@@ -1,21 +1,24 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { MenuItem } from 'primeng/api';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
+import { MenuModule } from 'primeng/menu';
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
-
+import { AuthService } from '../../core/services/auth/auth.service';
+import { MessageService } from 'primeng/api';
+import { SettingsService } from '../../core/services/settings.service';
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator],
+    imports: [RouterModule, CommonModule, StyleClassModule, MenuModule, AppConfigurator],
     template: ` <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
                 <i class="pi pi-bars"></i>
             </button>
-            <a class="layout-topbar-logo" routerLink="/">
+            <a class="layout-topbar-logo" [routerLink]="getDashboardRoute()" style="cursor: pointer;">
                 <svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                         fill-rule="evenodd"
@@ -33,7 +36,7 @@ import { LayoutService } from '../service/layout.service';
                         />
                     </g>
                 </svg>
-                <span>SAKAI</span>
+                <span>{{ platformName() }}</span>
             </a>
         </div>
 
@@ -72,21 +75,114 @@ import { LayoutService } from '../service/layout.service';
                         <i class="pi pi-inbox"></i>
                         <span>Messages</span>
                     </button>
-                    <button type="button" class="layout-topbar-action">
+                    <button type="button" class="layout-topbar-action" (click)="userMenu.toggle($event)">
                         <i class="pi pi-user"></i>
                         <span>Profile</span>
                     </button>
+                    <p-menu #userMenu [model]="userMenuItems" [popup]="true"></p-menu>
                 </div>
             </div>
         </div>
     </div>`
 })
-export class AppTopbar {
+export class AppTopbar implements OnInit {
     items!: MenuItem[];
+    userMenuItems: MenuItem[] = [];
+    platformName = signal('SAKAI');
 
-    constructor(public layoutService: LayoutService) {}
+    constructor(
+        public layoutService: LayoutService,
+        private authService: AuthService,
+        private router: Router,
+        private messageService: MessageService,
+        private settingsService: SettingsService
+    ) {
+        this.initUserMenu();
+    }
+
+    ngOnInit() {
+        this.loadPlatformName();
+    }
+
+    private loadPlatformName() {
+        this.settingsService.getSettings().subscribe({
+            next: (settings) => {
+                if (settings?.platform_name) {
+                    this.platformName.set(settings.platform_name);
+                }
+            },
+            error: () => {
+                // Keep default value on error
+            }
+        });
+    }
+
+    getDashboardRoute(): string {
+        const user = this.authService.getCurrentUser();
+        if (user?.role === 'SuperAdmin') {
+            return '/admin/dashboard';
+        }
+        return '/client/dashboard';
+    }
+
+    initUserMenu() {
+        this.userMenuItems = [
+            {
+                label: 'Profile',
+                icon: 'pi pi-user',
+                command: () => this.goToProfile()
+            },
+            {
+                label: 'Settings',
+                icon: 'pi pi-cog',
+                command: () => this.goToSettings()
+            },
+            {
+                separator: true
+            },
+            {
+                label: 'Logout',
+                icon: 'pi pi-sign-out',
+                command: () => this.logout()
+            }
+        ];
+    }
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
+    }
+
+    goToProfile() {
+        console.log('Navigate to profile');
+    }
+
+    goToSettings() {
+        console.log('Navigate to settings');
+    }
+
+    logout() {
+        this.authService.logout().subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Session cerrada correctamente!' });
+                this.router.navigate(['/auth/login']);
+            },
+            error: () => {
+                // Clear local data even if server fails
+                this.authService.clearAuthData();
+                this.authService.logout().subscribe({
+                    next: () => {
+                        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Session cerrada correctamente!' });
+
+                        this.router.navigate(['/auth/login']);
+                    },
+                    error: () => {
+                                    this.messageService.add({ severity: 'error', summary: 'Error', detail:  'Error al cerrar sesión' });
+
+                    }
+                });
+
+                this.router.navigate(['/auth/login']);
+            }
+        });
     }
 }

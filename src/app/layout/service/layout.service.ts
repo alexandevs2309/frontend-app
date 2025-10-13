@@ -79,6 +79,18 @@ export class LayoutService {
     private initialized = false;
 
     constructor() {
+
+        const saveDarkTheme = localStorage.getItem('darkTheme');
+        if(saveDarkTheme !== null){
+            this._config.darkTheme = saveDarkTheme === 'true';
+            this.layoutConfig.set({...this._config});
+            this.toggleDarkMode(this._config);
+        }
+
+
+
+
+
         effect(() => {
             const config = this.layoutConfig();
             if (config) {
@@ -126,6 +138,16 @@ export class LayoutService {
         } else {
             document.documentElement.classList.remove('app-dark');
         }
+
+        localStorage.setItem('darkTheme', String(_config.darkTheme));
+
+    }
+
+    toggleTheme(): void {
+        const current = this.layoutConfig().darkTheme;
+        this.layoutConfig.update((prev) => ({ ...prev, darkTheme: !current }));
+        localStorage.setItem('darkTheme', String(!current));
+        this.toggleDarkMode({ ...this.layoutConfig(), darkTheme: !current });
     }
 
     private onTransitionEnd() {

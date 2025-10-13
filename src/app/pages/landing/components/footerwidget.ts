@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
+import { SettingsService } from '../../../core/services/settings.service';
 
 @Component({
     selector: 'footer-widget',
@@ -26,7 +27,7 @@ import { Router, RouterModule } from '@angular/router';
                                 />
                             </g>
                         </svg>
-                        <h4 class="font-medium text-3xl text-surface-900 dark:text-surface-0">SAKAI</h4>
+                        <h4 class="font-medium text-3xl text-surface-900 dark:text-surface-0">{{ platformName() }}</h4>
                     </a>
                 </div>
 
@@ -68,6 +69,28 @@ import { Router, RouterModule } from '@angular/router';
         </div>
     `
 })
-export class FooterWidget {
-    constructor(public router: Router) {}
+export class FooterWidget implements OnInit {
+    platformName = signal('SAKAI');
+
+    constructor(
+        public router: Router,
+        private settingsService: SettingsService
+    ) {}
+
+    ngOnInit() {
+        this.loadPlatformName();
+    }
+
+    private loadPlatformName() {
+        this.settingsService.getSettings().subscribe({
+            next: (settings) => {
+                if (settings?.platform_name) {
+                    this.platformName.set(settings.platform_name);
+                }
+            },
+            error: () => {
+                // Keep default value on error
+            }
+        });
+    }
 }

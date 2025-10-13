@@ -4,7 +4,11 @@
     "scripts": {
         "ng": "ng",
         "start": "ng serve",
+        "start:dev": "ng serve --configuration development",
+        "start:prod": "ng serve --configuration production",
         "build": "ng build",
+        "build:dev": "ng build --configuration development",
+        "build:prod": "ng build --configuration production",
         "watch": "ng build --watch --configuration development",
         "format": "prettier --write \"**/*.{js,mjs,ts,mts,d.ts,html}\" --cache",
         "test": "ng test"
@@ -21,7 +25,11 @@
         "@angular/router": "^20",
         "@primeuix/themes": "^1.2.1",
         "@tailwindcss/postcss": "^4.1.11",
+        "aos": "^2.3.4",
         "chart.js": "4.4.2",
+        "gsap": "^3.13.0",
+        "lottie-web": "^5.13.0",
+        "ng-lottie": "^0.3.2",
         "primeclt": "^0.1.5",
         "primeicons": "^7.0.0",
         "primeng": "^20",

@@ -1,139 +1,330 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
+import { RippleModule } from 'primeng/ripple';
 import { CommonModule } from '@angular/common';
 
 @Component({
     selector: 'features-widget',
-    standalone: true,
-    imports: [CommonModule],
-    template: ` <div id="features" class="py-6 px-6 lg:px-20 mt-8 mx-0 lg:mx-20">
-        <div class="grid grid-cols-12 gap-4 justify-center">
-            <div class="col-span-12 text-center mt-20 mb-6">
-                <div class="text-surface-900 dark:text-surface-0 font-normal mb-2 text-4xl">Marvelous Features</div>
-                <span class="text-muted-color text-2xl">Placerat in egestas erat...</span>
+    imports: [ButtonModule, RippleModule, CommonModule],
+    template: `
+        <div id="features" class="py-20 px-6 lg:px-20 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+            <div class="text-center mb-20">
+                <span class="inline-block px-4 py-2 bg-purple-100 text-purple-600 rounded-full text-sm font-medium mb-4">
+                    ✨ Funcionalidades Principales
+                </span>
+                <h2 class="text-4xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+                    Todo lo que necesitas para
+                    <span class="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">gestionar tu barbería</span>
+                </h2>
+                <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                    Desde la agenda hasta el punto de venta, pasando por el control de empleados y ganancias. Una solución completa.
+                </p>
             </div>
 
-            <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pr-8 lg:pb-8 mt-6 lg:mt-0">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(253, 228, 165, 0.2), rgba(187, 199, 205, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(187, 199, 205, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-yellow-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-users text-2xl! text-yellow-700"></i>
+            <!-- Feature 1: POS System -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-32" #feature1>
+                <div class="order-2 lg:order-1">
+                    <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl p-8 shadow-2xl transform hover:scale-105 transition-all duration-500">
+                        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h4 class="text-white font-bold text-lg">Sistema POS</h4>
+                                <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="bg-white/20 rounded-lg p-4">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-white/80 text-sm">Corte + Barba</span>
+                                        <span class="text-white font-bold">$25.00</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-white/80 text-sm">Empleado: Carlos</span>
+                                        <span class="text-green-300 text-sm">Comisión: $5.00</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white/20 rounded-lg p-4">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-white/80 text-sm">Shampoo Premium</span>
+                                        <span class="text-white font-bold">$8.00</span>
+                                    </div>
+                                    <div class="text-white/60 text-xs">Stock: 15 unidades</div>
+                                </div>
+                                
+                                <div class="border-t border-white/20 pt-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-white font-bold">Total:</span>
+                                        <span class="text-white font-bold text-xl">$33.00</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <h5 class="mb-2 text-surface-900 dark:text-surface-0">Easy to Use</h5>
-                        <span class="text-surface-600 dark:text-surface-200">Posuere morbi leo urna molestie.</span>
+                    </div>
+                </div>
+                
+                <div class="order-1 lg:order-2" [class.animate-slide-in-right]="feature1Visible">
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="pi pi-shopping-cart text-green-600 text-xl"></i>
+                            </div>
+                            <h3 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+                                Sistema POS Inteligente
+                            </h3>
+                        </div>
+                        
+                        <p class="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Procesa ventas, calcula comisiones automáticamente y mantén control total del inventario. 
+                            Cada venta genera ganancias para tus empleados al instante.
+                        </p>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <i class="pi pi-check-circle text-green-500"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Cálculo automático de comisiones</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="pi pi-check-circle text-green-500"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Control de inventario en tiempo real</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="pi pi-check-circle text-green-500"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Notificaciones instantáneas a empleados</span>
+                            </div>
+                        </div>
+                        
+                        <button pButton pRipple label="Ver Demo POS" icon="pi pi-play" 
+                                class="bg-green-500 border-green-500 hover:bg-green-600 px-6 py-3" [rounded]="true"></button>
                     </div>
                 </div>
             </div>
 
-            <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pr-8 lg:pb-8 mt-6 lg:mt-0">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(145, 226, 237, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(172, 180, 223, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-cyan-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-palette text-2xl! text-cyan-700"></i>
+            <!-- Feature 2: Appointments -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-32" #feature2>
+                <div [class.animate-slide-in-left]="feature2Visible">
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="pi pi-calendar text-blue-600 text-xl"></i>
+                            </div>
+                            <h3 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+                                Agenda Inteligente
+                            </h3>
                         </div>
-                        <h5 class="mb-2 text-surface-900 dark:text-surface-0">Fresh Design</h5>
-                        <span class="text-surface-600 dark:text-surface-200">Semper risus in hendrerit.</span>
+                        
+                        <p class="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Gestiona citas, asigna empleados y optimiza tu tiempo. Los clientes pueden reservar online 
+                            y recibir recordatorios automáticos.
+                        </p>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <i class="pi pi-check-circle text-blue-500"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Reservas online 24/7</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="pi pi-check-circle text-blue-500"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Recordatorios automáticos por SMS/Email</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="pi pi-check-circle text-blue-500"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Asignación inteligente de empleados</span>
+                            </div>
+                        </div>
+                        
+                        <button pButton pRipple label="Ver Calendario" icon="pi pi-calendar" 
+                                class="bg-blue-500 border-blue-500 hover:bg-blue-600 px-6 py-3" [rounded]="true"></button>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl p-8 shadow-2xl transform hover:scale-105 transition-all duration-500">
+                        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h4 class="text-white font-bold text-lg">Agenda del Día</h4>
+                                <span class="text-white/80 text-sm">Miércoles, 15 Ene</span>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <div class="bg-white/20 rounded-lg p-3 border-l-4 border-yellow-400">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-white font-medium">10:00 - Juan Pérez</span>
+                                        <span class="text-yellow-300 text-sm">Confirmado</span>
+                                    </div>
+                                    <div class="text-white/80 text-sm">Corte + Barba • Carlos López</div>
+                                </div>
+                                
+                                <div class="bg-white/20 rounded-lg p-3 border-l-4 border-green-400">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-white font-medium">11:30 - María García</span>
+                                        <span class="text-green-300 text-sm">En proceso</span>
+                                    </div>
+                                    <div class="text-white/80 text-sm">Corte Dama • Ana Rodríguez</div>
+                                </div>
+                                
+                                <div class="bg-white/20 rounded-lg p-3 border-l-4 border-blue-400">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-white font-medium">13:00 - Pedro Martín</span>
+                                        <span class="text-blue-300 text-sm">Pendiente</span>
+                                    </div>
+                                    <div class="text-white/80 text-sm">Afeitado Clásico • Carlos López</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pb-8 mt-6 lg:mt-0">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(145, 226, 237, 0.2), rgba(172, 180, 223, 0.2)), linear-gradient(180deg, rgba(172, 180, 223, 0.2), rgba(246, 158, 188, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-indigo-200" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-map text-2xl! text-indigo-700"></i>
+            <!-- Feature 3: Earnings -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center" #feature3>
+                <div class="order-2 lg:order-1">
+                    <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl p-8 shadow-2xl transform hover:scale-105 transition-all duration-500">
+                        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h4 class="text-white font-bold text-lg">Ganancias Quincena</h4>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                    <span class="text-white/80 text-sm">Actualizado</span>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="text-center mb-6">
+                                    <div class="text-4xl font-bold text-white mb-2">$1,245.50</div>
+                                    <div class="text-white/80">Total Quincena Actual</div>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-white/80">Servicios (24)</span>
+                                        <span class="text-white font-medium">$980.00</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-white/80">Productos (8)</span>
+                                        <span class="text-white font-medium">$165.50</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-white/80">Bonos</span>
+                                        <span class="text-white font-medium">$100.00</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white/20 rounded-lg p-3 mt-4">
+                                    <div class="text-white/80 text-sm mb-1">Próximo pago:</div>
+                                    <div class="text-white font-bold">Viernes, 31 Enero</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mt-6 mb-1 text-surface-900 dark:text-surface-0 text-xl font-semibold">Well Documented</div>
-                        <span class="text-surface-600 dark:text-surface-200">Non arcu risus quis varius quam quisque.</span>
                     </div>
                 </div>
-            </div>
-
-            <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pr-8 lg:pb-8 mt-6 lg:mt-0">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-slate-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-id-card text-2xl! text-slate-700"></i>
+                
+                <div class="order-1 lg:order-2" [class.animate-slide-in-right]="feature3Visible">
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                <i class="pi pi-dollar text-purple-600 text-xl"></i>
+                            </div>
+                            <h3 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+                                Ganancias Automáticas
+                            </h3>
                         </div>
-                        <div class="mt-6 mb-1 text-surface-900 dark:text-surface-0 text-xl font-semibold">Responsive Layout</div>
-                        <span class="text-surface-600 dark:text-surface-200">Nulla malesuada pellentesque elit.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pr-8 lg:pb-8 mt-6 lg:mt-0">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(246, 158, 188, 0.2)), linear-gradient(180deg, rgba(145, 226, 237, 0.2), rgba(160, 210, 250, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-orange-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-star text-2xl! text-orange-700"></i>
+                        
+                        <p class="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Cada venta genera automáticamente las comisiones de tus empleados. Transparencia total 
+                            con notificaciones en tiempo real y reportes detallados.
+                        </p>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <i class="pi pi-check-circle text-purple-500"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Cálculo automático por quincena</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="pi pi-check-circle text-purple-500"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Notificaciones instantáneas</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="pi pi-check-circle text-purple-500"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Reportes detallados y exportables</span>
+                            </div>
                         </div>
-                        <div class="mt-6 mb-1 text-surface-900 dark:text-surface-0 text-xl font-semibold">Clean Code</div>
-                        <span class="text-surface-600 dark:text-surface-200">Condimentum lacinia quis vel eros.</span>
+                        
+                        <button pButton pRipple label="Ver Ganancias" icon="pi pi-chart-line" 
+                                class="bg-purple-500 border-purple-500 hover:bg-purple-600 px-6 py-3" [rounded]="true"></button>
                     </div>
-                </div>
-            </div>
-
-            <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pb-8 mt-6 lg:mt-0">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(251, 199, 145, 0.2), rgba(246, 158, 188, 0.2)), linear-gradient(180deg, rgba(172, 180, 223, 0.2), rgba(212, 162, 221, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-pink-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-moon text-2xl! text-pink-700"></i>
-                        </div>
-                        <div class="mt-6 mb-1 text-surface-900 dark:text-surface-0 text-xl font-semibold">Dark Mode</div>
-                        <span class="text-surface-600 dark:text-surface-200">Convallis tellus id interdum velit laoreet.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pr-8 mt-6 lg:mt-0">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(145, 210, 204, 0.2), rgba(160, 210, 250, 0.2)), linear-gradient(180deg, rgba(187, 199, 205, 0.2), rgba(145, 210, 204, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-teal-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-shopping-cart text-2xl! text-teal-700"></i>
-                        </div>
-                        <div class="mt-6 mb-1 text-surface-900 dark:text-surface-0 text-xl font-semibold">Ready to Use</div>
-                        <span class="text-surface-600 dark:text-surface-200">Mauris sit amet massa vitae.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg:pr-8 mt-6 lg:mt-0">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(145, 210, 204, 0.2), rgba(212, 162, 221, 0.2)), linear-gradient(180deg, rgba(251, 199, 145, 0.2), rgba(160, 210, 250, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-blue-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-globe text-2xl! text-blue-700"></i>
-                        </div>
-                        <div class="mt-6 mb-1 text-surface-900 dark:text-surface-0 text-xl font-semibold">Modern Practices</div>
-                        <span class="text-surface-600 dark:text-surface-200">Elementum nibh tellus molestie nunc non.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-span-12 md:col-span-12 lg:col-span-4 p-0 lg-4 mt-6 lg:mt-0">
-                <div style="height: 160px; padding: 2px; border-radius: 10px; background: linear-gradient(90deg, rgba(160, 210, 250, 0.2), rgba(212, 162, 221, 0.2)), linear-gradient(180deg, rgba(246, 158, 188, 0.2), rgba(212, 162, 221, 0.2))">
-                    <div class="p-4 bg-surface-0 dark:bg-surface-900 h-full" style="border-radius: 8px">
-                        <div class="flex items-center justify-center bg-purple-200 mb-4" style="width: 3.5rem; height: 3.5rem; border-radius: 10px">
-                            <i class="pi pi-fw pi-eye text-2xl! text-purple-700"></i>
-                        </div>
-                        <div class="mt-6 mb-1 text-surface-900 dark:text-surface-0 text-xl font-semibold">Privacy</div>
-                        <span class="text-surface-600 dark:text-surface-200">Neque egestas congue quisque.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div
-                class="col-span-12 mt-20 mb-20 p-2 md:p-20"
-                style="border-radius: 20px; background: linear-gradient(0deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)), radial-gradient(77.36% 256.97% at 77.36% 57.52%, #efe1af 0%, #c3dcfa 100%)"
-            >
-                <div class="flex flex-col justify-center items-center text-center px-4 py-4 md:py-0">
-                    <div class="text-gray-900 mb-2 text-3xl font-semibold">Joséphine Miller</div>
-                    <span class="text-gray-600 text-2xl">Peak Interactive</span>
-                    <p class="text-gray-900 sm:line-height-2 md:line-height-4 text-2xl mt-6" style="max-width: 800px">
-                        “Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.”
-                    </p>
-                    <img src="https://primefaces.org/cdn/templates/sakai/landing/peak-logo.svg" class="mt-6" alt="Company logo" />
                 </div>
             </div>
         </div>
-    </div>`
+        
+        <style>
+            @keyframes slide-in-left {
+                from {
+                    opacity: 0;
+                    transform: translateX(-50px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+            
+            @keyframes slide-in-right {
+                from {
+                    opacity: 0;
+                    transform: translateX(50px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+            
+            .animate-slide-in-left {
+                animation: slide-in-left 0.8s ease-out;
+            }
+            
+            .animate-slide-in-right {
+                animation: slide-in-right 0.8s ease-out;
+            }
+        </style>
+    `
 })
-export class FeaturesWidget {}
+export class FeaturesWidget implements OnInit {
+    @ViewChild('feature1', { static: false }) feature1!: ElementRef;
+    @ViewChild('feature2', { static: false }) feature2!: ElementRef;
+    @ViewChild('feature3', { static: false }) feature3!: ElementRef;
+    
+    feature1Visible = false;
+    feature2Visible = false;
+    feature3Visible = false;
+
+    ngOnInit() {
+        this.setupIntersectionObserver();
+    }
+
+    private setupIntersectionObserver() {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const target = entry.target;
+                        if (target === this.feature1?.nativeElement) {
+                            this.feature1Visible = true;
+                        } else if (target === this.feature2?.nativeElement) {
+                            this.feature2Visible = true;
+                        } else if (target === this.feature3?.nativeElement) {
+                            this.feature3Visible = true;
+                        }
+                    }
+                });
+            },
+            { threshold: 0.3 }
+        );
+
+        setTimeout(() => {
+            if (this.feature1?.nativeElement) observer.observe(this.feature1.nativeElement);
+            if (this.feature2?.nativeElement) observer.observe(this.feature2.nativeElement);
+            if (this.feature3?.nativeElement) observer.observe(this.feature3.nativeElement);
+        }, 100);
+    }
+}

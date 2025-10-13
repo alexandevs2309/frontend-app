@@ -1,0 +1,60 @@
+// Estilos para el sistema de administración
+
+:host ::ng-deep .p-tabs .p-tabview-nav li .p-tabview-nav-link {
+    border-radius: 0.5rem;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    
+    &:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+}
+
+:host ::ng-deep .p-tabs .p-highlight .p-tabview-nav-link {
+    background: linear-gradient(to right, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+:host ::ng-deep .p-inputtext,
+:host ::ng-deep .p-textarea,
+:host ::ng-deep .p-inputnumber,
+:host ::ng-deep .p-dropdown {
+    width: 100%;
+    font-size: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    background-color: white;
+    
+    &:focus {
+        border-color: #3b82f6;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+}
+
+:host ::ng-deep .p-card {
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgb(0, 0, 0);
+    border: none;
+    overflow: hidden;
+}
+
+// Dark mode
+@media (prefers-color-scheme: dark) {
+    :host ::ng-deep .p-inputtext,
+    :host ::ng-deep .p-textarea,
+    :host ::ng-deep .p-inputnumber,
+    :host ::ng-deep .p-dropdown {
+        border-color: #4b5563;
+        background-color: #374151;
+        color: white;
+        
+        &:focus {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.8);
+        }
+    }
+}

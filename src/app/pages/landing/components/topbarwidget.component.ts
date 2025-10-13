@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { StyleClassModule } from 'primeng/styleclass';
 import { Router, RouterModule } from '@angular/router';
 import { RippleModule } from 'primeng/ripple';
 import { ButtonModule } from 'primeng/button';
 import {AppFloatingConfigurator} from "@/layout/component/app.floatingconfigurator";
+import { SettingsService } from '../../../core/services/settings.service';
 
 @Component({
     selector: 'topbar-widget',
@@ -26,7 +27,7 @@ import {AppFloatingConfigurator} from "@/layout/component/app.floatingconfigurat
                     />
                 </g>
             </svg>
-            <span class="text-surface-900 dark:text-surface-0 font-medium text-2xl leading-normal mr-20">SAKAI</span>
+            <span class="text-surface-900 dark:text-surface-0 font-medium text-2xl leading-normal mr-20">{{ platformName() }}</span>
         </a>
 
         <a pButton [text]="true" severity="secondary" [rounded]="true" pRipple class="lg:hidden!" pStyleClass="@next" enterFromClass="hidden" leaveToClass="hidden" [hideOnOutsideClick]="true">
@@ -63,6 +64,28 @@ import {AppFloatingConfigurator} from "@/layout/component/app.floatingconfigurat
             </div>
         </div> `
 })
-export class TopbarWidget {
-    constructor(public router: Router) {}
+export class TopbarWidget implements OnInit {
+    platformName = signal('SAKAI');
+
+    constructor(
+        public router: Router,
+        private settingsService: SettingsService
+    ) {}
+
+    ngOnInit() {
+        this.loadPlatformName();
+    }
+
+    private loadPlatformName() {
+        this.settingsService.getSettings().subscribe({
+            next: (settings) => {
+                if (settings?.platform_name) {
+                    this.platformName.set(settings.platform_name);
+                }
+            },
+            error: () => {
+                // Keep default value on error
+            }
+        });
+    }
 }
