@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
 import { AuthService } from '../../core/services/auth/auth.service';
+import { TrialService } from '../../core/services/trial.service';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-menu',
@@ -16,19 +18,50 @@ import { AuthService } from '../../core/services/auth/auth.service';
         </ng-container>
     </ul> `
 })
-export class AppMenu implements OnInit {
+export class AppMenu implements OnInit, OnDestroy {
     model: MenuItem[] = [];
+    private subscription = new Subscription();
 
-    constructor(private authService: AuthService) {}
+    constructor(
+        private authService: AuthService,
+        private trialService: TrialService
+    ) {}
 
     ngOnInit() {
-        const userRole = this.authService.getCurrentUserRole();
+        // Build menu immediately if user exists
+        const currentUser = this.authService.getCurrentUser();
+        if (currentUser) {
+            this.updateMenuForUser(currentUser.role);
+        }
         
-        if (userRole === 'SuperAdmin') {
+        // Subscribe to user changes
+        this.subscription.add(
+            this.authService.currentUser$.subscribe(user => {
+                if (user) {
+                    this.updateMenuForUser(user.role);
+                } else {
+                    this.model = [];
+                }
+            })
+        );
+    }
+    
+
+    
+    private updateMenuForUser(role: string) {
+        if (role === 'SuperAdmin') {
             this.model = this.getAdminMenu();
         } else {
-            this.model = this.getClientMenu();
+            this.buildClientMenu();
         }
+    }
+
+    ngOnDestroy() {
+        this.subscription.unsubscribe();
+    }
+
+    buildClientMenu() {
+        this.model = this.getClientMenu();
     }
 
     getAdminMenu(): MenuItem[] {
@@ -51,11 +84,39 @@ export class AppMenu implements OnInit {
     }
 
     getClientMenu(): MenuItem[] {
+        const user = this.authService.getCurrentUser();
+        const userRole = user?.role;
+        const menuItems: MenuItem[] = [
+            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/client/dashboard'] }
+        ];
+
+        if (userRole === 'Client-Admin') {
+            // Client-Admin: All features available
+            menuItems.push(
+                { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
+                { label: 'Citas', icon: 'pi pi-fw pi-calendar', routerLink: ['/client/appointments'] },
+                { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
+                { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
+                { label: 'Punto de Venta', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
+                { label: 'Ganancias', icon: 'pi pi-fw pi-dollar', routerLink: ['/client/earnings'] },
+                { label: 'Reportes', icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }
+            );
+        } else if (userRole === 'Client-Staff') {
+            // Client-Staff: Limited features
+            menuItems.push(
+                { label: 'Mis Citas', icon: 'pi pi-fw pi-calendar', routerLink: ['/client/appointments'] },
+                { label: 'Ventas', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
+                { label: 'Mis Comisiones', icon: 'pi pi-fw pi-dollar', routerLink: ['/client/earnings'] },
+                { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
+                { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] }
+            );
+        }
+
         return [
             {
                 label: 'Barbershop',
-                items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/client/dashboard'] }]
-            },
+                items: menuItems
+            }
         ];
     }
 }

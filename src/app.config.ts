@@ -1,5 +1,5 @@
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { ApplicationConfig } from '@angular/core';
+import { ApplicationConfig, APP_INITIALIZER } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
 import Aura from '@primeuix/themes/aura';
@@ -8,6 +8,7 @@ import { MessageService } from 'primeng/api';
 import { appRoutes } from './app.routes';
 import { AuthInterceptor, ErrorInterceptor, TenantInterceptor } from './app/core/interceptors';
 import { MaintenanceInterceptor } from './app/core/interceptors/maintenance.interceptor';
+
 
 export const appConfig: ApplicationConfig = {
     providers: [

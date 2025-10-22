@@ -138,7 +138,7 @@ interface Tenant {
                     <td>{{ tenant.contact_email }}</td>
                     <td>{{ tenant.plan_type || tenant.subscription_plan?.name }}</td>
                     <td>
-                        <p-tag [value]="tenant.subscription_status || 'trial'" [severity]="tenant.subscription_status === 'active' ? 'success' : 'warning'" />
+                        <p-tag [value]="tenant.subscription_status || 'trial'" [severity]="tenant.subscription_status === 'active' ? 'success' : 'warn'" />
                     </td>
                     <td>{{ tenant.trial_end_date ? (tenant.trial_end_date | date:'dd/MM/yyyy') : '-' }}</td>
                     <td>

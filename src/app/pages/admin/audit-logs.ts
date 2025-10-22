@@ -241,7 +241,7 @@ export class AuditLogs implements OnInit {
         this.filteredLogs.set(filtered);
     }
 
-    getActionSeverity(action: string): string {
+    getActionSeverity(action: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
         switch (action) {
             case 'CREATE': return 'success';
             case 'UPDATE': return 'info';
@@ -254,14 +254,14 @@ export class AuditLogs implements OnInit {
             case 'TWILIO_ERROR':
             case 'SENDGRID_ERROR':
             case 'INTEGRATION_ERROR': return 'danger';
-            case 'PERFORMANCE_ALERT': return 'warning';
+            case 'PERFORMANCE_ALERT': return 'warn';
             default: return 'info';
         }
     }
 
-    getSourceSeverity(source: string): string {
+    getSourceSeverity(source: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
         switch (source) {
-            case 'INTEGRATIONS': return 'warning';
+            case 'INTEGRATIONS': return 'warn';
             case 'PERFORMANCE': return 'info';
             case 'SYSTEM': return 'secondary';
             case 'AUTH': return 'success';

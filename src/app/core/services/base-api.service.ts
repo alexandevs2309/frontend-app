@@ -12,13 +12,14 @@ export class BaseApiService {
 
   constructor() {}
 
-  protected get<T>(endpoint: string, params?: any): Observable<T> {
+  protected get<T>(endpoint: string, params?: any, options?: { withCredentials?: boolean; [key: string]: any }): Observable<T> {
     const httpParams = this.buildParams(params);
-    return this.http.get<T>(`${this.baseUrl}${endpoint}`, { params: httpParams });
+    const requestOptions = { params: httpParams, ...options };
+    return this.http.get<T>(`${this.baseUrl}${endpoint}`, requestOptions);
   }
 
-  protected post<T>(endpoint: string, data?: any): Observable<T> {
-    return this.http.post<T>(`${this.baseUrl}${endpoint}`, data);
+  protected post<T>(endpoint: string, data?: any, options?: { withCredentials?: boolean; [key: string]: any }): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}${endpoint}`, data, options);
   }
 
   protected put<T>(endpoint: string, data?: any): Observable<T> {

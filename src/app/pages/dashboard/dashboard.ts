@@ -26,15 +26,30 @@ import { Observable } from 'rxjs';
         </div>
         
         <div class="grid grid-cols-12 gap-8" *ngIf="!loading(); else loadingTemplate">
+            <!-- Stats Widget - Todos los roles -->
             <app-stats-widget class="contents" />
-            <div class="col-span-12 xl:col-span-6">
-                <app-recent-sales-widget />
-                <app-best-selling-widget />
-            </div>
-            <div class="col-span-12 xl:col-span-6">
-                <app-revenue-stream-widget />
-                <app-notifications-widget />
-            </div>
+            
+            <!-- Client-Admin: Vista completa -->
+            <ng-container *ngIf="isClientAdmin()">
+                <div class="col-span-12 xl:col-span-6">
+                    <app-recent-sales-widget />
+                    <app-best-selling-widget />
+                </div>
+                <div class="col-span-12 xl:col-span-6">
+                    <app-revenue-stream-widget />
+                    <app-notifications-widget />
+                </div>
+            </ng-container>
+            
+            <!-- Client-Staff: Vista limitada -->
+            <ng-container *ngIf="isClientStaff()">
+                <div class="col-span-12 xl:col-span-8">
+                    <app-recent-sales-widget />
+                </div>
+                <div class="col-span-12 xl:col-span-4">
+                    <app-notifications-widget />
+                </div>
+            </ng-container>
         </div>
         
         <ng-template #loadingTemplate>
@@ -80,9 +95,19 @@ export class Dashboard implements OnInit {
     getRoleDisplayName(role: string): string {
         const roleNames: { [key: string]: string } = {
             'SuperAdmin': 'Super Administrador',
-            'ClientAdmin': 'Administrador de Peluquería', 
-            'ClientStaff': 'Empleado'
+            'Client-Admin': 'Administrador de Peluquería', 
+            'Client-Staff': 'Empleado/Barbero'
         };
         return roleNames[role] || role;
+    }
+
+    isClientAdmin(): boolean {
+        const user = this.authService.getCurrentUser();
+        return user?.role === 'Client-Admin';
+    }
+
+    isClientStaff(): boolean {
+        const user = this.authService.getCurrentUser();
+        return user?.role === 'Client-Staff';
     }
 }

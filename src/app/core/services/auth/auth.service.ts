@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { BaseApiService } from '../base-api.service';
 import { API_CONFIG } from '../../config/api.config';
+import { TrialService } from '../trial.service';
 
 export interface LoginRequest {
   email: string;
@@ -13,6 +14,12 @@ export interface LoginResponse {
   refresh: string;
   user: any;
   tenant?: any;
+}
+
+export interface SecureLoginResponse {
+  user: any;
+  tenant?: any;
+  message: string;
 }
 
 export interface User {
@@ -34,7 +41,7 @@ export class AuthService extends BaseApiService {
   public currentUser$ = this.currentUserSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  constructor() {
+  constructor(private trialService: TrialService) {
     super();
     this.loadStoredAuth();
   }
@@ -44,8 +51,16 @@ export class AuthService extends BaseApiService {
       .pipe(
         tap(response => {
           this.setAuthData(response);
+          // Load entitlements for client users after successful login
+          if (response.user?.role !== 'SuperAdmin') {
+            this.trialService.loadTrialStatus();
+          }
         })
       );
+  }
+
+  loginSecure(credentials: LoginRequest): Observable<LoginResponse> {
+    return this.login(credentials);
   }
 
   logout(): Observable<any> {
@@ -71,8 +86,22 @@ export class AuthService extends BaseApiService {
     });
   }
 
+  logoutSecure(): Observable<any> {
+    return this.logout();
+  }
+
   register(userData: any): Observable<any> {
     return this.post(API_CONFIG.ENDPOINTS.AUTH.REGISTER, userData);
+  }
+
+  registerWithPlan(userData: any): Observable<any> {
+    console.log('🚀 [AUTH_SERVICE] Enviando registro con plan:', userData);
+    return this.post('/subscriptions/register/', userData).pipe(
+      tap({
+        next: response => console.log('✅ [AUTH_SERVICE] Registro exitoso:', response),
+        error: error => console.error('❌ [AUTH_SERVICE] Error en registro:', error)
+      })
+    );
   }
 
   changePassword(data: { old_password: string; new_password: string }): Observable<any> {
@@ -135,6 +164,7 @@ export class AuthService extends BaseApiService {
   }
 
   getToken(): string | null {
+    // Solo localStorage para compatibilidad (las cookies httpOnly se manejan automáticamente)
     return localStorage.getItem('access_token');
   }
 
@@ -145,14 +175,29 @@ export class AuthService extends BaseApiService {
   private setAuthData(response: LoginResponse): void {
     localStorage.setItem('access_token', response.access);
     localStorage.setItem('refresh_token', response.refresh);
-    localStorage.setItem('user', JSON.stringify(response.user));
+    
+    // Agregar tenant_id si viene en la respuesta
+    const userWithTenant = {
+      ...response.user,
+      tenant_id: response.tenant ? response.tenant.id : null
+    };
+    
+    localStorage.setItem('user', JSON.stringify(userWithTenant));
 
     if (response.tenant) {
       localStorage.setItem('tenant', JSON.stringify(response.tenant));
     }
 
-    this.currentUserSubject.next(response.user);
+    // Force state update
+    this.currentUserSubject.next(userWithTenant);
     this.isAuthenticatedSubject.next(true);
+    
+    // Load trial status for non-admin users
+    if (response.user?.role !== 'SuperAdmin') {
+      this.trialService.loadTrialStatus();
+    }
+    
+    console.log('Auth data set, user:', userWithTenant);
   }
 
   public clearAuthData(): void {
@@ -165,6 +210,8 @@ export class AuthService extends BaseApiService {
     this.isAuthenticatedSubject.next(false);
   }
 
+
+
   private loadStoredAuth(): void {
     const token = this.getToken();
     const userStr = localStorage.getItem('user');
@@ -174,6 +221,11 @@ export class AuthService extends BaseApiService {
         const user = JSON.parse(userStr);
         this.currentUserSubject.next(user);
         this.isAuthenticatedSubject.next(true);
+        
+        // Cargar trial status si es necesario
+        if (user.role !== 'SuperAdmin') {
+          this.trialService.loadTrialStatus();
+        }
       } catch (error) {
         this.clearAuthData();
       }

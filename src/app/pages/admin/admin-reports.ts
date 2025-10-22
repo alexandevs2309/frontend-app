@@ -307,12 +307,12 @@ export class AdminReports implements OnInit {
         return plan.tenant_count > 0 ? plan.revenue / plan.tenant_count : 0;
     }
 
-    getPlanSeverity(plan: string): string {
-        const severityMap: { [key: string]: string } = {
+    getPlanSeverity(plan: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+        const severityMap: { [key: string]: 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' } = {
             'FREE': 'secondary',
             'Basic': 'info',
             'Professional': 'success',
-            'Enterprise': 'warning'
+            'Enterprise': 'warn'
         };
         return severityMap[plan] || 'info';
     }

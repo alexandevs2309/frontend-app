@@ -321,10 +321,10 @@ export class BillingManagement implements OnInit {
         this.filteredInvoices.set(filtered);
     }
 
-    getStatusSeverity(status: string): string {
+    getStatusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
         switch (status) {
             case 'paid': return 'success';
-            case 'pending': return 'warning';
+            case 'pending': return 'warn';
             case 'overdue': return 'danger';
             case 'cancelled': return 'secondary';
             default: return 'info';

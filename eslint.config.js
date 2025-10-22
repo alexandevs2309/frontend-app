@@ -4,19 +4,8 @@ export default {
     plugins: ['prettier'],
     extends: ['prettier'],
     rules: {
-        'padding-line-between-statements': [
-            'error',
-            { blankLine: 'always', prev: ['const', 'let', 'var'], next: '*' },
-            { blankLine: 'any', prev: ['const', 'let', 'var'], next: ['const', 'let', 'var'] },
-            { blankLine: 'any', prev: ['case', 'default'], next: 'break' },
-            { blankLine: 'any', prev: 'case', next: 'case' },
-            { blankLine: 'always', prev: '*', next: 'return' },
-            { blankLine: 'always', prev: 'block', next: '*' },
-            { blankLine: 'always', prev: '*', next: 'block' },
-            { blankLine: 'always', prev: 'block-like', next: '*' },
-            { blankLine: 'always', prev: '*', next: 'block-like' },
-            { blankLine: 'always', prev: ['import'], next: ['const', 'let', 'var'] }
-        ]
+        // Reglas de formato deshabilitadas para evitar recompilación constante
+        'padding-line-between-statements': 'off'
     },
     overrides: [
         {

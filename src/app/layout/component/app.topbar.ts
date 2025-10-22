@@ -105,16 +105,21 @@ export class AppTopbar implements OnInit {
     }
 
     private loadPlatformName() {
-        this.settingsService.getSettings().subscribe({
-            next: (settings) => {
-                if (settings?.platform_name) {
-                    this.platformName.set(settings.platform_name);
+        const user = this.authService.getCurrentUser();
+        // Only SuperAdmin can access system settings
+        if (user?.role === 'SuperAdmin') {
+            this.settingsService.getSettings().subscribe({
+                next: (settings) => {
+                    if (settings?.platform_name) {
+                        this.platformName.set(settings.platform_name);
+                    }
+                },
+                error: () => {
+                    // Keep default value on error
                 }
-            },
-            error: () => {
-                // Keep default value on error
-            }
-        });
+            });
+        }
+        // For Client users, keep default platform name
     }
 
     getDashboardRoute(): string {
@@ -169,18 +174,7 @@ export class AppTopbar implements OnInit {
             error: () => {
                 // Clear local data even if server fails
                 this.authService.clearAuthData();
-                this.authService.logout().subscribe({
-                    next: () => {
-                        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Session cerrada correctamente!' });
-
-                        this.router.navigate(['/auth/login']);
-                    },
-                    error: () => {
-                                    this.messageService.add({ severity: 'error', summary: 'Error', detail:  'Error al cerrar sesión' });
-
-                    }
-                });
-
+                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Session cerrada correctamente!' });
                 this.router.navigate(['/auth/login']);
             }
         });

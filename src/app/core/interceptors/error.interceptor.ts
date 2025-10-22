@@ -4,14 +4,12 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { AuthService } from '../services/auth/auth.service';
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
 
   constructor(
     private router: Router,
-    private authService: AuthService,
     private messageService: MessageService
   ) {}
 
@@ -50,7 +48,12 @@ export class ErrorInterceptor implements HttpInterceptor {
     const isPublicPage = publicPages.some(page => currentUrl.startsWith(page));
     
     if (!isPublicPage) {
-      this.authService.logout().subscribe();
+      // Clear auth data directly
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('tenant');
+      
       this.router.navigate(['/auth/login']);
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Sesión expirada. Por favor, inicia sesión nuevamente.' });
     }

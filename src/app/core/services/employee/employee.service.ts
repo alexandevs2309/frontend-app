@@ -7,10 +7,11 @@ export interface Employee {
   id: number;
   user: any;
   tenant: number;
-  position: string;
-  hire_date: string;
+  specialty?: string;
+  phone?: string;
+  hire_date?: string;
   is_active: boolean;
-  commission_rate: number;
+  commission_rate?: number;
 }
 
 export interface Earning {

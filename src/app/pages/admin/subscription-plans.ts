@@ -327,7 +327,7 @@ export class SubscriptionPlans implements OnInit {
         return plan.allows_multiple_branches ? 'Sí' : 'No';
     }
 
-    getMultiBranchSeverity(plan: SubscriptionPlan): string {
+    getMultiBranchSeverity(plan: SubscriptionPlan): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
         return plan.allows_multiple_branches ? 'success' : 'secondary';
     }
 

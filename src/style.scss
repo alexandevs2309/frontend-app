@@ -1,0 +1,213 @@
+/* src/styles.css (o similar) */
+.glass-effect {
+  background-color: rgba(255, 255, 255, 0.15); /* Fondo blanco semi-transparente */
+  backdrop-filter: blur(10px) saturate(180%); /* El toque mágico del desenfoque */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Borde sutil */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); /* Sombra elegante */
+}
+
+/* Animaciones para el hero */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px) rotate(-5deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px) rotate(5deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(2deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  opacity: 0;
+  animation: slideInLeft 1s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  opacity: 0;
+  animation: slideInRight 1s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  opacity: 0;
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.animate-slide-up {
+  opacity: 0;
+  animation: slideUp 0.8s ease-out forwards;
+}
+
+/* Animaciones direccionales para cards */
+@keyframes slideInFromLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-150px) scale(0.7) rotate(-10deg);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateX(-20px) scale(0.95) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes slideInFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(150px) scale(0.7) rotate(10deg);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateX(20px) scale(0.95) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes slideInFromTop {
+  0% {
+    opacity: 0;
+    transform: translateY(-150px) scale(0.7) rotate(-5deg);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-20px) scale(0.95) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes slideInFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(150px) scale(0.7) rotate(5deg);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(20px) scale(0.95) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+/* Clases de animación con estado inicial */
+.feature-card {
+  opacity: 0 !important;
+  transform: translateY(50px) scale(0.9) !important;
+  transition: none !important;
+}
+
+.feature-card.animate-slide-in-left,
+.feature-card.animate-slide-in-right,
+.feature-card.animate-slide-in-top,
+.feature-card.animate-slide-in-bottom {
+  opacity: 1 !important;
+  transform: translateX(0) translateY(0) scale(1) !important;
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-slide-in-top {
+  animation: slideInFromTop 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-slide-in-bottom {
+  animation: slideInFromBottom 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Sistema de animaciones global */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(50px) scale(0.9);
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.animate-visible {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+/* Stagger animations con direcciones diferentes */
+.group:nth-child(1) { animation-delay: 0.1s; }
+.group:nth-child(2) { animation-delay: 0.2s; }
+.group:nth-child(3) { animation-delay: 0.3s; }
+.group:nth-child(4) { animation-delay: 0.4s; }
+.group:nth-child(5) { animation-delay: 0.5s; }
+.group:nth-child(6) { animation-delay: 0.6s; }

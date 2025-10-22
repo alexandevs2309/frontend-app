@@ -106,7 +106,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
                                         <div class="md:col-span-2 flex justify-end mt-6">
                                             <button pButton label="Guardar Cambios" icon="pi pi-save" (click)="saveGeneral()"
                                                     [loading]="saving" [disabled]="generalForm.invalid"
-                                                    class="px-8 py-3 text-base bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
+                                                    class="px-8 py-3 text-base bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
                                         </div>
                                     </form>
                                 </div>
@@ -163,7 +163,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
                                                     class="px-8 py-3 text-base border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 shadow-md hover:shadow-lg"></button>
                                             <button pButton label="Guardar Cambios" icon="pi pi-save" (click)="saveEmail()"
                                                     [loading]="saving" [disabled]="emailForm.invalid"
-                                                    class="px-8 py-3 text-base bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
+                                                    class="px-8 py-3 text-base bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
                                         </div>
                                     </form>
                                 </div>
@@ -287,7 +287,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
                                             </div>
                                             <button pButton label="Guardar Cambios" icon="pi pi-save" (click)="savePayment()"
                                                     [loading]="saving" [disabled]="paymentForm.invalid"
-                                                    class="px-8 py-3 text-base bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
+                                                    class="px-8 py-3 text-base bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
                                         </div>
                                     </form>
                                 </div>
@@ -328,7 +328,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
                                         <div class="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                                             <button pButton label="Guardar Cambios" icon="pi pi-save" (click)="saveSecurity()"
                                                     [loading]="saving" [disabled]="securityForm.invalid"
-                                                    class="px-8 py-3 text-base bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
+                                                    class="px-8 py-3 text-base bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
                                         </div>
                                     </form>
                                 </div>
@@ -373,7 +373,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
                                         <div class="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                                             <button pButton label="Guardar Cambios" icon="pi pi-save" (click)="saveLimits()"
                                                     [loading]="saving" [disabled]="limitsForm.invalid"
-                                                    class="px-8 py-3 text-base bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
+                                                    class="px-8 py-3 text-base bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
                                         </div>
                                     </form>
                                 </div>
@@ -410,7 +410,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
                                         <div class="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                                             <button pButton label="Guardar Cambios" icon="pi pi-save" (click)="saveCommissions()"
                                                     [loading]="saving" [disabled]="commissionsForm.invalid"
-                                                    class="px-8 py-3 text-base bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
+                                                    class="px-8 py-3 text-base bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
                                         </div>
                                     </form>
                                 </div>
@@ -462,7 +462,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
                                         <div class="flex justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                                             <button pButton label="Guardar Cambios" icon="pi pi-save" (click)="saveAutomation()"
                                                     [loading]="saving" [disabled]="automationForm.invalid"
-                                                    class="px-8 py-3 text-base bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
+                                                    class="px-8 py-3 text-base bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"></button>
                                         </div>
                                     </form>
                                 </div>

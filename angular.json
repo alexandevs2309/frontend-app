@@ -15,21 +15,19 @@
             "prefix": "app",
             "architect": {
                 "build": {
-                    "builder": "@angular-devkit/build-angular:application",
+                    "builder": "@angular-devkit/build-angular:browser",
                     "options": {
                         "outputPath": "dist/sakai-ng",
                         "index": "src/index.html",
-                        "browser": "src/main.ts",
+                        "main": "src/main.ts",
                         "polyfills": [
                             "zone.js"
                         ],
                         "tsConfig": "tsconfig.app.json",
                         "inlineStyleLanguage": "scss",
                         "assets": [
-                            {
-                                "glob": "**/*",
-                                "input": "public"
-                            }
+                            "src/favicon.ico",
+                            "src/assets"
                         ],
                         "styles": [
                             "src/assets/styles.scss"
@@ -52,20 +50,20 @@
                             "sourceMap": true
                         }
                     },
-                    "defaultConfiguration": "production"
-                },
-                "serve": {
-                    "builder": "@angular-devkit/build-angular:dev-server",
-                    "configurations": {
-                        "production": {
-                            "buildTarget": "sakai-ng:build:production"
-                        },
-                        "development": {
-                            "buildTarget": "sakai-ng:build:development"
-                        }
-                    },
                     "defaultConfiguration": "development"
                 },
+               "serve": {
+                    "builder": "@angular-devkit/build-angular:dev-server",
+                    "options": {
+                        "watch": true,
+                        "poll": 1000
+                    },
+                    "configurations": {
+                        "production": { "buildTarget": "sakai-ng:build:production" },
+                        "development": { "buildTarget": "sakai-ng:build:development" }
+                    },
+                    "defaultConfiguration": "development"
+                    },
                 "extract-i18n": {
                     "builder": "@angular-devkit/build-angular:extract-i18n"
                 },
@@ -81,7 +79,8 @@
                         "assets": [
                             {
                                 "glob": "**/*",
-                                "input": "public"
+                                "input": "src/assets",
+                                "output": "assets"
                             }
                         ],
                         "styles": [

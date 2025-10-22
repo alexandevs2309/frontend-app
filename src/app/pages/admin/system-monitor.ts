@@ -426,12 +426,12 @@ export class SystemMonitor implements OnInit, OnDestroy {
         return icons[name] || 'pi pi-cog';
     }
 
-    getServiceSeverity(status: string): string {
+    getServiceSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
         switch (status) {
             case 'up':
                 return 'success';
             case 'degraded':
-                return 'warning';
+                return 'warn';
             case 'down':
                 return 'danger';
             default:
@@ -470,12 +470,12 @@ export class SystemMonitor implements OnInit, OnDestroy {
         }
     }
 
-    getAlertSeverity(type: string): string {
+    getAlertSeverity(type: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
         switch (type) {
             case 'critical':
                 return 'danger';
             case 'warning':
-                return 'warning';
+                return 'warn';
             case 'info':
                 return 'info';
             default:

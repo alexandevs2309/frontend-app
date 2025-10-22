@@ -10,8 +10,7 @@ import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
-import { AuthService } from '../../core/services/auth/auth.service';
-import { SettingsService } from '../../core/services/settings.service';
+import { AuthService, LoginResponse } from '../../core/services/auth/auth.service';
 
 @Component({
     selector: 'app-login',
@@ -28,83 +27,25 @@ import { SettingsService } from '../../core/services/settings.service';
         ToastModule,
         AppFloatingConfigurator
     ],
+    styleUrls: ['./register.component.scss'],
     providers: [MessageService],
-    template: `
-        <app-floating-configurator />
-        <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
-            <div class="flex flex-col items-center justify-center">
-                <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
-                    <div class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20" style="border-radius: 53px">
-                        <div class="text-center mb-8">
-                            <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">💈 {{platformName()}}</div>
-                            <span class="text-muted-color font-medium">Inicia sesión para continuar</span>
-                        </div>
-
-                        <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
-                            <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                            <input
-                                pInputText
-                                id="email1"
-                                type="text"
-                                placeholder="Email address"
-                                class="w-full md:w-120 mb-8"
-                                formControlName="email"
-                            />
-                            <small *ngIf="email.invalid && email.touched" class="text-red-500">Email requerido</small>
-
-                            <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
-                            <p-password
-                                id="password1"
-                                formControlName="password"
-                                placeholder="Password"
-                                [toggleMask]="true"
-                                styleClass="mb-4"
-                                [fluid]="true"
-                                [feedback]="false"
-                            ></p-password>
-                            <small *ngIf="password.invalid && password.touched" class="text-red-500">Contraseña requerida</small>
-
-                            <div class="flex items-center justify-between mt-2 mb-8 gap-8">
-                                <div class="flex items-center">
-                                    <p-checkbox formControlName="rememberMe" id="rememberme1" binary class="mr-2"></p-checkbox>
-                                    <label for="rememberme1">Remember me</label>
-                                </div>
-                                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
-                            </div>
-
-                            <p-button label="Sign In" styleClass="w-full" [loading]="isLoading" type="submit"></p-button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <p-toast />
-    `
+    templateUrl: './login.component.html'
 })
 export class Login implements OnInit {
     loginForm!: FormGroup;
     isLoading = false;
-    platformName = signal('BarberSaaS');
+    platformName = signal('Auron-Suite');
 
     constructor(
         private fb: FormBuilder,
         private authService: AuthService,
         private router: Router,
-        private messageService: MessageService,
-        private settingsService: SettingsService
+        private messageService: MessageService
     ) {}
 
     ngOnInit(): void {
-        // Cargar nombre de la plataforma
-        this.settingsService.getSettings().subscribe({
-            next: (settings) => {
-                this.platformName.set(settings.platform_name || 'BarberSaaS');
-            },
-            error: () => {
-                this.platformName.set('BarberSaaS');
-            }
-        });
-
+        this.platformName.set('BarberSaaS');
+        
         // Inicializa el formulario reactivo
         this.loginForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]],
@@ -141,8 +82,8 @@ export class Login implements OnInit {
         const { email, password, rememberMe } = this.loginForm.value;
         this.isLoading = true;
 
-        this.authService.login({ email, password }).subscribe({
-            next: (response) => {
+        this.authService.loginSecure({ email, password }).subscribe({
+            next: (response: LoginResponse | any) => {
                 this.isLoading = false;
                 this.messageService.add({ severity: 'success', summary: 'Éxito', detail: '¡Bienvenido!' });
 
@@ -155,9 +96,10 @@ export class Login implements OnInit {
                     localStorage.removeItem('rememberMe');
                 }
 
+                // Force menu update and redirect
                 setTimeout(() => {
-                    this.redirectUser(response.user.role);
-                }, 100);
+                    this.redirectUser(response.user?.role);
+                }, 500);
             },
             error: (error) => {
                 this.isLoading = false;
@@ -168,16 +110,13 @@ export class Login implements OnInit {
     }
 
     private redirectUser(role: string): void {
-        switch (role) {
-            case 'SuperAdmin':
+        // Usar setTimeout para asegurar que el estado se actualice
+        setTimeout(() => {
+            if (role === 'SuperAdmin') {
                 this.router.navigate(['/admin/dashboard']);
-                break;
-            case 'ClientAdmin':
-            case 'ClientStaff':
+            } else {
                 this.router.navigate(['/client/dashboard']);
-                break;
-            default:
-                this.router.navigate(['/auth/login']);
-        }
+            }
+        }, 100);
     }
 }

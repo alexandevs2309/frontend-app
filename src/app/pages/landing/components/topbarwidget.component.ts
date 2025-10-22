@@ -1,10 +1,9 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { StyleClassModule } from 'primeng/styleclass';
 import { Router, RouterModule } from '@angular/router';
 import { RippleModule } from 'primeng/ripple';
 import { ButtonModule } from 'primeng/button';
-import {AppFloatingConfigurator} from "@/layout/component/app.floatingconfigurator";
-import { SettingsService } from '../../../core/services/settings.service';
+import { AppFloatingConfigurator } from '../../../layout/component/app.floatingconfigurator';
 
 @Component({
     selector: 'topbar-widget',
@@ -27,11 +26,11 @@ import { SettingsService } from '../../../core/services/settings.service';
                     />
                 </g>
             </svg>
-            <span class="text-surface-900 dark:text-surface-0 font-medium text-2xl leading-normal mr-20">{{ platformName() }}</span>
+            <span class="text-surface-900 dark:text-surface-0 font-medium text-xl leading-normal mr-20">Auron-Suite</span>
         </a>
 
-        <a pButton [text]="true" severity="secondary" [rounded]="true" pRipple class="lg:hidden!" pStyleClass="@next" enterFromClass="hidden" leaveToClass="hidden" [hideOnOutsideClick]="true">
-            <i class="pi pi-bars text-2xl!"></i>
+        <a pButton [text]="true" severity="secondary" [rounded]="true" pRipple class="lg:!hidden" pStyleClass="@next" enterClass="hidden" leaveToClass="hidden" [hideOnOutsideClick]="true">
+            <i class="pi pi-bars !text-2xl"></i>
         </a>
 
         <div class="items-center bg-surface-0 dark:bg-surface-900 grow justify-between hidden lg:flex absolute lg:static w-full left-0 top-full px-12 lg:px-0 z-20 rounded-border">
@@ -58,34 +57,10 @@ import { SettingsService } from '../../../core/services/settings.service';
                 </li>
             </ul>
             <div class="flex border-t lg:border-t-0 border-surface py-4 lg:py-0 mt-4 lg:mt-0 gap-2">
-                <button pButton pRipple label="Login" routerLink="/auth/login" [rounded]="true" [text]="true"></button>
-                <button pButton pRipple label="Register" routerLink="/auth/login" [rounded]="true"></button>
-                <app-floating-configurator [float]="false"/>
+                <app-floating-configurator [float]="false" />
             </div>
         </div> `
 })
-export class TopbarWidget implements OnInit {
-    platformName = signal('SAKAI');
-
-    constructor(
-        public router: Router,
-        private settingsService: SettingsService
-    ) {}
-
-    ngOnInit() {
-        this.loadPlatformName();
-    }
-
-    private loadPlatformName() {
-        this.settingsService.getSettings().subscribe({
-            next: (settings) => {
-                if (settings?.platform_name) {
-                    this.platformName.set(settings.platform_name);
-                }
-            },
-            error: () => {
-                // Keep default value on error
-            }
-        });
-    }
+export class TopbarWidget {
+    constructor(public router: Router) {}
 }
