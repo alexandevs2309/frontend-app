@@ -6,12 +6,30 @@ import { API_CONFIG } from '../../config/api.config';
 export interface Employee {
   id: number;
   user: any;
+  user_id_read?: number;
   tenant: number;
   specialty?: string;
   phone?: string;
   hire_date?: string;
   is_active: boolean;
   commission_rate?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateEmployeeRequest {
+  user_id: number;
+  specialty?: string;
+  phone?: string;
+  hire_date?: string;
+  is_active: boolean;
+}
+
+export interface UpdateEmployeeRequest {
+  specialty?: string;
+  phone?: string;
+  hire_date?: string;
+  is_active: boolean;
 }
 
 export interface Earning {
@@ -49,8 +67,12 @@ export class EmployeeService extends BaseApiService {
     return this.post(API_CONFIG.ENDPOINTS.EMPLOYEES.BASE, employee);
   }
 
-  updateEmployee(id: number, employee: Partial<Employee>): Observable<Employee> {
+  updateEmployee(id: number, employee: UpdateEmployeeRequest): Observable<Employee> {
     return this.put(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${id}/`, employee);
+  }
+
+  patchEmployee(id: number, employee: Partial<UpdateEmployeeRequest>): Observable<Employee> {
+    return this.patch(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${id}/`, employee);
   }
 
   deleteEmployee(id: number): Observable<any> {

@@ -1,483 +1,261 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { ToolbarModule } from 'primeng/toolbar';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { CardModule } from 'primeng/card';
+import { CheckboxModule } from 'primeng/checkbox';
 import { TagModule } from 'primeng/tag';
-import { SelectModule } from 'primeng/select';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { ToastModule } from 'primeng/toast';
-import { DatePickerModule } from 'primeng/datepicker';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { MessageService, ConfirmationService } from 'primeng/api';
-import { EmployeeService, Employee } from '../../core/services/employee/employee.service';
-import { AuthService } from '../../core/services/auth/auth.service';
-import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
+import { ConfirmationService } from 'primeng/api';
+import { EmployeeService, Employee, UpdateEmployeeRequest } from '../../core/services/employee/employee.service';
+import { AuthService, User } from '../../core/services/auth/auth.service';
 
-interface EmpleadoUI {
+interface EmployeeWithUser {
   id: number;
-  nombre: string;
-  full_name?: string;
+  user_id: number;
+  full_name: string;
   email: string;
-  cargo: string;
-  telefono: string;
-  fechaContratacion: string;
-  estado: 'Activo' | 'Inactivo';
-  especialidad?: string;
-}
-
-interface Usuario {
-  id?: number;
-  email: string;
-  first_name: string;
-  last_name: string;
+  role: string;
+  specialty: string;
+  phone: string;
+  hire_date: string;
+  is_active: boolean;
+  created_at: string;
 }
 
 @Component({
-  selector: 'app-employees-managements',
+  selector: 'app-employees-management',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     ReactiveFormsModule,
     TableModule,
     ButtonModule,
-    ToolbarModule,
     DialogModule,
     InputTextModule,
-    CardModule,
+    CheckboxModule,
     TagModule,
-    SelectModule,
-    InputNumberModule,
     ToastModule,
-    DatePickerModule,
-    ConfirmDialogModule,
-    ProgressSpinnerModule,
+    ConfirmDialogModule
   ],
   providers: [MessageService, ConfirmationService],
   template: `
-    <div class="p-6">
-      <p-card header="Gestión de Empleados" class="shadow-md">
-        <p-toolbar class="mb-4">
-          <div class="p-toolbar-group-left flex gap-2">
-            <button
-              pButton
-              label="Nuevo"
-              icon="pi pi-plus"
-              class="p-button-success"
-              (click)="abrirDialogo()"
-            ></button>
-          </div>
-          <div class="p-toolbar-group-right">
+    <div class="card">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">Gestión de Empleados</h2>
+        <div class="flex gap-2">
+          <button pButton icon="pi pi-refresh" (click)="cargarDatos()"
+                  [loading]="cargando()" class="p-button-outlined"></button>
+          <button pButton label="Nuevo Empleado" icon="pi pi-plus"
+                  (click)="abrirDialogo()"></button>
+        </div>
+      </div>
+
+      <p-table [value]="empleados()" [loading]="cargando()"
+               [globalFilterFields]="['full_name', 'email', 'specialty']"
+               #dt>
+        <ng-template pTemplate="caption">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">
+              Total: {{empleados().length}} empleados
+            </span>
             <span class="p-input-icon-left">
               <i class="pi pi-search"></i>
-              <input
-                pInputText
-                type="text"
-                [(ngModel)]="filtroGlobal"
-                placeholder="Buscar empleado"
-              />
+              <input pInputText type="text" placeholder="Buscar empleados..."
+                     (input)="dt.filterGlobal($any($event.target).value, 'contains')">
             </span>
           </div>
-        </p-toolbar>
+        </ng-template>
 
-        <p-table
-          [value]="empleados()"
-          [paginator]="true"
-          [rows]="10"
-          [loading]="cargando()"
-          [globalFilterFields]="['nombre','email','cargo','telefono']"
-          [filters]="{ global: { value: filtroGlobal, matchMode: 'contains' } }"
-          class="shadow-sm rounded-lg"
-        >
-          <ng-template pTemplate="header">
-            <tr>
-              <th pSortableColumn="nombre">
-                Nombre
-                <p-sortIcon field="nombre"></p-sortIcon>
-              </th>
-              <th>Email</th>
-              <th>Cargo/Especialidad</th>
-              <th>Teléfono</th>
-              <th>Fecha Contratación</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </ng-template>
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Empleado</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Especialidad</th>
+            <th>Teléfono</th>
+            <th>Fecha Contrato</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </ng-template>
 
-          <ng-template pTemplate="body" let-emp>
-            <tr>
-              <td>{{ emp.full_name }}</td>
-              <td>{{ emp.email }}</td>
-              <td>
-                <div>{{ emp.cargo }}</div>
-                <small class="text-gray-500" *ngIf="emp.especialidad">{{ emp.especialidad }}</small>
-              </td>
-              <td>{{ emp.telefono }}</td>
-              <td>{{ emp.fechaContratacion | date:'dd/MM/yyyy' }}</td>
-              <td>
-                <p-tag
-                  [value]="emp.estado"
-                  [severity]="emp.estado === 'Activo' ? 'success' : 'danger'"
-                ></p-tag>
-              </td>
-              <td class="flex gap-2">
-                <button
-                  pButton
-                  icon="pi pi-pencil"
-                  class="p-button-rounded p-button-warning p-button-sm"
-                  (click)="editarEmpleado(emp)"
-                  pTooltip="Editar"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-calendar"
-                  class="p-button-rounded p-button-info p-button-sm"
-                  (click)="gestionarHorarios(emp)"
-                  pTooltip="Horarios"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-cog"
-                  class="p-button-rounded p-button-secondary p-button-sm"
-                  (click)="gestionarServicios(emp)"
-                  pTooltip="Servicios"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-trash"
-                  class="p-button-rounded p-button-danger p-button-sm"
-                  (click)="confirmarEliminar(emp)"
-                  pTooltip="Eliminar"
-                ></button>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </p-card>
+        <ng-template pTemplate="body" let-emp>
+          <tr>
+            <td>{{emp.full_name}}</td>
+            <td>{{emp.email}}</td>
+            <td>
+              <p-tag [value]="getRoleDisplayName(emp.role)"
+                     [severity]="getRoleSeverity(getRoleDisplayName(emp.role))"></p-tag>
+            </td>
+            <td>{{emp.specialty || 'N/A'}}</td>
+            <td>{{emp.phone || 'N/A'}}</td>
+            <td>{{emp.hire_date | date:'dd/MM/yyyy'}}</td>
+            <td>
+              <p-tag [value]="emp.is_active ? 'Activo' : 'Inactivo'"
+                     [severity]="emp.is_active ? 'success' : 'danger'"></p-tag>
+            </td>
+            <td>
+              <div class="flex gap-1">
+                <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm"
+                        (click)="editarEmpleado(emp)" pTooltip="Editar"></button>
+                <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                        (click)="confirmarEliminar(emp)" pTooltip="Eliminar"></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
 
-      <!-- Diálogo de formulario -->
-      <p-dialog
-        [(visible)]="mostrarDialogo"
-        [modal]="true"
-        [style]="{ width: '500px' }"
-        [draggable]="false"
-        [resizable]="false"
-        header="{{ empleadoSeleccionado ? 'Editar Empleado' : 'Nuevo Empleado' }}"
-      >
-        <form [formGroup]="formularioEmpleado" class="flex flex-col gap-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block mb-1 font-medium text-sm">Nombre *</label>
-              <input 
-                pInputText 
-                formControlName="nombre" 
-                class="w-full"
-                [class.ng-invalid]="formularioEmpleado.get('nombre')?.invalid && formularioEmpleado.get('nombre')?.touched"
-              />
-              <small class="text-red-500" *ngIf="formularioEmpleado.get('nombre')?.invalid && formularioEmpleado.get('nombre')?.touched">
-                El nombre es requerido
-              </small>
-            </div>
-            <div>
-              <label class="block mb-1 font-medium text-sm">Apellido *</label>
-              <input 
-                pInputText 
-                formControlName="apellido" 
-                class="w-full"
-                [class.ng-invalid]="formularioEmpleado.get('apellido')?.invalid && formularioEmpleado.get('apellido')?.touched"
-              />
-              <small class="text-red-500" *ngIf="formularioEmpleado.get('apellido')?.invalid && formularioEmpleado.get('apellido')?.touched">
-                El apellido es requerido
-              </small>
-            </div>
-          </div>
-          
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="8" class="text-center py-4">No hay empleados registrados</td></tr>
+        </ng-template>
+      </p-table>
+
+      <p-dialog header="{{empleadoSeleccionado ? 'Editar' : 'Nuevo'}} Empleado"
+                [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '500px'}"
+                [closable]="!guardando()" [closeOnEscape]="!guardando()">
+        <form [formGroup]="formulario" class="grid gap-4">
           <div>
-            <label class="block mb-1 font-medium text-sm">Email *</label>
-            <input 
-              pInputText 
-              formControlName="email" 
-              type="email"
-              class="w-full"
-              [class.ng-invalid]="formularioEmpleado.get('email')?.invalid && formularioEmpleado.get('email')?.touched"
-            />
-            <small class="text-red-500" *ngIf="formularioEmpleado.get('email')?.invalid && formularioEmpleado.get('email')?.touched">
-              <span *ngIf="formularioEmpleado.get('email')?.errors?.['required']">El email es requerido</span>
-              <span *ngIf="formularioEmpleado.get('email')?.errors?.['email']">Formato de email inválido</span>
-            </small>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block mb-1 font-medium text-sm">Teléfono</label>
-              <input 
-                pInputText 
-                formControlName="telefono" 
-                class="w-full"
-                placeholder="809-123-4567"
-              />
-            </div>
-            <div>
-              <label class="block mb-1 font-medium text-sm">Especialidad</label>
-              <input 
-                pInputText 
-                formControlName="especialidad" 
-                class="w-full"
-                placeholder="Barbero, Estilista, etc."
-              />
-            </div>
+            <label class="block font-medium mb-1">Nombre Completo *</label>
+            <input pInputText formControlName="full_name" class="w-full"
+                   [class.ng-invalid]="formulario.get('full_name')?.invalid && formulario.get('full_name')?.touched">
           </div>
 
           <div>
-            <label class="block mb-1 font-medium text-sm">Fecha de Contratación</label>
-            <p-datepicker 
-              formControlName="fechaContratacion"
-              dateFormat="dd/mm/yy"
-              [showIcon]="true"
-              class="w-full"
-            ></p-datepicker>
+            <label class="block font-medium mb-1">Email *</label>
+            <input pInputText formControlName="email" type="email" class="w-full"
+                   [class.ng-invalid]="formulario.get('email')?.invalid && formulario.get('email')?.touched">
+          </div>
+
+          <div *ngIf="!empleadoSeleccionado">
+            <label class="block font-medium mb-1">Contraseña *</label>
+            <input pInputText formControlName="password" type="password" class="w-full"
+                   [class.ng-invalid]="formulario.get('password')?.invalid && formulario.get('password')?.touched">
           </div>
 
           <div>
-            <label class="block mb-1 font-medium text-sm">Estado</label>
-            <p-select 
-              formControlName="estado"
-              [options]="estadosEmpleado"
-              optionLabel="label"
-              optionValue="value"
-              class="w-full"
-            ></p-select>
+            <label class="block font-medium mb-1">Rol *</label>
+            <select formControlName="role" class="w-full p-2 border border-gray-300 rounded">
+              <option *ngFor="let option of rolesOptions" [value]="option.value">{{option.label}}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-medium mb-1">Especialidad</label>
+            <input pInputText formControlName="specialty" class="w-full">
+          </div>
+
+          <div>
+            <label class="block font-medium mb-1">Teléfono</label>
+            <input pInputText formControlName="phone" class="w-full">
+          </div>
+
+          <div>
+            <label class="block font-medium mb-1">Fecha de Contratación</label>
+            <input type="date" formControlName="hire_date" class="w-full p-2 border border-gray-300 rounded">
+          </div>
+
+          <div class="flex items-center">
+            <p-checkbox formControlName="is_active" [binary]="true" inputId="activo"></p-checkbox>
+            <label for="activo" class="ml-2 font-medium">Empleado Activo</label>
           </div>
 
           <div class="flex justify-end gap-2 mt-4">
-            <button
-              pButton
-              label="Cancelar"
-              type="button"
-              class="p-button-text"
-              (click)="cerrarDialogo()"
-            ></button>
-            <button
-              pButton
-              label="Guardar"
-              type="button"
-              icon="pi pi-check"
-              [loading]="guardando()"
-              [disabled]="formularioEmpleado.invalid"
-              (click)="guardarEmpleado()"
-            ></button>
+            <button pButton label="Cancelar" type="button" class="p-button-text"
+                    (click)="cerrarDialogo()" [disabled]="guardando()"></button>
+            <button pButton [label]="empleadoSeleccionado ? 'Actualizar' : 'Crear'"
+                    type="button" icon="pi pi-check" [loading]="guardando()"
+                    [disabled]="formulario.invalid" (click)="guardarEmpleado()"></button>
           </div>
         </form>
-      </p-dialog>
-
-      <!-- Diálogo de horarios -->
-      <p-dialog
-        [(visible)]="mostrarDialogHorarios"
-        [modal]="true"
-        [style]="{ width: '600px' }"
-        header="Gestionar Horarios - {{ empleadoSeleccionado?.nombre }}"
-      >
-        <div class="text-center py-4">
-          <i class="pi pi-clock text-4xl text-blue-500 mb-2"></i>
-          <p>Funcionalidad de horarios en desarrollo</p>
-          <small class="text-gray-500">Próximamente podrás gestionar los horarios de trabajo</small>
-        </div>
-        <div class="flex justify-end mt-4">
-          <button pButton label="Cerrar" (click)="mostrarDialogHorarios = false"></button>
-        </div>
-      </p-dialog>
-
-      <!-- Diálogo de servicios -->
-      <p-dialog
-        [(visible)]="mostrarDialogServicios"
-        [modal]="true"
-        [style]="{ width: '600px' }"
-        header="Gestionar Servicios - {{ empleadoSeleccionado?.nombre }}"
-      >
-        <div class="text-center py-4">
-          <i class="pi pi-cog text-4xl text-green-500 mb-2"></i>
-          <p>Funcionalidad de servicios en desarrollo</p>
-          <small class="text-gray-500">Próximamente podrás asignar servicios a empleados</small>
-        </div>
-        <div class="flex justify-end mt-4">
-          <button pButton label="Cerrar" (click)="mostrarDialogServicios = false"></button>
-        </div>
       </p-dialog>
     </div>
 
     <p-confirmDialog></p-confirmDialog>
     <p-toast></p-toast>
-  `,
+  `
 })
 export class EmployeesManagement implements OnInit {
   private employeeService = inject(EmployeeService);
+  private authService = inject(AuthService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
-  private router = inject(Router);
 
-  filtroGlobal = '';
-  mostrarDialogo = false;
-  mostrarDialogHorarios = false;
-  mostrarDialogServicios = false;
-  empleadoSeleccionado: EmpleadoUI | null = null;
-
-  empleados = signal<EmpleadoUI[]>([]);
+  empleados = signal<EmployeeWithUser[]>([]);
   cargando = signal(false);
   guardando = signal(false);
+  mostrarDialogo = false;
+  empleadoSeleccionado: EmployeeWithUser | null = null;
+  fechaMaxima = new Date();
 
-  estadosEmpleado = [
-    { label: 'Activo', value: true },
-    { label: 'Inactivo', value: false }
+  rolesOptions = [
+    { label: 'Estilista', value: 'Estilista' },
+    { label: 'Cajera', value: 'Cajera' },
+    { label: 'Manager', value: 'Manager' },
+    { label: 'Utility', value: 'Utility' }
   ];
 
-  formularioEmpleado: FormGroup = this.fb.group({
-    nombre: ['', [Validators.required, Validators.minLength(2)]],
-    apellido: ['', [Validators.required, Validators.minLength(2)]],
+  formulario: FormGroup = this.fb.group({
+    full_name: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    telefono: [''],
-    especialidad: [''],
-    fechaContratacion: [new Date()],
-    estado: [true]
+    password: ['', [Validators.required, Validators.minLength(8)]],
+    role: ['Client-Staff', [Validators.required]],
+    specialty: [''],
+    phone: [''],
+    hire_date: [new Date()],
+    is_active: [true]
   });
 
   ngOnInit() {
-    // Verificar autenticación antes de cargar
-    if (!this.authService.getCurrentUser()) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'No autenticado',
-        detail: 'Redirigiendo al login...'
-      });
-      
-      setTimeout(() => {
-        this.router.navigate(['/auth/login']);
-      }, 1500);
-      
-      return;
-    }
-    
-    this.cargarEmpleados();
+    this.cargarDatos();
   }
 
-  async cargarEmpleados() {
+  async cargarDatos() {
+    this.cargando.set(true);
     try {
-      this.cargando.set(true);
-      
-      // Verificar autenticación antes de hacer la llamada
-      const token = localStorage.getItem('access_token');
-      const user = localStorage.getItem('user');
-      
-      if (!token || !user) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Sesión requerida',
-          detail: 'Debes iniciar sesión para ver los empleados'
-        });
-        
-        // Redirigir al login después de 2 segundos
-        setTimeout(() => {
-          this.router.navigate(['/auth/login']);
-        }, 2000);
-        
-        return;
-      }
-      
-      const userData = JSON.parse(user);
-      console.log('🔑 Token encontrado:', token ? 'Sí' : 'No');
-      console.log('👤 Usuario:', userData);
-      console.log('🏢 Tenant ID:', userData.tenant_id);
-      
-      // Obtener tenant_id del tenant en localStorage si no está en user
-      if (!userData.tenant_id) {
-        const tenant = localStorage.getItem('tenant');
-        if (tenant) {
-          const tenantData = JSON.parse(tenant);
-          userData.tenant_id = tenantData.id;
-          localStorage.setItem('user', JSON.stringify(userData));
-          console.log('✅ Tenant ID obtenido del tenant:', tenantData.id);
-        } else {
-          console.warn('⚠️ No se encontró tenant_id ni tenant en localStorage');
-        }
-      }
-      
-      console.log('📡 Haciendo llamada a API employees...');
-      const response = await this.employeeService.getEmployees().toPromise();
-      console.log('✅ Respuesta recibida:', response);
-      
-      if (response?.results) {
-        const empleadosUI: EmpleadoUI[] = response.results.map((emp: Employee) => ({
-          id: emp.id,
-          nombre: `${emp.user?.first_name || ''} ${emp.user?.last_name || ''}`.trim(),
-          full_name: `${emp.user?.first_name || ''} ${emp.user?.last_name || ''}`.trim(),
-          email: emp.user?.email || '',
-          cargo: emp.specialty || 'Empleado',
-          telefono: emp.phone || '',
-          fechaContratacion: emp.hire_date || '',
-          estado: emp.is_active ? 'Activo' : 'Inactivo',
-          especialidad: emp.specialty
-        }));
-        
-        this.empleados.set(empleadosUI);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: `${empleadosUI.length} empleados cargados`
-        });
-      } else {
-        this.empleados.set([]);
-        this.messageService.add({
-          severity: 'info',
-          summary: 'Sin datos',
-          detail: 'No hay empleados registrados'
-        });
-      }
-    } catch (error: any) {
-      console.error('❌ Error cargando empleados:', error);
-      console.error('📋 Detalles del error:');
-      console.error('- Status:', error.status);
-      console.error('- StatusText:', error.statusText);
-      console.error('- URL:', error.url);
-      console.error('- Error completo:', error.error);
-      
-      let errorMessage = 'Error desconocido';
-      
-      if (error.status === 403) {
-        errorMessage = 'Sin permisos para acceder a empleados';
-      } else if (error.status === 401) {
-        errorMessage = 'Sesión expirada. Redirigiendo al login...';
-        setTimeout(() => {
-          this.authService.clearAuthData();
-          this.router.navigate(['/auth/login']);
-        }, 2000);
-      } else if (error.status === 0) {
-        errorMessage = 'Backend no disponible. ¿Está corriendo en localhost:8000?';
-        
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Servidor no disponible',
-          detail: 'Verifica que el backend Django esté corriendo en puerto 8000'
-        });
-      } else if (error.message) {
-        errorMessage = error.message;
-      } else if (error.error?.message) {
-        errorMessage = error.error.message;
-      }
-      
+      const [empleadosRes, usuariosRes] = await Promise.all([
+        this.employeeService.getEmployees().toPromise(),
+        this.authService.getUsers().toPromise()
+      ]);
+
+      const empleados = (empleadosRes as any)?.results || [];
+      const usuarios = (usuariosRes as any)?.results || usuariosRes || [];
+
+      // Filtrar solo usuarios que son empleados (excluir Client-Admin)
+      const usuariosEmpleados = usuarios.filter((u: any) => 
+        u.role && ['Estilista', 'Cajera', 'Manager', 'Utility'].includes(u.role)
+      );
+
+      // Crear lista basada en usuarios empleados
+      const empleadosFusionados: EmployeeWithUser[] = usuariosEmpleados.map((usuario: any) => {
+        const emp = empleados.find((e: Employee) => e.user_id_read === usuario.id);
+        return {
+          id: emp?.id || 0,
+          user_id: usuario.id,
+          full_name: usuario.full_name || 'N/A',
+          email: usuario.email || 'N/A',
+          role: usuario.role || 'N/A',
+          specialty: emp?.specialty || '',
+          phone: emp?.phone || '',
+          hire_date: emp?.hire_date || '',
+          is_active: emp?.is_active ?? true,
+          created_at: emp?.created_at || ''
+        };
+      });
+
+      this.empleados.set(empleadosFusionados);
+    } catch (error) {
+      console.error('Error cargando datos:', error);
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: errorMessage
+        detail: 'No se pudieron cargar los empleados'
       });
-      
-      this.empleados.set([]);
     } finally {
       this.cargando.set(false);
     }
@@ -485,132 +263,157 @@ export class EmployeesManagement implements OnInit {
 
   abrirDialogo() {
     this.empleadoSeleccionado = null;
-    this.formularioEmpleado.reset({
-      nombre: '',
-      apellido: '',
+    this.formulario.reset({
+      full_name: '',
       email: '',
-      telefono: '',
-      especialidad: '',
-      fechaContratacion: new Date(),
-      estado: true
+      password: '',
+      role: 'Client-Staff',
+      specialty: '',
+      phone: '',
+      hire_date: new Date(),
+      is_active: true
     });
+    this.formulario.get('password')?.setValidators([Validators.required, Validators.minLength(8)]);
     this.mostrarDialogo = true;
   }
 
-  editarEmpleado(emp: EmpleadoUI) {
+  editarEmpleado(emp: EmployeeWithUser) {
     this.empleadoSeleccionado = emp;
-    const nombres = emp.nombre.split(' ');
-    
-    this.formularioEmpleado.patchValue({
-      nombre: nombres[0] || '',
-      apellido: nombres.slice(1).join(' ') || '',
+    this.formulario.patchValue({
+      full_name: emp.full_name,
       email: emp.email,
-      telefono: emp.telefono,
-      especialidad: emp.especialidad,
-      fechaContratacion: emp.fechaContratacion ? new Date(emp.fechaContratacion) : new Date(),
-      estado: emp.estado === 'Activo'
+      role: emp.role,
+      specialty: emp.specialty,
+      phone: emp.phone,
+      hire_date: emp.hire_date ? new Date(emp.hire_date) : new Date(),
+      is_active: emp.is_active
     });
+    this.formulario.get('password')?.clearValidators();
+    this.formulario.get('password')?.updateValueAndValidity();
     this.mostrarDialogo = true;
   }
 
   async guardarEmpleado() {
-    if (this.formularioEmpleado.invalid) {
-      this.formularioEmpleado.markAllAsTouched();
+    if (this.formulario.invalid) {
+      this.formulario.markAllAsTouched();
       return;
     }
 
     this.guardando.set(true);
-    const formData = this.formularioEmpleado.value;
-    
+    const formData = this.formulario.value;
+
     try {
       if (this.empleadoSeleccionado) {
-        // Actualizar empleado existente
-        const empleadoData: any = {
-          specialty: formData.especialidad,
-          phone: formData.telefono || '',
-          hire_date: formData.fechaContratacion ? 
-            new Date(formData.fechaContratacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          is_active: formData.estado
-        };
-        
-        await this.employeeService.updateEmployee(this.empleadoSeleccionado.id, empleadoData).toPromise();
+        // Actualizar usuario
+        await this.authService.updateUser(this.empleadoSeleccionado.user_id, {
+          full_name: formData.full_name,
+          email: formData.email,
+          role: formData.role,
+          is_active: formData.is_active
+        } as any).toPromise();
+
+        // Si tiene registro Employee (id > 0), actualizar; si no, crear
+        if (this.empleadoSeleccionado.id > 0) {
+          const updateData = {
+            specialty: formData.specialty || undefined,
+            phone: formData.phone || undefined,
+            hire_date: formData.hire_date ? new Date(formData.hire_date).toISOString().split('T')[0] : undefined,
+            is_active: formData.is_active
+          };
+          
+          console.log('Updating employee with data:', updateData);
+          // Usar PATCH en lugar de PUT para evitar problemas con campos no permitidos
+          await this.employeeService.patchEmployee(this.empleadoSeleccionado.id, updateData).toPromise();
+        } else {
+          // Crear registro Employee para usuario existente
+          const createData: any = {
+            user_id: this.empleadoSeleccionado.user_id,
+            specialty: formData.specialty || '',
+            phone: formData.phone || '',
+            is_active: formData.is_active
+          };
+          
+          if (formData.hire_date) {
+            createData.hire_date = new Date(formData.hire_date).toISOString().split('T')[0];
+          }
+          
+          await this.employeeService.createEmployee(createData).toPromise();
+        }
+
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
           detail: 'Empleado actualizado correctamente'
         });
       } else {
-        // Crear nuevo empleado: primero crear usuario, luego empleado
-        console.log('👤 Paso 1: Creando usuario...');
-        
-        const userData = {
-          first_name: formData.nombre,
-          last_name: formData.apellido,
-          full_name: `${formData.nombre} ${formData.apellido}`, // Campo requerido
-          email: formData.email,
-          username: formData.email,
-          password: 'Temporal123!', // Password temporal
-          role: 'ClientStaff' // Rol por defecto para empleados
-        };
-        
-        const userResponse = await this.authService.createUser(userData).toPromise();
-        console.log('✅ Usuario creado:', userResponse);
-        
-        console.log('👷 Paso 2: Creando empleado...');
-        
-        const empleadoData = {
-          user_id: userResponse.id, // Usar el ID del usuario recién creado
-          specialty: formData.especialidad,
-          phone: formData.telefono || '',
-          hire_date: formData.fechaContratacion ? 
-            new Date(formData.fechaContratacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          is_active: formData.estado
-        };
-        
-        console.log('📤 Datos del empleado a enviar:', empleadoData);
-        
-        await this.employeeService.createEmployee(empleadoData).toPromise();
+        try {
+          // Crear usuario
+          const nuevoUsuario = await this.authService.createUser({
+            email: formData.email,
+            full_name: formData.full_name,
+            password: formData.password,
+            role: formData.role,
+            tenant: this.authService.getTenantId()
+          } as any).toPromise();
+
+          // Crear empleado
+          await this.employeeService.createEmployee({
+            user_id: (nuevoUsuario as any).id,
+            specialty: formData.specialty,
+            phone: formData.phone,
+            hire_date: formData.hire_date ?
+              new Date(formData.hire_date).toISOString().split('T')[0] : undefined,
+            is_active: formData.is_active
+          } as any).toPromise();
+        } catch (userError: any) {
+          // Si el usuario se creó pero devolvió 403, intentar crear empleado
+          if (userError.status === 403) {
+            // Recargar usuarios para obtener el recién creado
+            const usuariosRes = await this.authService.getUsers().toPromise();
+            const usuarios = (usuariosRes as any)?.results || usuariosRes || [];
+            const usuarioCreado = usuarios.find((u: any) => u.email === formData.email);
+            
+            if (usuarioCreado) {
+              // Crear empleado con el usuario encontrado
+              await this.employeeService.createEmployee({
+                user_id: usuarioCreado.id,
+                specialty: formData.specialty,
+                phone: formData.phone,
+                hire_date: formData.hire_date ?
+                  new Date(formData.hire_date).toISOString().split('T')[0] : undefined,
+                is_active: formData.is_active
+              } as any).toPromise();
+            } else {
+              throw userError;
+            }
+          } else {
+            throw userError;
+          }
+        }
+
         this.messageService.add({
           severity: 'success',
           summary: 'Éxito',
           detail: 'Empleado creado correctamente'
         });
       }
-      
-      await this.cargarEmpleados();
+
       this.cerrarDialogo();
+      await this.cargarDatos();
     } catch (error: any) {
-      console.error('❌ Error guardando empleado:', error);
-      console.error('📋 Error completo:', error.error);
-      console.error('📝 Status:', error.status);
-      console.error('📝 StatusText:', error.statusText);
-      console.error('📝 Headers:', error.headers);
-      console.error('📝 URL:', error.url);
-      console.error('📝 Mensaje del servidor:', error.error?.message);
-      console.error('📝 Detalles del error:', error.error?.detail);
-      console.error('📝 Errores de validación:', error.error?.errors);
-      
-      // Intentar parsear la respuesta como texto si es posible
-      if (error.error && typeof error.error === 'object') {
-        console.error('📝 Respuesta del servidor (JSON):', JSON.stringify(error.error, null, 2));
-      }
-      
-      // Si hay errores de validación específicos, mostrarlos
-      if (error.error && typeof error.error === 'object') {
-        Object.keys(error.error).forEach(key => {
-          console.error(`📝 Campo ${key}:`, error.error[key]);
-        });
-      }
+      console.error('Error guardando empleado:', error);
+      console.error('Error details:', error.error);
       
       let errorMessage = 'No se pudo guardar el empleado';
       
-      if (error.status === 403) {
-        errorMessage = 'Sin permisos para guardar empleados';
-      } else if (error.status === 401) {
-        errorMessage = 'Sesión expirada';
-      } else if (error.status === 400) {
-        errorMessage = error.error?.message || 'Datos inválidos';
-      } else if (error.error?.message) {
+      // Detectar límite de usuarios
+      if (error?.error?.current !== undefined && error?.error?.limit !== undefined) {
+        errorMessage = `Límite de usuarios alcanzado (${error.error.current}/${error.error.limit}). Actualiza tu plan para agregar más usuarios.`;
+      } else if (error?.error?.error && error.error.error.includes('User limit reached')) {
+        errorMessage = `Límite de usuarios alcanzado. Actualiza tu plan para agregar más usuarios.`;
+      } else if (error.status === 403) {
+        errorMessage = 'No tienes permisos para crear usuarios. Verifica tu plan de suscripción.';
+      } else if (error?.error?.message) {
         errorMessage = error.error.message;
       }
       
@@ -624,9 +427,9 @@ export class EmployeesManagement implements OnInit {
     }
   }
 
-  confirmarEliminar(emp: EmpleadoUI) {
+  confirmarEliminar(emp: EmployeeWithUser) {
     this.confirmationService.confirm({
-      message: `¿Estás seguro de eliminar al empleado ${emp.nombre}?`,
+      message: `¿Está seguro de eliminar al empleado ${emp.full_name}?`,
       header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Sí, eliminar',
@@ -635,48 +438,57 @@ export class EmployeesManagement implements OnInit {
     });
   }
 
-  async eliminarEmpleado(emp: EmpleadoUI) {
+  async eliminarEmpleado(emp: EmployeeWithUser) {
     try {
-      await this.employeeService.deleteEmployee(emp.id).toPromise();
-      this.empleados.update(lista => lista.filter(e => e.id !== emp.id));
+      // Solo eliminar registro Employee si existe (id > 0)
+      if (emp.id > 0) {
+        await this.employeeService.deleteEmployee(emp.id).toPromise();
+      }
+      
+      // Eliminar usuario
+      await this.authService.deleteUser(emp.user_id).toPromise();
+      
+      this.empleados.update(lista => lista.filter(e => e.user_id !== emp.user_id));
       this.messageService.add({
         severity: 'success',
         summary: 'Éxito',
         detail: 'Empleado eliminado correctamente'
       });
-    } catch (error: any) {
-      console.error('❌ Error eliminando empleado:', error);
-      
-      let errorMessage = 'No se pudo eliminar el empleado';
-      
-      if (error.status === 403) {
-        errorMessage = 'Sin permisos para eliminar empleados';
-      } else if (error.status === 401) {
-        errorMessage = 'Sesión expirada';
-      } else if (error.error?.message) {
-        errorMessage = error.error.message;
-      }
-      
+    } catch (error) {
+      console.error('Error eliminando empleado:', error);
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: errorMessage
+        detail: 'No se pudo eliminar el empleado'
       });
     }
   }
 
-  gestionarHorarios(emp: EmpleadoUI) {
-    this.empleadoSeleccionado = emp;
-    this.mostrarDialogHorarios = true;
+  getRoleDisplayName(role: string): string {
+    const roleNames: { [key: string]: string } = {
+      'ClientStaff': 'Estilista',
+      'Client-Staff': 'Estilista',
+      'ClientAdmin': 'Administrador',
+      'Client-Admin': 'Administrador',
+      'Cajera': 'Cajera',
+      'Manager': 'Manager'
+    };
+    return roleNames[role] || role;
   }
 
-  gestionarServicios(emp: EmpleadoUI) {
-    this.empleadoSeleccionado = emp;
-    this.mostrarDialogServicios = true;
+  getRoleSeverity(role: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' {
+    const severities: { [key: string]: 'success' | 'secondary' | 'info' | 'warn' | 'danger' } = {
+      'Estilista': 'info',
+      'Cajera': 'success',
+      'Manager': 'warn',
+      'Administrador': 'danger'
+    };
+    return severities[role] || 'secondary';
   }
 
   cerrarDialogo() {
     this.mostrarDialogo = false;
-    this.formularioEmpleado.reset();
+    this.empleadoSeleccionado = null;
+    this.formulario.reset();
   }
 }

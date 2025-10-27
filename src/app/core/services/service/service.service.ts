@@ -6,13 +6,15 @@ import { API_CONFIG } from '../../config/api.config';
 export interface Service {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   price: number;
   duration: number;
-  category: string;
+  category?: string;
   is_active: boolean;
-  tenant: number;
+  tenant?: number;
   created_at: string;
+  updated_at?: string;
+  allowed_roles?: number[];
 }
 
 @Injectable({
@@ -63,5 +65,17 @@ export class ServiceService extends BaseApiService {
 
   bulkUpdatePrices(updates: { id: number; price: number }[]): Observable<any> {
     return this.post(`${API_CONFIG.ENDPOINTS.SERVICES}bulk_update_prices/`, { updates });
+  }
+
+  getCategories(): Observable<string[]> {
+    return this.get(`${API_CONFIG.ENDPOINTS.SERVICES}categories/`);
+  }
+
+  getServiceEmployees(serviceId: number): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.SERVICES}${serviceId}/employees/`);
+  }
+
+  assignEmployees(serviceId: number, employeeIds: number[]): Observable<any> {
+    return this.post(`${API_CONFIG.ENDPOINTS.SERVICES}${serviceId}/assign_employees/`, { employee_ids: employeeIds });
   }
 }

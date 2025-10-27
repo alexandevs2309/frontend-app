@@ -8,11 +8,15 @@ export class UIHelpers {
     }
   }
 
-  static getRoleSeverity(role: string): 'danger' | 'warn' | 'info' | 'secondary' {
+  static getRoleSeverity(role: string): 'danger' | 'warn' | 'info' | 'success' | 'secondary' {
     switch (role) {
       case 'SuperAdmin': return 'danger';
-      case 'ClientAdmin': return 'warn';
-      case 'ClientStaff': return 'info';
+      case 'Client-Admin': return 'warn';
+      case 'Client-Staff': return 'info';
+      case 'Estilista': return 'info';
+      case 'Cajera': return 'success';
+      case 'Manager': return 'warn';
+      case 'Utility': return 'secondary';
       default: return 'secondary';
     }
   }

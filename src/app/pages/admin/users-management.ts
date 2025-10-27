@@ -30,6 +30,7 @@ interface User {
     date_joined?: string;
     last_login?: string;
     password?: string;
+    phone?: string;
 }
 
 @Component({
@@ -37,7 +38,7 @@ interface User {
     standalone: true,
     imports: [CommonModule, TableModule, FormsModule, ButtonModule, RippleModule, ToastModule, ToolbarModule, InputTextModule, SelectModule, DialogModule, TagModule, InputIconModule, IconFieldModule, ConfirmDialogModule, DatePipe],
     template: `
-        <p-toolbar styleClass="mb-6">
+        <p-toolbar class="mb-6">
             <ng-template #start>
                 <p-button label="New User" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
                 <p-button severity="secondary" label="Delete" icon="pi pi-trash" outlined (onClick)="deleteSelectedUsers()" [disabled]="!selectedUsers || !selectedUsers.length" />
@@ -146,10 +147,10 @@ interface User {
                         <p-select [(ngModel)]="user.role" inputId="role" [options]="roleOptions" optionLabel="label" optionValue="value" placeholder="Select Role" fluid />
                     </div>
 
-                    <div *ngIf="user.role === 'ClientAdmin' || user.role === 'ClientStaff'">
+                    <div *ngIf="user.role === 'Client-Admin' || user.role === 'Client-Staff'">
                         <label for="tenant" class="block font-bold mb-3">Tenant</label>
                         <p-select [(ngModel)]="user.tenant" inputId="tenant" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Select Tenant" fluid />
-                        <small class="text-red-500" *ngIf="submitted && (user.role === 'ClientAdmin' || user.role === 'ClientStaff') && !user.tenant">Tenant is required for this role.</small>
+                        <small class="text-red-500" *ngIf="submitted && (user.role === 'Client-Admin' || user.role === 'Client-Staff') && !user.tenant">Tenant is required for this role.</small>
                     </div>
 
                     <div *ngIf="!user.id">
@@ -188,9 +189,11 @@ export class UsersManagement implements OnInit {
     saving = signal(false);
 
     roleOptions = [
-        { label: 'Super Admin', value: 'SuperAdmin' },
-        { label: 'Client Admin', value: 'ClientAdmin' },
-        { label: 'Client Staff', value: 'ClientStaff' }
+        { label: 'Administrador', value: 'Client-Admin' },
+        { label: 'Estilista', value: 'Estilista' },
+        { label: 'Cajera', value: 'Cajera' },
+        { label: 'Manager', value: 'Manager' },
+        { label: 'Utility', value: 'Utility' }
     ];
 
     constructor(
@@ -210,7 +213,11 @@ export class UsersManagement implements OnInit {
         this.authService.getUsers().subscribe({
             next: (data: any) => {
                 const users = Array.isArray(data) ? data : data.results || [];
-                const mappedUsers = users.map((user: any) => ({
+                // Filtrar solo usuarios del tenant actual (excluir SuperAdmin)
+                const filteredUsers = users.filter((user: any) => 
+                    user.role && user.role !== 'SuperAdmin'
+                );
+                const mappedUsers = filteredUsers.map((user: any) => ({
                     ...user,
                     tenant_name: user.tenant?.name || user.tenant_name || 'N/A'
                 }));
@@ -222,26 +229,53 @@ export class UsersManagement implements OnInit {
     }
 
     loadTenants() {
-        this.tenantService.getTenants().subscribe({
-            next: (data: any) => {
-                const tenants = Array.isArray(data) ? data : data.results || [];
-                const options = [{ name: 'All Tenants', id: null }, ...tenants.map((t: any) => ({ name: t.name, id: t.id }))];
-                this.tenantOptions.set(options);
-            },
-            error: (error) => this.handleLoadTenantsError(error)
-        });
+        const currentUser = this.authService.getCurrentUser();
+        
+        if (currentUser?.role === 'SuperAdmin') {
+            // SuperAdmin puede ver todos los tenants
+            this.tenantService.getTenants().subscribe({
+                next: (data: any) => {
+                    const tenants = Array.isArray(data) ? data : data.results || [];
+                    const options = [{ name: 'All Tenants', id: null }, ...tenants.map((t: any) => ({ name: t.name, id: t.id }))];
+                    this.tenantOptions.set(options);
+                },
+                error: (error) => this.handleLoadTenantsError(error)
+            });
+        } else {
+            // Para Client-Admin, obtener tenant desde localStorage
+            const tenantData = localStorage.getItem('tenant');
+            if (tenantData) {
+                try {
+                    const tenant = JSON.parse(tenantData);
+                    const options = [{ name: tenant.name, id: tenant.id }];
+                    this.tenantOptions.set(options);
+                } catch (error) {
+                    console.error('Error parsing tenant data:', error);
+                    this.tenantOptions.set([]);
+                }
+            } else {
+                this.tenantOptions.set([]);
+            }
+        }
     }
 
     filterByTenant() {
-        if (this.selectedTenantFilter) {
-            this.authService.getUsers({ tenant: this.selectedTenantFilter }).subscribe({
-                next: (data: any) => {
-                    const users = Array.isArray(data) ? data : data.results || [];
-                    this.users.set(users);
-                },
-                error: (error) => this.handleFilterError(error)
-            });
+        const currentUser = this.authService.getCurrentUser();
+        
+        if (currentUser?.role === 'SuperAdmin') {
+            if (this.selectedTenantFilter) {
+                this.authService.getUsers({ tenant: this.selectedTenantFilter }).subscribe({
+                    next: (data: any) => {
+                        const users = Array.isArray(data) ? data : data.results || [];
+                        this.users.set(users);
+                    },
+                    error: (error) => this.handleFilterError(error)
+                });
+            } else {
+                this.loadUsers();
+            }
         } else {
+            // Client-Admin siempre ve solo sus usuarios
             this.loadUsers();
         }
     }
@@ -251,7 +285,7 @@ export class UsersManagement implements OnInit {
     }
 
     openNew() {
-        this.user = { is_active: true, role: 'ClientStaff' };
+        this.user = { is_active: true, role: 'Client-Staff' };
         this.submitted = false;
         this.userDialog = true;
     }
@@ -325,6 +359,21 @@ export class UsersManagement implements OnInit {
             return;
         }
 
+        // Usar datos del tenant desde localStorage si está disponible
+        const tenantData = localStorage.getItem('tenant');
+        if (tenantData && this.user.tenant) {
+            try {
+                const tenant = JSON.parse(tenantData);
+                if (tenant.id === this.user.tenant) {
+                    this.validateUserLimits(tenant);
+                    return;
+                }
+            } catch (error) {
+                console.error('Error parsing tenant data:', error);
+            }
+        }
+
+        // Fallback a API call
         this.tenantService.getTenant(this.user.tenant).subscribe({
             next: (tenant: any) => this.validateUserLimits(tenant),
             error: () => {
@@ -353,12 +402,12 @@ export class UsersManagement implements OnInit {
 
     createUser() {
         const userData = {
-            email: this.user.email,
-            full_name: this.user.full_name,
+            email: this.user.email!,
+            full_name: this.user.full_name!,
             role: this.user.role,
-            tenant: this.user.tenant,
-            is_active: this.user.is_active,
-            password: this.user.password
+            tenant: this.user.tenant || undefined,
+            is_active: this.user.is_active ?? true,
+            password: this.user.password!
         };
 
         this.authService.createUser(userData).subscribe({
@@ -393,17 +442,23 @@ export class UsersManagement implements OnInit {
     }
 
     private userNeedsTenant(): boolean {
-        return this.user.role === 'ClientAdmin' || this.user.role === 'ClientStaff';
+        return this.user.role === 'Client-Admin' || this.user.role === 'Client-Staff';
     }
 
     private updateUser(): void {
-        const updateData = {
+        const updateData: any = {
             email: this.user.email,
             full_name: this.user.full_name,
             role: this.user.role,
-            tenant: this.user.tenant,
-            is_active: this.user.is_active
+            tenant: this.user.tenant || undefined,
+            is_active: this.user.is_active ?? true
         };
+
+        // No incluir password en updates
+        // Solo incluir phone si existe
+        if (this.user.phone) {
+            updateData.phone = this.user.phone;
+        }
 
         this.authService.updateUser(this.user.id!, updateData).subscribe({
             next: (updatedUser) => {
@@ -411,8 +466,9 @@ export class UsersManagement implements OnInit {
                 this.showSuccessMessage('User Updated');
                 this.closeDialog();
             },
-            error: () => {
-                this.showErrorMessage('Failed to update user');
+            error: (error) => {
+                console.error('Update user error:', error);
+                this.showErrorMessage('Failed to update user', error);
                 this.saving.set(false);
             }
         });

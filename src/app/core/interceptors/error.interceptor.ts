@@ -60,7 +60,22 @@ export class ErrorInterceptor implements HttpInterceptor {
   }
 
   private handle403Error(): void {
-    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No tienes permisos para realizar esta acción.' });
+    // También redirigir en 403 si es error de autenticación
+    const currentUrl = this.router.url;
+    const publicPages = ['/landing', '/auth', '/maintenance'];
+    const isPublicPage = publicPages.some(page => currentUrl.startsWith(page));
+    
+    if (!isPublicPage) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('tenant');
+      
+      this.router.navigate(['/auth/login']);
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Sesión expirada. Por favor, inicia sesión nuevamente.' });
+    } else {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No tienes permisos para realizar esta acción.' });
+    }
   }
 
   private handle404Error(): void {

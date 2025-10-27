@@ -5,14 +5,24 @@ import { API_CONFIG } from '../../config/api.config';
 
 export interface Appointment {
   id: number;
-  client: any;
-  stylist: any;
-  service: any;
+  client: number;
+  stylist: number;
+  service?: number;
   date_time: string;
-  duration: number;
-  status: string;
-  notes: string;
-  price: number;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  sale?: number;
+  stylist_info?: any;
+}
+
+export interface AppointmentWithDetails extends Appointment {
+  client_name?: string;
+  stylist_name?: string;
+  service_name?: string;
+  service_price?: number;
+  service_duration?: number;
 }
 
 @Injectable({
@@ -82,6 +92,18 @@ export class AppointmentService extends BaseApiService {
       stylist_id: stylistId,
       date
     });
+  }
+
+  // Backend specific methods
+  getAvailability(stylistId: number, date: string): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.APPOINTMENTS.BASE}availability/`, {
+      stylist_id: stylistId,
+      date
+    });
+  }
+
+  getTodayAppointments(): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.APPOINTMENTS.BASE}today/`);
   }
 
   // Test endpoint

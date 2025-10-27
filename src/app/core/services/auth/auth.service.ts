@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, catchError } from 'rxjs';
 import { BaseApiService } from '../base-api.service';
 import { API_CONFIG } from '../../config/api.config';
 import { TrialService } from '../trial.service';
+import { throwError } from 'rxjs';
 
 export interface LoginRequest {
   email: string;
@@ -29,6 +30,24 @@ export interface User {
   role: string;
   tenant_id?: number;
   roles: string[];
+  phone?: string;
+  is_active?: boolean;
+  date_joined?: string;
+}
+
+export interface CreateUserRequest {
+  email: string;
+  full_name: string;
+  phone?: string;
+  password: string;
+  tenant?: number;
+}
+
+export interface CreateUserResponse {
+  id: number;
+  email: string;
+  full_name: string;
+  phone?: string;
 }
 
 @Injectable({
@@ -120,16 +139,29 @@ export class AuthService extends BaseApiService {
     return this.get(API_CONFIG.ENDPOINTS.AUTH.PERMISSIONS);
   }
 
-  createUser(userData: any): Observable<any> {
-    return this.post(API_CONFIG.ENDPOINTS.AUTH.USERS, userData);
+  createUser(userData: CreateUserRequest): Observable<CreateUserResponse> {
+    return this.post<CreateUserResponse>(API_CONFIG.ENDPOINTS.AUTH.USERS, userData)
+      .pipe(
+        catchError(error => {
+          if (error.status === 402 || error.error?.code === 'UPGRADE_REQUIRED') {
+            // Redirigir a upgrade o mostrar modal
+            console.warn('Upgrade required:', error.error?.message);
+          }
+          return throwError(() => error);
+        })
+      );
   }
 
-  updateUser(id: number, userData: any): Observable<any> {
-    return this.put(`${API_CONFIG.ENDPOINTS.AUTH.USERS}${id}/`, userData);
+  updateUser(id: number, userData: Partial<CreateUserRequest>): Observable<User> {
+    return this.put<User>(`${API_CONFIG.ENDPOINTS.AUTH.USERS}${id}/`, userData);
   }
 
   deleteUser(id: number): Observable<any> {
     return this.delete(`${API_CONFIG.ENDPOINTS.AUTH.USERS}${id}/`);
+  }
+
+  getUsersAvailableForEmployee(): Observable<User[]> {
+    return this.get<User[]>(API_CONFIG.ENDPOINTS.COMPATIBILITY.USERS_AVAILABLE_FOR_EMPLOYEE);
   }
 
   getCurrentUser(): User | null {

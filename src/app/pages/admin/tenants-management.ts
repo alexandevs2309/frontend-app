@@ -27,10 +27,14 @@ interface Tenant {
     subdomain?: string;
     contact_email?: string;
     contact_phone?: string;
+    address?: string;
+    country?: string;
     subscription_plan?: any;
     plan_type?: string;
     subscription_status?: string;
     trial_end_date?: string;
+    billing_info?: any;
+    settings?: any;
     max_employees?: number;
     max_users?: number;
     branches_count?: number;

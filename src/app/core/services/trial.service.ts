@@ -99,17 +99,30 @@ export class TrialService extends BaseApiService {
       return basicFeatures.includes(featureName);
     }
     
-    // Si el trial expiró, solo acceso básico
+    // Si el trial expiró, verificar período de gracia
     if (this.isTrialExpired()) {
-      return ['basic_access', 'view_only'].includes(featureName);
+      return this.isInGracePeriod() ? ['view_only', 'export_data'].includes(featureName) : false;
     }
     
-    // Durante trial activo, permitir features básicas
-    if (status.is_trial) {
+    // Durante trial activo o suscripción activa, permitir features
+    if (status.is_trial || status.subscription_status === 'active') {
       return ['employees_management', 'appointments_management', 'pos_system', 'services_management', 'inventory_management', 'earnings_management', 'reports'].includes(featureName);
     }
     
     return status.features?.[featureName] || false;
+  }
+
+  isInGracePeriod(): boolean {
+    const status = this.getCurrentTrialStatus();
+    if (!status?.trial_end_date || !this.isTrialExpired()) return false;
+    
+    const trialEndDate = new Date(status.trial_end_date);
+    const daysSinceExpiry = Math.floor((Date.now() - trialEndDate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysSinceExpiry <= 3;
+  }
+
+  isBlocked(): boolean {
+    return this.isTrialExpired() && !this.isInGracePeriod();
   }
 
   hasReachedLimit(limitType: string): boolean {
@@ -121,5 +134,23 @@ export class TrialService extends BaseApiService {
     
     if (limit === 0) return false; // Unlimited
     return usage >= limit;
+  }
+
+  getUpgradeUrl(): string {
+    return '/subscriptions/upgrade/';
+  }
+
+  getAccessMessage(): string {
+    if (this.isBlocked()) {
+      return 'Your access has been blocked. Please subscribe to continue using the service.';
+    }
+    if (this.isInGracePeriod()) {
+      const status = this.getCurrentTrialStatus();
+      const trialEndDate = new Date(status?.trial_end_date || '');
+      const daysSinceExpiry = Math.floor((Date.now() - trialEndDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysLeft = 3 - daysSinceExpiry;
+      return `Your trial has expired. You have ${daysLeft} day(s) left to subscribe before losing access.`;
+    }
+    return '';
   }
 }

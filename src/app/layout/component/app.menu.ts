@@ -93,7 +93,9 @@ export class AppMenu implements OnInit, OnDestroy {
         if (userRole === 'Client-Admin') {
             // Client-Admin: All features available
             menuItems.push(
+                { label: 'Usuarios', icon: 'pi pi-fw pi-user', routerLink: ['/client/users'] },
                 { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
+                { label: 'Clientes', icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
                 { label: 'Citas', icon: 'pi pi-fw pi-calendar', routerLink: ['/client/appointments'] },
                 { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
                 { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
@@ -105,6 +107,7 @@ export class AppMenu implements OnInit, OnDestroy {
             // Client-Staff: Limited features
             menuItems.push(
                 { label: 'Mis Citas', icon: 'pi pi-fw pi-calendar', routerLink: ['/client/appointments'] },
+                { label: 'Clientes', icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
                 { label: 'Ventas', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
                 { label: 'Mis Comisiones', icon: 'pi pi-fw pi-dollar', routerLink: ['/client/earnings'] },
                 { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
