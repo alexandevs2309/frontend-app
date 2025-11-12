@@ -51,7 +51,7 @@ import { HttpClientModule } from '@angular/common/http';
             </div>
         </div>
         <video-modal [(visible)]="showVideoModal"></video-modal>
-        <p-scrollTop [threshold]="300" styleClass="!right-6 !bg-gradient-to-r !from-blue-500 !to-purple-600 !border-0 !w-12 !h-12 shadow-lg hover:!scale-110 !transition-all !duration-300" pTooltip="Volver arriba" tooltipPosition="left">
+        <p-scrollTop [threshold]="300" styleClass="!right-6 !bg-linear-to-r !from-blue-500 !to-purple-600 !border-0 !w-12 !h-12 shadow-lg hover:!scale-110 !transition-all !duration-300" pTooltip="Volver arriba" tooltipPosition="left">
             <i class="pi pi-chevron-up !text-xl text-white"></i>
         </p-scrollTop>
     `

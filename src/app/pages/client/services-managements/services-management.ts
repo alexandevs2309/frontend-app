@@ -14,7 +14,7 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { ServiceService, Service } from '../../core/services/service/service.service';
+import { ServiceService, Service } from '../../../core/services/service/service.service';
 
 @Component({
     selector: 'app-services-management',

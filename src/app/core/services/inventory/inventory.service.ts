@@ -9,13 +9,15 @@ export interface Product {
   sku: string;
   description: string;
   price: number;
-  cost: number;
+  cost?: number;
   stock: number;
   min_stock: number;
   category: string;
-  supplier: any;
+  supplier?: any;
+  unit?: string;
   is_active: boolean;
   tenant: number;
+  image?: string;
 }
 
 export interface Supplier {
@@ -57,8 +59,16 @@ export class InventoryService extends BaseApiService {
     return this.post(API_CONFIG.ENDPOINTS.INVENTORY.PRODUCTS, product);
   }
 
+  createProductWithImage(formData: FormData): Observable<Product> {
+    return this.postFormData(API_CONFIG.ENDPOINTS.INVENTORY.PRODUCTS, formData);
+  }
+
   updateProduct(id: number, product: Partial<Product>): Observable<Product> {
     return this.put(`${API_CONFIG.ENDPOINTS.INVENTORY.PRODUCTS}${id}/`, product);
+  }
+
+  updateProductWithImage(id: number, formData: FormData): Observable<Product> {
+    return this.putFormData(`${API_CONFIG.ENDPOINTS.INVENTORY.PRODUCTS}${id}/`, formData);
   }
 
   deleteProduct(id: number): Observable<any> {

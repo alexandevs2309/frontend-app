@@ -28,13 +28,15 @@ export const API_CONFIG = {
     
     // Subscriptions
     SUBSCRIPTIONS: {
+      BASE: '/subscriptions/',
       PLANS: '/subscriptions/plans/',
       USER_SUBSCRIPTIONS: '/subscriptions/user-subscriptions/',
       AUDIT_LOGS: '/subscriptions/audit-logs/',
       MY_ACTIVE: '/subscriptions/me/active/',
       MY_ENTITLEMENTS: '/subscriptions/me/entitlements/',
       REGISTER: '/subscriptions/register/',
-      ONBOARD: '/subscriptions/onboard/'
+      ONBOARD: '/subscriptions/onboard/',
+      RENEW: '/subscriptions/renew/'
     },
     
     // Employees
@@ -63,13 +65,18 @@ export const API_CONFIG = {
     POS: {
       SALES: '/pos/sales/',
       CASH_REGISTERS: '/pos/cashregisters/',
+      PROMOTIONS: '/pos/promotions/',
+      CONFIGURATION: '/pos/configuration/',
       DAILY_SUMMARY: '/pos/summary/daily/',
       DASHBOARD_STATS: '/pos/dashboard/stats/',
       ACTIVE_PROMOTIONS: '/pos/promotions/active/',
       CATEGORIES: '/pos/categories/',
       CONFIG: '/pos/config/',
       MY_EARNINGS: '/pos/earnings/my_earnings/',
-      CURRENT_FORTNIGHT: '/pos/earnings/current_fortnight/'
+      CURRENT_FORTNIGHT: '/pos/earnings/current_fortnight/',
+      SEARCH_SALES: '/pos/sales/search_sales/',
+      PRINT_RECEIPT: '/pos/sales/{id}/print_receipt/',
+      CASH_COUNT: '/pos/cashregisters/{id}/cash_count/'
     },
     
     // Inventory
@@ -79,12 +86,19 @@ export const API_CONFIG = {
       STOCK_MOVEMENTS: '/inventory/stock-movements/',
       LOW_STOCK_ALERTS: '/inventory/alerts/low-stock/',
       CATEGORIES: '/inventory/categories/',
-      LOW_STOCK_PRODUCTS: '/inventory/products/low-stock/'
+      LOW_STOCK_PRODUCTS: '/inventory/products/low-stock/',
+      SEARCH_BY_BARCODE: '/inventory/products/search_by_barcode/'
     },
     
     // Reports
-    REPORTS: '/reports/',
-    ADMIN_REPORTS: '/reports/admin/',
+    REPORTS: {
+      BASE: '/reports/',
+      DASHBOARD: '/reports/dashboard/',
+      SALES: '/reports/sales/',
+      EMPLOYEES: '/reports/employees/',
+      BY_TYPE: '/reports/',
+      ADMIN: '/reports/admin/'
+    },
     
     // Billing
     BILLING: '/billing/',

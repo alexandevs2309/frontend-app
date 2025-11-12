@@ -101,7 +101,8 @@ export class AppMenu implements OnInit, OnDestroy {
                 { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: 'Punto de Venta', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
                 { label: 'Ganancias', icon: 'pi pi-fw pi-dollar', routerLink: ['/client/earnings'] },
-                { label: 'Reportes', icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }
+                { label: 'Reportes', icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] },
+                { label: 'Configuración', icon: 'pi pi-fw pi-cog', routerLink: ['/client/settings'] }
             );
         } else if (userRole === 'Client-Staff') {
             // Client-Staff: Limited features

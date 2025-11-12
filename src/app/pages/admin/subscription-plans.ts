@@ -346,7 +346,7 @@ export class SubscriptionPlans implements OnInit {
                     max_users: this.plan.max_users,
                     is_active: this.plan.is_active
                 }).subscribe({
-                    next: (updatedPlan) => {
+                    next: (updatedPlan: any) => {
                         const plans = this.plans();
                         const index = plans.findIndex(p => p.id === this.plan.id);
                         if (index !== -1) {
@@ -362,7 +362,7 @@ export class SubscriptionPlans implements OnInit {
                         this.planDialog = false;
                         this.saving.set(false);
                     },
-                    error: (error) => {
+                    error: (error: any) => {
                         this.showErrorMessage('Error al actualizar el plan', error);
                         this.saving.set(false);
                     }

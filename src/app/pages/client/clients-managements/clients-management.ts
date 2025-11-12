@@ -14,7 +14,7 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { ClientService, Client } from '../../core/services/client/client.service';
+import { ClientService, Client } from '../../../core/services/client/client.service';
 
 @Component({
     selector: 'app-clients-management',
@@ -101,12 +101,19 @@ import { ClientService, Client } from '../../core/services/client/client.service
                             </p-tag>
                         </td>
                         <td>
-                            <span *ngIf="cliente.date_of_birth">
-                                {{cliente.date_of_birth | date:'dd/MM/yyyy'}}
-                            </span>
-                            <span *ngIf="!cliente.date_of_birth" class="text-gray-400">
-                                No especificada
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <span>{{ formatearFecha(cliente) }}</span>
+                                @if (esCumpleanosHoy(cliente)) {
+                                    <i class="pi pi-gift text-yellow-500" pTooltip="¡Cumpleaños hoy! 🎉"></i>
+                                } @else if (esCumpleanosEsteMes(cliente)) {
+                                    <i class="pi pi-calendar text-blue-500" pTooltip="Cumpleaños este mes"></i>
+                                }
+                                @if (calcularEdad(cliente)) {
+                                    <span class="text-xs text-gray-500">
+                                        ({{ calcularEdad(cliente) }} años)
+                                    </span>
+                                }
+                            </div>
                         </td>
                         <td>
                             <p-tag [value]="cliente.is_active ? 'Activo' : 'Inactivo'"
@@ -229,14 +236,29 @@ export class ClientsManagement implements OnInit {
 
     ngOnInit() {
         this.cargarClientes();
+        console.log(this.clientes)
     }
 
     async cargarClientes() {
         this.cargando.set(true);
         try {
             const response = await this.clientService.getClients().toPromise();
+            console.log('🔍 RESPUESTA COMPLETA DEL BACKEND:', response);
+            console.log('🔍 TIPO DE RESPUESTA:', typeof response);
+            console.log('🔍 ES ARRAY:', Array.isArray(response));
+            console.log('🔍 KEYS:', Object.keys(response || {}));
+            
             const clientes = (response as any)?.results || response || [];
+            console.log('🔍 CLIENTES PROCESADOS:', clientes);
+            console.log('🔍 CANTIDAD DE CLIENTES:', clientes.length);
+            
+            if (clientes.length > 0) {
+                console.log('🔍 PRIMER CLIENTE (ESTRUCTURA):', clientes[0]);
+                console.log('🔍 PROPIEDADES DEL PRIMER CLIENTE:', Object.keys(clientes[0]));
+            }
+            
             this.clientes.set(clientes);
+
         } catch (error) {
             console.error('Error cargando clientes:', error);
             this.messageService.add({
@@ -271,7 +293,10 @@ export class ClientsManagement implements OnInit {
             email: cliente.email,
             phone: cliente.phone || '',
             address: cliente.address || '',
-            date_of_birth: cliente.date_of_birth ? new Date(cliente.date_of_birth) : null,
+            date_of_birth: (() => {
+                const fecha = cliente.birthday || cliente.date_of_birth;
+                return fecha ? new Date(fecha) : null;
+            })(),
             gender: cliente.gender || '',
             notes: cliente.notes || '',
             is_active: cliente.is_active
@@ -286,9 +311,10 @@ export class ClientsManagement implements OnInit {
         try {
             const clienteData = { ...this.formulario.value };
 
-            // Formatear fecha de nacimiento
+            // Formatear fecha de nacimiento - el backend espera 'birthday'
             if (clienteData.date_of_birth) {
-                clienteData.date_of_birth = new Date(clienteData.date_of_birth).toISOString().split('T')[0];
+                clienteData.birthday = new Date(clienteData.date_of_birth).toISOString().split('T')[0];
+                delete clienteData.date_of_birth; // Remover el campo incorrecto
             }
 
             if (this.clienteSeleccionado) {
@@ -353,6 +379,16 @@ export class ClientsManagement implements OnInit {
 
 
 
+    formatearFecha(cliente: any): string {
+        const fecha = cliente.birthday || cliente.date_of_birth;
+        if (!fecha) return 'No especificada';
+        try {
+            return new Date(fecha).toLocaleDateString('es-ES');
+        } catch {
+            return 'No especificada';
+        }
+    }
+
     getGenderSeverity(gender: string): 'success' | 'info' | 'warn' | 'secondary' {
         switch (gender) {
             case 'M': return 'info';
@@ -366,5 +402,34 @@ export class ClientsManagement implements OnInit {
         this.mostrarDialogo = false;
         this.clienteSeleccionado = null;
         this.formulario.reset();
+    }
+
+    // Funciones para sistema de cumpleaños
+    esCumpleanosHoy(cliente: any): boolean {
+        if (!cliente.birthday) return false;
+        const hoy = new Date();
+        const cumple = new Date(cliente.birthday);
+        return hoy.getDate() === cumple.getDate() && hoy.getMonth() === cumple.getMonth();
+    }
+
+    esCumpleanosEsteMes(cliente: any): boolean {
+        if (!cliente.birthday) return false;
+        const hoy = new Date();
+        const cumple = new Date(cliente.birthday);
+        return hoy.getMonth() === cumple.getMonth();
+    }
+
+    calcularEdad(cliente: any): number | null {
+        if (!cliente.birthday) return null;
+        const hoy = new Date();
+        const cumple = new Date(cliente.birthday);
+        let edad = hoy.getFullYear() - cumple.getFullYear();
+        const mesActual = hoy.getMonth();
+        const mesCumple = cumple.getMonth();
+        
+        if (mesActual < mesCumple || (mesActual === mesCumple && hoy.getDate() < cumple.getDate())) {
+            edad--;
+        }
+        return edad;
     }
 }

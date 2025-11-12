@@ -118,7 +118,7 @@ export class PricingWidget implements OnInit, OnDestroy {
     
     getPlanButtonClass(name: string): string {
         if (this.isPopularPlan(name)) {
-            return 'bg-gradient-to-r from-yellow-400 to-orange-500 border-0 text-black hover:from-yellow-500 hover:to-orange-600';
+            return 'bg-linear-to-r from-yellow-400 to-orange-500 border-0 text-black hover:from-yellow-500 hover:to-orange-600';
         }
         return 'bg-white/20 border-2 border-white/30 text-white hover:bg-white/30';
     }

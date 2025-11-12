@@ -11,18 +11,18 @@ import { AnimationService } from '../../../shared/services/animation.service';
     template: `
         <div id="highlights" class="py-20 px-6 lg:px-20 relative overflow-hidden"
              style="background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);">
-            
+
             <!-- Background decoration -->
             <div class="absolute inset-0 opacity-30">
-                <div class="absolute top-32 left-16 w-96 h-96 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-3xl"></div>
-                <div class="absolute bottom-32 right-16 w-80 h-80 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full blur-3xl"></div>
+                <div class="absolute top-32 left-16 w-96 h-96 bg-linear-to-r from-cyan-400 to-blue-500 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-32 right-16 w-80 h-80 bg-linear-to-r from-purple-400 to-pink-500 rounded-full blur-3xl"></div>
             </div>
 
             <div class="relative z-10">
                 <div class="text-center mb-20 animate-on-scroll" data-direction="top">
-                    <span class="inline-block px-4 py-2 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-semibold rounded-full text-sm mb-4">⚡ Potencia Total</span>
+                    <span class="inline-block px-4 py-2 bg-linear-to-r from-cyan-400 to-blue-500 text-black font-semibold rounded-full text-sm mb-4">⚡ Potencia Total</span>
                     <h2 class="text-5xl lg:text-6xl font-bold text-white mb-6">
-                        Funciona en <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Cualquier Lugar</span>
+                        Funciona en <span class="bg-linear-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Cualquier Lugar</span>
                     </h2>
                     <p class="text-xl text-gray-300 max-w-3xl mx-auto">
                         Auron-Suite está optimizado para funcionar perfectamente en todos los dispositivos y plataformas.
@@ -39,15 +39,15 @@ import { AnimationService } from '../../../shared/services/animation.service';
                                 <div class="w-full h-full bg-black rounded-3xl overflow-hidden relative">
                                     <!-- Notch -->
                                     <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-10"></div>
-                                    
+
                                     <!-- Screen content -->
-                                    <div class="pt-8 px-4 h-full bg-gradient-to-br from-blue-900 to-purple-900">
+                                    <div class="pt-8 px-4 h-full bg-linear-to-br from-blue-900 to-purple-900">
                                         <!-- Header -->
                                         <div class="flex items-center justify-between mb-6">
                                             <div class="text-white font-bold">Auron-Suite</div>
                                             <div class="w-8 h-8 bg-white/20 rounded-full"></div>
                                         </div>
-                                        
+
                                         <!-- Stats cards -->
                                         <div class="space-y-4">
                                             <div class="glass-effect rounded-xl p-4">
@@ -65,7 +65,7 @@ import { AnimationService } from '../../../shared/services/animation.service';
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Floating elements -->
                                 <div class="absolute -top-4 -right-4 glass-effect rounded-xl p-3 animate-bounce" style="animation-delay: 0.5s;">
                                     <div class="text-xl">📱</div>
@@ -73,18 +73,18 @@ import { AnimationService } from '../../../shared/services/animation.service';
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-span-12 lg:col-span-6 order-1 lg:order-2 animate-on-scroll" data-direction="right">
                         <div class="glass-effect rounded-3xl p-8 border border-white/20">
-                            <div class="flex items-center justify-center w-20 h-20 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-3xl mb-8">
+                            <div class="flex items-center justify-center w-20 h-20 bg-linear-to-r from-cyan-400 to-blue-500 rounded-3xl mb-8">
                                 <i class="pi pi-fw pi-mobile !text-4xl text-black"></i>
                             </div>
                             <h3 class="text-4xl font-bold text-white mb-6">Optimizado para Móviles</h3>
                             <p class="text-xl text-gray-300 mb-8 leading-relaxed">
-                                Gestiona tu barbería desde cualquier lugar. La app móvil de Auron-Suite te permite 
+                                Gestiona tu barbería desde cualquier lugar. La app móvil de Auron-Suite te permite
                                 controlar citas, ver ganancias y gestionar empleados desde tu smartphone.
                             </p>
-                            
+
                             <div class="space-y-4">
                                 <div class="flex items-center text-gray-300">
                                     <i class="pi pi-check-circle text-cyan-400 mr-4 text-xl"></i>
@@ -107,15 +107,15 @@ import { AnimationService } from '../../../shared/services/animation.service';
                 <div class="grid grid-cols-12 gap-12 items-center">
                     <div class="col-span-12 lg:col-span-6 animate-on-scroll" data-direction="left">
                         <div class="glass-effect rounded-3xl p-8 border border-white/20">
-                            <div class="flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-400 to-pink-500 rounded-3xl mb-8">
+                            <div class="flex items-center justify-center w-20 h-20 bg-linear-to-r from-purple-400 to-pink-500 rounded-3xl mb-8">
                                 <i class="pi pi-fw pi-desktop !text-4xl text-white"></i>
                             </div>
                             <h3 class="text-4xl font-bold text-white mb-6">Potencia de Escritorio</h3>
                             <p class="text-xl text-gray-300 mb-8 leading-relaxed">
-                                Aprovecha al máximo las capacidades de Auron-Suite en tu computadora. 
+                                Aprovecha al máximo las capacidades de Auron-Suite en tu computadora.
                                 Dashboards avanzados, reportes detallados y gestión completa de tu negocio.
                             </p>
-                            
+
                             <div class="space-y-4">
                                 <div class="flex items-center text-gray-300">
                                     <i class="pi pi-check-circle text-purple-400 mr-4 text-xl"></i>
@@ -132,7 +132,7 @@ import { AnimationService } from '../../../shared/services/animation.service';
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-span-12 lg:col-span-6 animate-on-scroll" data-direction="right">
                         <div class="relative">
                             <!-- Desktop mockup -->
@@ -140,7 +140,7 @@ import { AnimationService } from '../../../shared/services/animation.service';
                                 <!-- Monitor frame -->
                                 <div class="bg-black rounded-xl overflow-hidden">
                                     <!-- Screen content -->
-                                    <div class="h-80 bg-gradient-to-br from-gray-900 to-black p-6">
+                                    <div class="h-80 bg-linear-to-br from-gray-900 to-black p-6">
                                         <!-- Browser bar -->
                                         <div class="flex items-center gap-2 mb-4">
                                             <div class="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -148,7 +148,7 @@ import { AnimationService } from '../../../shared/services/animation.service';
                                             <div class="w-3 h-3 bg-green-500 rounded-full"></div>
                                             <div class="ml-4 text-gray-400 text-sm">auron-suite.com/dashboard</div>
                                         </div>
-                                        
+
                                         <!-- Dashboard content -->
                                         <div class="grid grid-cols-3 gap-4 mb-4">
                                             <div class="glass-effect rounded p-3">
@@ -164,19 +164,19 @@ import { AnimationService } from '../../../shared/services/animation.service';
                                                 <div class="text-purple-400 font-bold">24</div>
                                             </div>
                                         </div>
-                                        
+
                                         <!-- Chart area -->
                                         <div class="glass-effect rounded-lg h-32 flex items-center justify-center">
                                             <div class="text-gray-400 text-sm">📈 Analytics Avanzados</div>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Monitor stand -->
                                 <div class="w-16 h-4 bg-gray-700 mx-auto mt-2 rounded-b"></div>
                                 <div class="w-24 h-2 bg-gray-600 mx-auto rounded"></div>
                             </div>
-                            
+
                             <!-- Floating elements -->
                             <div class="absolute -top-6 -left-6 glass-effect rounded-xl p-3 animate-bounce" style="animation-delay: 1s;">
                                 <div class="text-xl">💻</div>
@@ -195,7 +195,7 @@ import { AnimationService } from '../../../shared/services/animation.service';
                             <h3 class="text-4xl font-bold text-white mb-4">Rendimiento Excepcional</h3>
                             <p class="text-xl text-gray-300">Optimizado para velocidad y confiabilidad</p>
                         </div>
-                        
+
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                             <div class="text-center">
                                 <div class="text-5xl font-bold text-cyan-400 mb-2">< 2s</div>

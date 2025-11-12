@@ -1,0 +1,122 @@
+<div class="checkout-container">
+      <div class="checkout-header">
+        <h1>Finalizar Pago</h1>
+        <p>Completa tu información de pago para activar tu suscripción</p>
+      </div>
+
+      <div *ngIf="!selectedPlan" class="text-center p-4">
+        <i class="pi pi-spinner pi-spin" style="font-size: 2rem"></i>
+        <p>Cargando información del plan...</p>
+      </div>
+
+      <div class="checkout-content" *ngIf="selectedPlan">
+        <!-- Plan Summary -->
+        <div class="plan-summary" *ngIf="selectedPlan">
+          <h3>Resumen del Plan</h3>
+          <div class="plan-details">
+            <div class="plan-name">{{ selectedPlan.get_name_display || selectedPlan.name }}</div>
+            <div class="plan-price">${{ selectedPlan.price }}/mes</div>
+          </div>
+          <div class="plan-features">
+            <div *ngFor="let feature of selectedPlan.features" class="feature-item">
+              <i class="pi pi-check text-green-500"></i>
+              {{ feature }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Form -->
+        <div class="payment-form">
+          <h3>Información de Pago</h3>
+          <form (ngSubmit)="processPayment()" #paymentForm="ngForm">
+            <div class="form-group">
+              <label for="cardNumber">Número de Tarjeta</label>
+              <input
+                pInputText
+                id="cardNumber"
+                [(ngModel)]="paymentData.cardNumber"
+                name="cardNumber"
+                placeholder="1234 5678 9012 3456"
+                maxlength="19"
+                (input)="formatCardNumber($event)"
+                required
+                class="w-full" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="expiryDate">Fecha de Vencimiento</label>
+                <input
+                  pInputText
+                  id="expiryDate"
+                  [(ngModel)]="paymentData.expiryDate"
+                  name="expiryDate"
+                  placeholder="MM/YY"
+                  maxlength="5"
+                  (input)="formatExpiryDate($event)"
+                  required
+                  class="w-full" />
+              </div>
+              <div class="form-group">
+                <label for="cvv">CVV</label>
+                <input
+                  pInputText
+                  id="cvv"
+                  [(ngModel)]="paymentData.cvv"
+                  name="cvv"
+                  placeholder="123"
+                  maxlength="4"
+                  required
+                  class="w-full" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="cardName">Nombre en la Tarjeta</label>
+              <input
+                pInputText
+                id="cardName"
+                [(ngModel)]="paymentData.cardName"
+                name="cardName"
+                placeholder="Juan Pérez"
+                required
+                class="w-full" />
+            </div>
+
+            <div class="payment-actions">
+              <button
+                pButton
+                type="button"
+                label="Cancelar"
+                class="p-button-outlined"
+                (click)="goBack()">
+              </button>
+              <button
+                pButton
+                type="submit"
+                label="Pagar ${{ selectedPlan?.price }}"
+                class="p-button-success"
+                [loading]="processing"
+                [disabled]="!paymentForm.valid">
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Security Info -->
+      <div class="security-info">
+        <div class="security-item">
+          <i class="pi pi-shield text-green-500"></i>
+          <span>Pago seguro con encriptación SSL</span>
+        </div>
+        <div class="security-item">
+          <i class="pi pi-lock text-blue-500"></i>
+          <span>Información protegida según PCI DSS</span>
+        </div>
+        <div class="security-item">
+          <i class="pi pi-refresh text-orange-500"></i>
+          <span>Cancela en cualquier momento</span>
+        </div>
+      </div>
+    </div>

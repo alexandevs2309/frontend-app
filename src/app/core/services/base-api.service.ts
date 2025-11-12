@@ -34,6 +34,14 @@ export class BaseApiService {
     return this.http.delete<T>(`${this.baseUrl}${endpoint}`);
   }
 
+  protected postFormData<T>(endpoint: string, formData: FormData): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}${endpoint}`, formData);
+  }
+
+  protected putFormData<T>(endpoint: string, formData: FormData): Observable<T> {
+    return this.http.put<T>(`${this.baseUrl}${endpoint}`, formData);
+  }
+
   private buildParams(params?: any): HttpParams {
     let httpParams = new HttpParams();
     if (params) {

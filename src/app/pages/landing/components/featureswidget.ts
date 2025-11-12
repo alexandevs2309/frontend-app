@@ -13,18 +13,18 @@ import { RippleModule } from 'primeng/ripple';
             
             <!-- Background decoration -->
             <div class="absolute inset-0 opacity-10 dark:opacity-20">
-                <div class="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-3xl"></div>
-                <div class="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full blur-3xl"></div>
+                <div class="absolute top-20 left-10 w-72 h-72 bg-linear-to-r from-blue-400 to-purple-500 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-20 right-10 w-96 h-96 bg-linear-to-r from-yellow-400 to-orange-500 rounded-full blur-3xl"></div>
             </div>
 
             <div class="relative z-10">
                 <div class="w-full text-center mb-16 animate-on-scroll" data-direction="top">
-                        <span class="inline-block px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-full text-sm mb-4">
+                        <span class="inline-block px-4 py-2 bg-linear-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-full text-sm mb-4">
                             💎 Características Premium
                         </span>
 
                         <h2 class="text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-                            Potencia tu <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Barbería</span>
+                            Potencia tu <span class="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Barbería</span>
                         </h2>
 
                         <p class="text-xl text-center text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
@@ -38,7 +38,7 @@ import { RippleModule } from 'primeng/ripple';
                     <!-- Feature 1: Ganancias por Quincena -->
                     <div class="group animate-on-scroll" data-direction="left">
                         <div class="glass-effect rounded-2xl p-8 h-full hover:scale-105 transition-all duration-300 border border-white/20 shadow-xl">
-                            <div class="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
+                            <div class="flex items-center justify-center w-16 h-16 bg-linear-to-r from-green-400 to-emerald-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
                                 <i class="pi pi-fw pi-dollar !text-3xl text-white"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Ganancias por Quincena</h3>
@@ -55,7 +55,7 @@ import { RippleModule } from 'primeng/ripple';
                     <!-- Feature 2: Multitenancy -->
                     <div class="group animate-on-scroll" data-direction="top">
                         <div class="glass-effect rounded-2xl p-8 h-full hover:scale-105 transition-all duration-300 border border-white/20 shadow-xl">
-                            <div class="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
+                            <div class="flex items-center justify-center w-16 h-16 bg-linear-to-r from-blue-400 to-cyan-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
                                 <i class="pi pi-fw pi-building !text-3xl text-white"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Multitenancy Avanzado</h3>
@@ -72,7 +72,7 @@ import { RippleModule } from 'primeng/ripple';
                     <!-- Feature 3: Gestión de Citas -->
                     <div class="group animate-on-scroll" data-direction="right">
                         <div class="glass-effect rounded-2xl p-8 h-full hover:scale-105 transition-all duration-300 border border-white/20 shadow-xl">
-                            <div class="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
+                            <div class="flex items-center justify-center w-16 h-16 bg-linear-to-r from-purple-400 to-pink-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
                                 <i class="pi pi-fw pi-calendar !text-3xl text-white"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Gestión Inteligente de Citas</h3>
@@ -89,7 +89,7 @@ import { RippleModule } from 'primeng/ripple';
                     <!-- Feature 4: POS Integrado -->
                     <div class="group animate-on-scroll" data-direction="left">
                         <div class="glass-effect rounded-2xl p-8 h-full hover:scale-105 transition-all duration-300 border border-white/20 shadow-xl">
-                            <div class="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-orange-400 to-red-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
+                            <div class="flex items-center justify-center w-16 h-16 bg-linear-to-r from-orange-400 to-red-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
                                 <i class="pi pi-fw pi-shopping-cart !text-3xl text-white"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">POS Integrado</h3>
@@ -106,7 +106,7 @@ import { RippleModule } from 'primeng/ripple';
                     <!-- Feature 5: Analytics en Tiempo Real -->
                     <div class="group animate-on-scroll" data-direction="bottom">
                         <div class="glass-effect rounded-2xl p-8 h-full hover:scale-105 transition-all duration-300 border border-white/20 shadow-xl">
-                            <div class="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-400 to-blue-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
+                            <div class="flex items-center justify-center w-16 h-16 bg-linear-to-r from-indigo-400 to-blue-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
                                 <i class="pi pi-fw pi-chart-line !text-3xl text-white"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Analytics Avanzados</h3>
@@ -123,7 +123,7 @@ import { RippleModule } from 'primeng/ripple';
                     <!-- Feature 6: Seguridad Empresarial -->
                     <div class="group animate-on-scroll" data-direction="right">
                         <div class="glass-effect rounded-2xl p-8 h-full hover:scale-105 transition-all duration-300 border border-white/20 shadow-xl">
-                            <div class="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-red-400 to-pink-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
+                            <div class="flex items-center justify-center w-16 h-16 bg-linear-to-r from-red-400 to-pink-500 rounded-2xl mb-6 group-hover:rotate-12 transition-transform duration-300">
                                 <i class="pi pi-fw pi-lock !text-3xl text-white"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Seguridad Empresarial</h3>

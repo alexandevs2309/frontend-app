@@ -9,13 +9,13 @@ import { CardModule } from 'primeng/card';
   standalone: true,
   imports: [CommonModule, RouterModule, ButtonModule, CardModule],
   template: `
-    <div class="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-slate-900 dark:via-green-900 dark:to-emerald-900 flex items-center justify-center p-4">
+    <div class="min-h-screen bg-linear-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-slate-900 dark:via-green-900 dark:to-emerald-900 flex items-center justify-center p-4">
       <div class="max-w-2xl w-full">
         <!-- Success Card -->
         <div class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-slate-700/50 overflow-hidden">
-          
+
           <!-- Header -->
-          <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-8 text-center text-white">
+          <div class="bg-linear-to-r from-green-500 to-emerald-600 p-8 text-center text-white">
             <div class="w-20 h-20 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
               <i class="pi pi-check text-4xl"></i>
             </div>
@@ -25,7 +25,7 @@ import { CardModule } from 'primeng/card';
 
           <!-- Content -->
           <div class="p-8">
-            
+
             <!-- Email Sent Info -->
             <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6">
               <div class="flex items-start gap-4">
@@ -71,7 +71,7 @@ import { CardModule } from 'primeng/card';
             </div>
 
             <!-- Email Content Preview -->
-            <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 rounded-xl p-6 mb-6">
+            <div class="bg-linear-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 rounded-xl p-6 mb-6">
               <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
                 <i class="pi pi-eye text-purple-500 mr-2"></i>
                 Vista Previa del Email Enviado
@@ -118,13 +118,13 @@ import { CardModule } from 'primeng/card';
 
             <!-- Actions -->
             <div class="flex flex-col sm:flex-row gap-4">
-              <button pButton 
+              <button pButton
                       label="Ir a Iniciar Sesión"
                       icon="pi pi-sign-in"
                       class="flex-1 !bg-green-600 !border-green-600 !text-white"
                       (click)="goToLogin()">
               </button>
-              <button pButton 
+              <button pButton
                       label="¿No recibiste el email?"
                       icon="pi pi-question-circle"
                       severity="secondary"
@@ -161,7 +161,7 @@ export class RegistrationSuccess implements OnInit {
 
   goToLogin() {
     this.router.navigate(['/auth/login'], {
-      queryParams: { 
+      queryParams: {
         email: this.email,
         message: 'check_email'
       }

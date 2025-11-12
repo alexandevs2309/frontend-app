@@ -11,8 +11,8 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService } from 'primeng/api';
 import { ConfirmationService } from 'primeng/api';
-import { EmployeeService, Employee, UpdateEmployeeRequest } from '../../core/services/employee/employee.service';
-import { AuthService, User } from '../../core/services/auth/auth.service';
+import { EmployeeService, Employee, UpdateEmployeeRequest } from '../../../core/services/employee/employee.service';
+import { AuthService, User } from '../../../core/services/auth/auth.service';
 
 interface EmployeeWithUser {
   id: number;
@@ -227,7 +227,7 @@ export class EmployeesManagement implements OnInit {
       const usuarios = (usuariosRes as any)?.results || usuariosRes || [];
 
       // Filtrar solo usuarios que son empleados (excluir Client-Admin)
-      const usuariosEmpleados = usuarios.filter((u: any) => 
+      const usuariosEmpleados = usuarios.filter((u: any) =>
         u.role && ['Estilista', 'Cajera', 'Manager', 'Utility'].includes(u.role)
       );
 
@@ -320,7 +320,7 @@ export class EmployeesManagement implements OnInit {
             hire_date: formData.hire_date ? new Date(formData.hire_date).toISOString().split('T')[0] : undefined,
             is_active: formData.is_active
           };
-          
+
           console.log('Updating employee with data:', updateData);
           // Usar PATCH en lugar de PUT para evitar problemas con campos no permitidos
           await this.employeeService.patchEmployee(this.empleadoSeleccionado.id, updateData).toPromise();
@@ -332,11 +332,11 @@ export class EmployeesManagement implements OnInit {
             phone: formData.phone || '',
             is_active: formData.is_active
           };
-          
+
           if (formData.hire_date) {
             createData.hire_date = new Date(formData.hire_date).toISOString().split('T')[0];
           }
-          
+
           await this.employeeService.createEmployee(createData).toPromise();
         }
 
@@ -372,7 +372,7 @@ export class EmployeesManagement implements OnInit {
             const usuariosRes = await this.authService.getUsers().toPromise();
             const usuarios = (usuariosRes as any)?.results || usuariosRes || [];
             const usuarioCreado = usuarios.find((u: any) => u.email === formData.email);
-            
+
             if (usuarioCreado) {
               // Crear empleado con el usuario encontrado
               await this.employeeService.createEmployee({
@@ -403,9 +403,9 @@ export class EmployeesManagement implements OnInit {
     } catch (error: any) {
       console.error('Error guardando empleado:', error);
       console.error('Error details:', error.error);
-      
+
       let errorMessage = 'No se pudo guardar el empleado';
-      
+
       // Detectar límite de usuarios
       if (error?.error?.current !== undefined && error?.error?.limit !== undefined) {
         errorMessage = `Límite de usuarios alcanzado (${error.error.current}/${error.error.limit}). Actualiza tu plan para agregar más usuarios.`;
@@ -416,7 +416,7 @@ export class EmployeesManagement implements OnInit {
       } else if (error?.error?.message) {
         errorMessage = error.error.message;
       }
-      
+
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -444,10 +444,10 @@ export class EmployeesManagement implements OnInit {
       if (emp.id > 0) {
         await this.employeeService.deleteEmployee(emp.id).toPromise();
       }
-      
+
       // Eliminar usuario
       await this.authService.deleteUser(emp.user_id).toPromise();
-      
+
       this.empleados.update(lista => lista.filter(e => e.user_id !== emp.user_id));
       this.messageService.add({
         severity: 'success',

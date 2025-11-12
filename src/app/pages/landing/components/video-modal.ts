@@ -51,7 +51,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
           <!-- Fallback si no hay video -->
           @if (!videoUrl && !visible) {
-            <div class="flex items-center justify-center h-full bg-gradient-to-br from-purple-600 to-blue-600">
+            <div class="flex items-center justify-center h-full bg-linear-to-br from-purple-600 to-blue-600">
               <div class="text-center text-white">
                 <i class="pi pi-video text-6xl mb-4 opacity-50"></i>
                 <h3 class="text-2xl font-bold mb-2">Demo Próximamente</h3>
@@ -105,7 +105,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
               label="Comenzar Prueba Gratis"
               icon="pi pi-arrow-right"
               (onClick)="startTrial()"
-              class="bg-gradient-to-r from-yellow-400 to-orange-500 border-0">
+              class="bg-linear-to-r from-yellow-400 to-orange-500 border-0">
             </p-button>
           </div>
         </div>

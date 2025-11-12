@@ -1,0 +1,199 @@
+<div class="min-h-screen bg-gray-50 p-4">
+  <!-- HEADER -->
+  <div class="bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-lg p-6 shadow-lg mb-6">
+    <div class="flex items-center gap-3">
+      <i class="pi pi-cog text-3xl"></i>
+      <div>
+        <h1 class="text-3xl font-bold">⚙️ Configuración de Peluquería</h1>
+        <p class="text-sm opacity-90">Personaliza tu negocio: precios, horarios, moneda y más</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <!-- INFORMACIÓN GENERAL -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+        <i class="pi pi-building text-blue-600"></i>
+        Información General
+      </h3>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Nombre de la Peluquería</label>
+          <input type="text" pInputText [(ngModel)]="settings().name"
+                 class="w-full" placeholder="Mi Peluquería">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Logo</label>
+          <p-fileUpload mode="basic" name="logo" accept="image/*"
+                        [maxFileSize]="1000000" (onUpload)="onLogoUpload($event)"
+                        chooseLabel="Seleccionar Logo" class="w-full">
+          </p-fileUpload>
+          <div *ngIf="settings().logo" class="mt-2">
+            <img [src]="settings().logo" alt="Logo" class="h-16 w-auto rounded">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Moneda</label>
+          <p-select [(ngModel)]="settings().currency" [options]="currencies"
+                    optionLabel="label" optionValue="value" class="w-full"
+                    (onChange)="onCurrencyChange($event.value)">
+          </p-select>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIGURACIÓN DE PAGOS -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+        <i class="pi pi-money-bill text-green-600"></i>
+        Configuración de Pagos por Defecto
+      </h3>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Comisión por Defecto (%)</label>
+          <input type="number" pInputText [(ngModel)]="settings().default_commission_rate"
+                 class="w-full" placeholder="40" min="0" max="100">
+          <small class="text-gray-500">Porcentaje que se aplicará a nuevos empleados por comisión</small>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Sueldo Fijo por Defecto ({{settings().currency_symbol}})</label>
+          <input type="number" pInputText [(ngModel)]="settings().default_fixed_salary"
+                 class="w-full" placeholder="1200000" min="0">
+          <small class="text-gray-500">Sueldo que se aplicará a nuevos empleados con pago fijo</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- HORARIOS DE ATENCIÓN -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+        <i class="pi pi-clock text-purple-600"></i>
+        Horarios de Atención
+      </h3>
+
+      <div class="space-y-3">
+        <div *ngFor="let day of days" class="flex items-center gap-3">
+          <div class="w-20 text-sm font-medium">{{ day.label }}</div>
+
+          <div class="flex items-center gap-2">
+            <input type="checkbox"
+                   [checked]="!getBusinessHour(day.key, 'closed')"
+                   (change)="updateBusinessHour(day.key, 'closed', !$any($event.target).checked)"
+                   class="rounded">
+            <span class="text-sm">Abierto</span>
+          </div>
+
+          <div *ngIf="!getBusinessHour(day.key, 'closed')"
+               class="flex items-center gap-2">
+            <input type="time"
+                   [ngModel]="getBusinessHour(day.key, 'open')"
+                   (ngModelChange)="updateBusinessHour(day.key, 'open', $event)"
+                   class="px-2 py-1 border rounded text-sm">
+            <span class="text-sm">a</span>
+            <input type="time"
+                   [ngModel]="getBusinessHour(day.key, 'close')"
+                   (ngModelChange)="updateBusinessHour(day.key, 'close', $event)"
+                   class="px-2 py-1 border rounded text-sm">
+          </div>
+
+          <div *ngIf="getBusinessHour(day.key, 'closed')"
+               class="text-sm text-gray-500">
+            Cerrado
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POLÍTICAS Y REGLAS -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+        <i class="pi pi-shield text-red-600"></i>
+        Políticas y Reglas
+      </h3>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Impuesto (%)</label>
+          <input type="number" pInputText [(ngModel)]="settings().tax_rate"
+                 class="w-full" placeholder="19" min="0" max="100" step="0.01">
+          <small class="text-gray-500">Porcentaje de impuesto aplicado a los servicios</small>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Descuento Máximo (%)</label>
+          <input type="number" pInputText [(ngModel)]="settings().service_discount_limit"
+                 class="w-full" placeholder="20" min="0" max="100">
+          <small class="text-gray-500">Descuento máximo permitido en servicios</small>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Cancelación Gratuita (horas)</label>
+          <input type="number" pInputText [(ngModel)]="settings().cancellation_policy_hours"
+                 class="w-full" placeholder="24" min="1">
+          <small class="text-gray-500">Horas antes de la cita para cancelar sin costo</small>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Tolerancia Llegada Tarde (minutos)</label>
+          <input type="number" pInputText [(ngModel)]="settings().late_arrival_grace_minutes"
+                 class="w-full" placeholder="15" min="0">
+          <small class="text-gray-500">Minutos de gracia para llegadas tardías</small>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Reserva Anticipada (días)</label>
+          <input type="number" pInputText [(ngModel)]="settings().booking_advance_days"
+                 class="w-full" placeholder="30" min="1">
+          <small class="text-gray-500">Días máximos para reservar con anticipación</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFORMACIÓN DE CONTACTO -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+        <i class="pi pi-phone text-orange-600"></i>
+        Información de Contacto
+      </h3>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Teléfono</label>
+          <input type="tel" pInputText [(ngModel)]="settings().contact.phone"
+                 class="w-full" placeholder="+57 300 123 4567">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Email</label>
+          <input type="email" pInputText [(ngModel)]="settings().contact.email"
+                 class="w-full" placeholder="contacto@mipeluqueria.com">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Dirección</label>
+          <textarea pInputText [(ngModel)]="settings().contact.address"
+                    class="w-full h-20 resize-none"
+                    placeholder="Calle 123 #45-67, Barrio Centro, Ciudad"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTONES DE ACCIÓN -->
+  <div class="flex justify-end gap-3 mt-6">
+    <button pButton label="Cargar Configuración" icon="pi pi-refresh"
+            class="p-button-outlined" (click)="loadSettings()" [loading]="loading()">
+    </button>
+    <button pButton label="Guardar Cambios" icon="pi pi-save"
+            class="p-button-success" (click)="saveSettings()" [loading]="loading()">
+    </button>
+  </div>
+
+  <p-toast></p-toast>
+</div>

@@ -4,7 +4,8 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { Router } from '@angular/router';
-import { TrialService, TrialStatus } from '../../core/services/trial.service';
+import { TrialService, TrialStatus } from '../../../core/services/trial.service';
+import { SubscriptionService } from '../../../core/services/subscription/subscription.service';
 import { MessageService } from 'primeng/api';
 
 @Component({
@@ -18,13 +19,13 @@ import { MessageService } from 'primeng/api';
         <p>Tu prueba gratuita ha terminado. Elige un plan para continuar.</p>
       </div>
 
-      <div class="plans-grid">
-        <p-card *ngFor="let plan of plans" 
+      <div class="plans-grid" *ngIf="!loading">
+        <p-card *ngFor="let plan of plans"
                 [ngClass]="{'recommended': plan.recommended}"
                 class="plan-card">
           <ng-template pTemplate="header">
             <div class="plan-header">
-              <h3>{{ plan.name }}</h3>
+              <h3>{{ plan.get_name_display || plan.name }}</h3>
               <div class="plan-price">
                 <span class="currency">$</span>
                 <span class="amount">{{ plan.price }}</span>
@@ -32,7 +33,7 @@ import { MessageService } from 'primeng/api';
               </div>
             </div>
           </ng-template>
-          
+
           <div class="plan-features">
             <ul>
               <li *ngFor="let feature of plan.features">
@@ -43,13 +44,18 @@ import { MessageService } from 'primeng/api';
           </div>
 
           <ng-template pTemplate="footer">
-            <button pButton 
+            <button pButton
                     [label]="plan.recommended ? 'Elegir Plan Recomendado' : 'Elegir Plan'"
                     [class]="plan.recommended ? 'p-button-success w-full' : 'p-button-outlined w-full'"
                     (click)="selectPlan(plan)">
             </button>
           </ng-template>
         </p-card>
+      </div>
+
+      <div *ngIf="loading" class="text-center p-4">
+        <i class="pi pi-spinner pi-spin" style="font-size: 2rem"></i>
+        <p>Cargando planes...</p>
       </div>
 
       <div class="payment-info">
@@ -167,79 +173,70 @@ import { MessageService } from 'primeng/api';
 })
 export class PaymentComponent implements OnInit {
   trialStatus: TrialStatus | null = null;
-  
-  plans = [
-    {
-      id: 'starter',
-      name: 'Starter',
-      price: 29,
-      recommended: false,
-      features: [
-        'Hasta 2 empleados',
-        'Gestión básica de citas',
-        'Reportes básicos',
-        'Soporte por email'
-      ]
-    },
-    {
-      id: 'pro',
-      name: 'Pro',
-      price: 59,
-      recommended: true,
-      features: [
-        'Hasta 10 empleados',
-        'Gestión avanzada de citas',
-        'Sistema POS completo',
-        'Reportes avanzados',
-        'Inventario',
-        'Soporte prioritario'
-      ]
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: 99,
-      recommended: false,
-      features: [
-        'Empleados ilimitados',
-        'Múltiples ubicaciones',
-        'API personalizada',
-        'Reportes personalizados',
-        'Soporte 24/7',
-        'Gerente de cuenta dedicado'
-      ]
-    }
-  ];
+  plans: any[] = [];
+  loading = false;
 
   constructor(
     private trialService: TrialService,
+    private subscriptionService: SubscriptionService,
     private router: Router,
     private messageService: MessageService
   ) {}
 
   ngOnInit() {
     this.trialStatus = this.trialService.getCurrentTrialStatus();
+    this.loadPlans();
+  }
+
+  loadPlans() {
+    this.loading = true;
+    this.subscriptionService.getPlans().subscribe({
+      next: (data: any) => {
+        const allPlans = Array.isArray(data) ? data : (data.results || []);
+        // Filter out free plan and add recommended flag
+        this.plans = allPlans
+          .filter((plan: any) => plan.name !== 'free')
+          .map((plan: any, index: number) => ({
+            ...plan,
+            recommended: plan.name === 'standard',
+            features: this.getFeaturesList(plan.features)
+          }));
+        this.loading = false;
+      },
+      error: (error: any) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Error al cargar los planes'
+        });
+        this.loading = false;
+      }
+    });
+  }
+
+  getFeaturesList(features: any): string[] {
+    if (!features || typeof features !== 'object') return [];
+
+    const featureNames: { [key: string]: string } = {
+      'appointments': 'Gestión de Citas',
+      'basic_reports': 'Reportes Básicos',
+      'inventory': 'Gestión de Inventario',
+      'advanced_reports': 'Reportes Avanzados',
+      'multi_location': 'Múltiples Ubicaciones',
+      'api_access': 'Acceso a API',
+      'custom_branding': 'Marca Personalizada',
+      'priority_support': 'Soporte Prioritario'
+    };
+
+    return Object.entries(features)
+      .filter(([key, value]) => value === true)
+      .map(([key]) => featureNames[key] || key);
   }
 
   selectPlan(plan: any) {
-    // Simulate Stripe integration
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Procesando pago',
-      detail: `Redirigiendo a Stripe para el plan ${plan.name}...`
+    // Navigate to checkout with selected plan
+    this.router.navigate(['/client/checkout'], {
+      state: { plan: plan }
     });
-
-    // Simulate payment processing
-    setTimeout(() => {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Pago exitoso',
-        detail: 'Tu suscripción ha sido activada'
-      });
-      
-      // Reload trial status and redirect to dashboard
-      this.trialService.loadTrialStatus();
-      this.router.navigate(['/client/dashboard']);
-    }, 2000);
   }
 }

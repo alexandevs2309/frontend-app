@@ -12,8 +12,8 @@ import { RippleModule } from 'primeng/ripple';
         <footer class="bg-gradient-to-b from-gray-900 to-black py-20 px-6 lg:px-20 relative overflow-hidden">
             <!-- Background decoration -->
             <div class="absolute inset-0 opacity-20">
-                <div class="absolute top-10 left-20 w-64 h-64 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-3xl"></div>
-                <div class="absolute bottom-10 right-20 w-80 h-80 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full blur-3xl"></div>
+                <div class="absolute top-10 left-20 w-64 h-64 bg-linear-to-r from-blue-400 to-purple-500 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-10 right-20 w-80 h-80 bg-linear-to-r from-yellow-400 to-orange-500 rounded-full blur-3xl"></div>
             </div>
 
             <div class="relative z-10">
@@ -22,7 +22,7 @@ import { RippleModule } from 'primeng/ripple';
                     <div class="lg:col-span-1">
                         <div class="flex items-center mb-6">
                             <!-- Auron-Suite Logo -->
-                            <div class="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center mr-4">
+                            <div class="w-12 h-12 bg-linear-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center mr-4">
                                 <span class="text-black font-bold text-xl">A</span>
                             </div>
                             <h3 class="text-3xl font-bold text-white">Auron-Suite</h3>
@@ -177,7 +177,7 @@ import { RippleModule } from 'primeng/ripple';
                                 class="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors duration-300">
                             <button pButton pRipple 
                                     label="Suscribirse" 
-                                    class="!bg-gradient-to-r !from-yellow-400 !to-orange-500 !text-black !font-bold !px-6 !py-3 !rounded-xl hover:!scale-105 !transition-all !duration-300">
+                                    class="!bg-linear-to-r !from-yellow-400 !to-orange-500 !text-black !font-bold !px-6 !py-3 !rounded-xl hover:!scale-105 !transition-all !duration-300">
                             </button>
                         </div>
                     </div>

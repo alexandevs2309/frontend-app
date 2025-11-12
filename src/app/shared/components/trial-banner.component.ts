@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { Router } from '@angular/router';
 import { TrialService, TrialStatus } from '../../core/services/trial.service';
+import { SubscriptionService } from '../../core/services/subscription/subscription.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -13,13 +14,33 @@ import { Subscription } from 'rxjs';
     <div *ngIf="shouldShowBanner" 
          class="trial-banner"
          [ngClass]="{
-           'trial-warning': daysRemaining <= 3 && daysRemaining > 0,
-           'trial-expired': daysRemaining <= 0,
-           'trial-active': daysRemaining > 3
+           'trial-warning': daysRemaining <= 3 && daysRemaining > 0 && !isGracePeriod,
+           'trial-expired': daysRemaining <= 0 && !isGracePeriod,
+           'trial-active': daysRemaining > 3 && !isGracePeriod,
+           'grace-period': isGracePeriod
          }">
       
+      <!-- Período de Gracia -->
+      <div *ngIf="isGracePeriod && daysRemaining > 0" class="banner-content">
+        <div class="banner-icon">
+          <i class="pi pi-exclamation-triangle animate-pulse"></i>
+        </div>
+        <div class="banner-text">
+          <span class="banner-title">⚠️ Período de Gracia Activo</span>
+          <span class="banner-message">
+            Tu suscripción expiró. Te quedan <strong>{{daysRemaining}} días</strong> para renovar.
+          </span>
+        </div>
+        <button pButton 
+                type="button" 
+                label="Renovar Ahora" 
+                class="p-button-sm p-button-danger"
+                (click)="upgradeNow()">
+        </button>
+      </div>
+
       <!-- Trial Activo -->
-      <div *ngIf="daysRemaining > 0" class="banner-content">
+      <div *ngIf="!isGracePeriod && daysRemaining > 0" class="banner-content">
         <div class="banner-icon">
           <i class="pi pi-clock" *ngIf="daysRemaining > 3"></i>
           <i class="pi pi-exclamation-triangle" *ngIf="daysRemaining <= 3"></i>
@@ -39,7 +60,7 @@ import { Subscription } from 'rxjs';
       </div>
 
       <!-- Trial Expirado -->
-      <div *ngIf="daysRemaining <= 0" class="banner-content">
+      <div *ngIf="!isGracePeriod && daysRemaining <= 0" class="banner-content">
         <div class="banner-icon">
           <i class="pi pi-times-circle"></i>
         </div>
@@ -81,6 +102,22 @@ import { Subscription } from 'rxjs';
     .trial-expired {
       background: linear-gradient(135deg, #ffebee 0%, #ef5350 100%);
       color: #c62828;
+    }
+
+    .grace-period {
+      background: linear-gradient(135deg, #ffcdd2 0%, #d32f2f 100%);
+      color: #ffffff;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.8; }
+      100% { opacity: 1; }
+    }
+
+    .animate-pulse {
+      animation: pulse 1.5s infinite;
     }
 
     .banner-content {
@@ -127,12 +164,15 @@ import { Subscription } from 'rxjs';
 })
 export class TrialBannerComponent implements OnInit, OnDestroy {
   trialStatus: TrialStatus | null = null;
+  subscriptionStatus: any = null;
   daysRemaining: number = 0;
   shouldShowBanner: boolean = false;
+  isGracePeriod: boolean = false;
   private subscription: Subscription = new Subscription();
 
   constructor(
     private trialService: TrialService,
+    private subscriptionService: SubscriptionService,
     private router: Router
   ) {}
 
@@ -146,6 +186,7 @@ export class TrialBannerComponent implements OnInit, OnDestroy {
 
     // Cargar estado inicial
     this.trialService.loadTrialStatus();
+    this.loadSubscriptionStatus();
   }
 
   ngOnDestroy() {
@@ -153,15 +194,32 @@ export class TrialBannerComponent implements OnInit, OnDestroy {
   }
 
   private updateBannerState() {
+    // Verificar período de gracia primero
+    if (this.subscriptionStatus?.access_level === 'grace' && this.subscriptionStatus?.days_in_grace > 0) {
+      this.isGracePeriod = true;
+      this.daysRemaining = this.subscriptionStatus.days_in_grace;
+      this.shouldShowBanner = true;
+      return;
+    }
+
+    // Si no hay período de gracia, usar lógica de trial normal
     if (!this.trialStatus) {
       this.shouldShowBanner = false;
       return;
     }
 
+    this.isGracePeriod = false;
     this.daysRemaining = this.trialStatus.trial_days_remaining || 0;
-    
-    // Mostrar banner solo si está en trial
     this.shouldShowBanner = this.trialStatus.is_trial;
+  }
+
+  private async loadSubscriptionStatus() {
+    try {
+      this.subscriptionStatus = await this.subscriptionService.getSubscriptionStatus().toPromise();
+      this.updateBannerState();
+    } catch (error) {
+      console.error('Error loading subscription status:', error);
+    }
   }
 
   upgradeNow() {

@@ -8,13 +8,21 @@ export interface Client {
   full_name: string;
   email: string;
   phone: string;
-  address: string;
-  date_of_birth: string;
+  address?: string;
+  birthday?: string;
+  date_of_birth?: string;
   gender: string;
   notes: string;
   is_active: boolean;
   created_at: string;
   tenant: number;
+  loyalty_points?: number;
+  last_visit?: string;
+  preferred_stylist?: number;
+  source?: string;
+  user?: number;
+  created_by?: number;
+  updated_at?: string;
 }
 
 @Injectable({
@@ -23,6 +31,8 @@ export interface Client {
 export class ClientService extends BaseApiService {
 
   getClients(params?: any): Observable<any> {
+        console.log(this.getClient)
+
     return this.get(API_CONFIG.ENDPOINTS.CLIENTS, params);
   }
 
@@ -61,5 +71,18 @@ export class ClientService extends BaseApiService {
 
   getActiveClients(): Observable<any> {
     return this.get(API_CONFIG.ENDPOINTS.CLIENTS, { is_active: true });
+  }
+
+  // Métodos para sistema de cumpleaños
+  getBirthdaysThisMonth(): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.CLIENTS}birthdays_this_month/`);
+  }
+
+  getBirthdaysToday(): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.CLIENTS}birthdays_today/`);
+  }
+
+  getUpcomingBirthdays(): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.CLIENTS}upcoming_birthdays/`);
   }
 }

@@ -1,23 +1,25 @@
 import { Component, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../core/services/auth/auth.service';
-import { TrialService } from '../../core/services/trial.service';
-import { TrialBannerComponent } from '../../shared/components/trial-banner.component';
-import { StatsWidget } from '../dashboard/components/statswidget';
-import { RecentSalesWidget } from '../dashboard/components/recentsaleswidget';
-import { BestSellingWidget } from '../dashboard/components/bestsellingwidget';
-import { RevenueStreamWidget } from '../dashboard/components/revenuestreamwidget';
-import { NotificationsWidget } from '../dashboard/components/notificationswidget';
+import { AuthService } from '../../../core/services/auth/auth.service';
+import { TrialService } from '../../../core/services/trial.service';
+import { TrialBannerComponent } from '../../../shared/components/trial-banner.component';
+import { SubscriptionStatusComponent } from '../../../shared/components/subscription-status.component';
+import { StatsWidget } from '../../dashboard/components/statswidget';
+import { RecentSalesWidget } from '../../dashboard/components/recentsaleswidget';
+import { BestSellingWidget } from '../../dashboard/components/bestsellingwidget';
+import { RevenueStreamWidget } from '../../dashboard/components/revenuestreamwidget';
+import { NotificationsWidget } from '../../dashboard/components/notificationswidget';
 import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-client-dashboard',
     standalone: true,
-    imports: [CommonModule, TrialBannerComponent, StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget],
+    imports: [CommonModule, TrialBannerComponent, SubscriptionStatusComponent, StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget],
     template: `
         <app-trial-banner></app-trial-banner>
         
         @if (currentUser(); as user) {
+            <app-subscription-status></app-subscription-status>
             <div class="mb-6">
                 <div class="bg-surface-0 dark:bg-surface-900 p-6 rounded-lg border">
                     <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0 mb-2">

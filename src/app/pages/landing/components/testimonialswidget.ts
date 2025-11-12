@@ -25,15 +25,15 @@ interface Testimonial {
             
             <!-- Background decoration -->
             <div class="absolute inset-0 opacity-10 dark:opacity-20">
-                <div class="absolute top-16 right-20 w-80 h-80 bg-gradient-to-r from-green-400 to-blue-500 rounded-full blur-3xl"></div>
-                <div class="absolute bottom-16 left-20 w-96 h-96 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full blur-3xl"></div>
+                <div class="absolute top-16 right-20 w-80 h-80 bg-linear-to-r from-green-400 to-blue-500 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-16 left-20 w-96 h-96 bg-linear-to-r from-purple-400 to-pink-500 rounded-full blur-3xl"></div>
             </div>
 
             <div class="relative z-10">
                 <div class="text-center mb-16 animate-on-scroll" data-direction="top">
-                    <span class="inline-block px-4 py-2 bg-gradient-to-r from-green-500 to-blue-600 text-white font-semibold rounded-full text-sm mb-4">⭐ Testimonios</span>
+                    <span class="inline-block px-4 py-2 bg-linear-to-r from-green-500 to-blue-600 text-white font-semibold rounded-full text-sm mb-4">⭐ Testimonios</span>
                     <h2 class="text-5xl lg:text-6xl font-bold text-surface-900 dark:text-white mb-6">
-                        Lo que dicen nuestros <span class="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Clientes</span>
+                        Lo que dicen nuestros <span class="bg-linear-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Clientes</span>
                     </h2>
                     <p class="text-xl text-surface-600 dark:text-surface-300 max-w-3xl mx-auto">
                         Miles de peluquerías confían en Auron-Suite para gestionar su negocio de manera profesional.

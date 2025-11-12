@@ -19,33 +19,33 @@ export class ReportService extends BaseApiService {
 
   // General reports
   getReports(params?: any): Observable<any> {
-    return this.get(API_CONFIG.ENDPOINTS.REPORTS, params);
+    return this.get(API_CONFIG.ENDPOINTS.REPORTS.BASE, params);
   }
 
   // Sales reports
-  getSalesReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}sales/`, params);
+  getSalesReport(params?: ReportParams): Observable<any> {
+    return this.get(API_CONFIG.ENDPOINTS.REPORTS.SALES, params);
   }
 
   getDailySalesReport(date: string): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}sales/daily/`, { date });
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.SALES}daily/`, { date });
   }
 
   getMonthlySalesReport(year: number, month: number): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}sales/monthly/`, { year, month });
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.SALES}monthly/`, { year, month });
   }
 
   // Employee reports
-  getEmployeeReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}employees/`, params);
+  getEmployeeReport(params?: ReportParams): Observable<any> {
+    return this.get(API_CONFIG.ENDPOINTS.REPORTS.EMPLOYEES, params);
   }
 
   getEmployeeEarningsReport(employeeId: number, params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}employees/${employeeId}/earnings/`, params);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.EMPLOYEES}${employeeId}/earnings/`, params);
   }
 
   getEmployeePerformanceReport(employeeId: number, params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}employees/${employeeId}/performance/`, params);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.EMPLOYEES}${employeeId}/performance/`, params);
   }
 
   // Appointment reports
@@ -95,16 +95,16 @@ export class ReportService extends BaseApiService {
 
   // Dashboard reports
   getDashboardStats(period?: string): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}dashboard/stats/`, { period });
+    return this.get(API_CONFIG.ENDPOINTS.REPORTS.DASHBOARD, { period });
   }
 
   getKPIReport(): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}kpi/`);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.BASE}kpi/`);
   }
 
   // Export functions
   exportReport(reportType: string, params: ReportParams): Observable<Blob> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}${reportType}/export/`, params);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.BASE}${reportType}/export/`, params);
   }
 
   downloadReport(reportType: string, params: ReportParams): void {

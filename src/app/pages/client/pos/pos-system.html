@@ -1,0 +1,613 @@
+<div class="p-4 flex flex-col gap-4">
+
+  <!-- HEADER -->
+  <div class="flex justify-between items-center bg-primary-600 text-white rounded-lg p-4 shadow-md">
+    <div>
+      <h2 class="text-2xl font-bold">Sistema POS</h2>
+      <p class="text-sm opacity-80">{{ getCurrentDateTime() }}</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button *ngIf="!cajaAbierta()" pButton label="Abrir Caja" icon="pi pi-unlock" class="p-button-success" (click)="mostrarDialogoAbrirCaja = true"></button>
+      <button *ngIf="cajaAbierta()" pButton label="Cerrar Caja" icon="pi pi-lock" class="p-button-danger" (click)="prepararCierreCaja()"></button>
+      <button *ngIf="cajaAbierta()" pButton label="Arqueo" icon="pi pi-calculator" class="p-button-warning" (click)="mostrarDialogoArqueo = true"></button>
+      <div *ngIf="cajaAbierta()" class="flex items-center gap-2 bg-green-100 text-green-800 font-semibold px-3 py-1 rounded">
+        <i class="pi pi-check-circle"></i> Caja Abierta
+      </div>
+      <div *ngIf="!cajaAbierta()" class="flex items-center gap-2 bg-red-100 text-red-800 font-semibold px-3 py-1 rounded">
+        <i class="pi pi-times-circle"></i> Caja Cerrada
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="grid gap-4 lg:grid-cols-3">
+
+    <!-- PANEL IZQUIERDO: Productos y Servicios -->
+    <div class="lg:col-span-2 flex flex-col gap-4">
+      <!-- Filtros -->
+      <div class="flex gap-3">
+        <p-select [options]="categorias" [(ngModel)]="categoriaSeleccionada"
+                  optionLabel="name" optionValue="value"
+                  placeholder="Todas las categorías"
+                  (onChange)="filtrarItems()" class="flex-1" [disabled]="cargandoDatos"></p-select>
+        <input pInputText [(ngModel)]="busqueda" placeholder="Buscar..." (input)="filtrarItems()" class="flex-1" [disabled]="cargandoDatos">
+        <button pButton icon="pi pi-qrcode" [class]="modoScanner ? 'p-button-success' : 'p-button-outlined'" (click)="modoScanner = !modoScanner" pTooltip="Scanner (Ctrl+B)" [disabled]="cargandoDatos"></button>
+        <button pButton icon="pi pi-refresh" (click)="cargarDatos()" [loading]="cargandoDatos" pTooltip="Recargar datos" class="p-button-outlined"></button>
+      </div>
+
+      <!-- Scanner de Código de Barras -->
+      <div *ngIf="modoScanner" class="flex gap-2 p-3 bg-blue-50 rounded">
+        <input pInputText [(ngModel)]="codigoBarras" placeholder="Escanear código de barras..."
+               (keyup.enter)="buscarPorCodigoBarras()" class="flex-1" autofocus>
+        <button pButton label="Buscar" icon="pi pi-search" (click)="buscarPorCodigoBarras()" class="p-button-success"></button>
+      </div>
+
+      <!-- Tabs Servicios/Productos -->
+      <div class="flex border-b">
+        <button (click)="tipoActivo='services'; filtrarItems()"
+                [ngClass]="tipoActivo==='services' ? 'border-b-4 border-primary-500 text-primary-600 font-bold' : 'text-gray-600'"
+                class="px-4 py-2">Servicios</button>
+        <button (click)="tipoActivo='products'; filtrarItems()"
+                [ngClass]="tipoActivo==='products' ? 'border-b-4 border-primary-500 text-primary-600 font-bold' : 'text-gray-600'"
+                class="px-4 py-2">Productos</button>
+      </div>
+
+      <!-- GRID DE ITEMS -->
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" *ngIf="!cargandoDatos; else loadingTemplate">
+        <div *ngFor="let item of itemsFiltrados"
+             class="p-4 rounded-lg shadow transition bg-white dark:bg-gray-800 border-2 border-transparent"
+             [class.hover:shadow-lg]="puedeAgregarMas(item)"
+             [class.cursor-pointer]="puedeAgregarMas(item)"
+             [class.opacity-50]="!puedeAgregarMas(item)"
+             [class.cursor-not-allowed]="!puedeAgregarMas(item)"
+             [class.border-green-200]="puedeAgregarMas(item)"
+             [class.hover:border-green-400]="puedeAgregarMas(item)"
+             (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
+          <div class="flex justify-between items-start mb-2">
+            <h6 class="font-semibold">{{ item.name }}</h6>
+            <span class="text-lg font-bold text-primary-600">{{ formatearMoneda(item.price) }}</span>
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-300 mb-2" *ngIf="item.description">{{ item.description }}</p>
+          <div class="flex justify-between items-center">
+            <span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ item.category || 'General' }}</span>
+            <div *ngIf="tipoActivo==='products'" class="text-xs">
+              <span [class]="obtenerStockDisponible(item) > 5 ? 'text-green-600' : obtenerStockDisponible(item) > 0 ? 'text-yellow-600' : 'text-red-600'">
+                Stock: {{ obtenerStockDisponible(item) }}
+              </span>
+              <span *ngIf="obtenerStockDisponible(item) === 0" class="ml-1 text-red-600 font-semibold">AGOTADO</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensaje cuando no hay items -->
+        <div *ngIf="itemsFiltrados.length === 0" class="col-span-full text-center py-8">
+          <i class="pi pi-search text-4xl text-gray-400 mb-4"></i>
+          <p class="text-gray-500">No se encontraron {{ tipoActivo === 'services' ? 'servicios' : 'productos' }}</p>
+          <button pButton label="Limpiar filtros" (click)="categoriaSeleccionada=''; busqueda=''; filtrarItems()" class="p-button-text mt-2"></button>
+        </div>
+      </div>
+
+      <ng-template #loadingTemplate>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div *ngFor="let i of [1,2,3,4,5,6]" class="p-4 rounded-lg shadow bg-white dark:bg-gray-800 animate-pulse">
+            <div class="h-4 bg-gray-200 rounded mb-2"></div>
+            <div class="h-3 bg-gray-200 rounded mb-2 w-3/4"></div>
+            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- CARRITO -->
+      <div *ngIf="carrito().length>0" class="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg shadow-inner">
+        <h5 class="font-bold mb-3 text-lg">Carrito</h5>
+        <div class="flex flex-col gap-2">
+          <div *ngFor="let item of carrito(); let i=index" class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div class="flex-1">
+              <h6 class="font-medium">{{ item.item.name }}</h6>
+              <p class="text-sm text-gray-600 dark:text-gray-300 m-0">{{ item.type==='service'?'Servicio':'Producto' }}</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-1">
+                <button pButton icon="pi pi-minus" size="small" (click)="cambiarCantidad(i,-1)" [text]="true"></button>
+                <span class="font-medium">{{ item.quantity }}</span>
+                <button pButton icon="pi pi-plus" size="small" (click)="cambiarCantidad(i,1)" [text]="true"></button>
+              </div>
+              <span class="font-bold text-primary-600">\${{ item.subtotal.toFixed(2) }}</span>
+              <button pButton icon="pi pi-trash" severity="danger" size="small" (click)="removerDelCarrito(i)" [text]="true"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL DERECHO: Resumen -->
+    <div class="flex flex-col gap-4 sticky top-4">
+      <div class="p-4 bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col gap-4">
+
+        <h5 class="font-bold text-lg">Resumen de Venta</h5>
+
+        <!-- Cliente -->
+        <div>
+          <label class="block font-medium mb-1">Cliente</label>
+          <p-select [options]="clientes" [(ngModel)]="clienteSeleccionado"
+                    optionLabel="full_name" placeholder="Cliente general"
+                    [showClear]="true" class="w-full"
+                    (onChange)="aplicarDescuentoClienteFrecuente()">
+            <ng-template pTemplate="item" let-cliente>
+              <div class="flex items-center justify-between w-full">
+                <span>{{ cliente.full_name }}</span>
+                <span *ngIf="esClienteFrecuente(cliente)" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                  ⭐ VIP
+                </span>
+              </div>
+            </ng-template>
+          </p-select>
+        </div>
+
+        <!-- Empleado -->
+        <div *ngIf="tieneServicios()">
+          <label class="block font-medium mb-1">Empleado ({{ empleados.length }} disponibles)</label>
+          <p-select [options]="empleados" [(ngModel)]="empleadoSeleccionado"
+                    optionLabel="displayName"
+                    placeholder="Seleccionar empleado"
+                    class="w-full">
+            <ng-template pTemplate="item" let-empleado>
+              <div class="flex items-center gap-2">
+                <i class="pi pi-user text-primary-500"></i>
+                <span>{{ empleado.displayName }}</span>
+              </div>
+            </ng-template>
+          </p-select>
+        </div>
+
+        <!-- Totales -->
+        <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+          <div class="flex justify-between mb-2"><span>Subtotal:</span><span class="font-semibold">{{ formatearMoneda(calcularSubtotal()) }}</span></div>
+          <div class="flex justify-between mb-2">
+            <span>Descuento:</span>
+            <div class="flex items-center gap-2">
+              <input type="number" pInputText [(ngModel)]="descuento" class="w-16 text-right" min="0" [max]="tipoDescuento === '%' ? 100 : calcularSubtotal()">
+              <button pButton [label]="tipoDescuento" size="small" class="p-button-outlined w-8" (click)="alternarTipoDescuento()"></button>
+            </div>
+          </div>
+          <hr class="my-2 border-gray-300 dark:border-gray-700">
+          <div class="flex justify-between font-bold text-lg"><span>Total:</span><span class="text-primary-600">{{ formatearMoneda(calcularTotal()) }}</span></div>
+        </div>
+
+        <!-- Método de pago -->
+        <div>
+          <label class="block font-medium mb-1">Método de Pago</label>
+          <p-select [options]="metodosPago" [(ngModel)]="metodoPagoSeleccionado" optionLabel="label" optionValue="value" placeholder="Seleccionar método" class="w-full"></p-select>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex flex-col gap-2">
+          <button pButton
+                  [label]="procesandoVenta ? 'Procesando...' : (puedeVender() ? 'Procesar Venta' : obtenerMensajeValidacion())"
+                  [icon]="procesandoVenta ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
+                  [disabled]="!puedeVender() || procesandoVenta"
+                  [loading]="procesandoVenta"
+                  (click)="procesarVenta()"
+                  class="p-button-success w-full"
+                  [pTooltip]="!puedeVender() ? obtenerMensajeValidacion() : ''"></button>
+          <button pButton label="Limpiar" icon="pi pi-trash" (click)="limpiarCarrito()" class="p-button-outlined w-full" [disabled]="carrito().length === 0 || procesandoVenta"></button>
+          <button pButton label="Historial" icon="pi pi-history" (click)="mostrarDialogoHistorial=true; cargarHistorialVentas()" class="p-button-outlined w-full" size="small" [disabled]="procesandoVenta"></button>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
+          <h6 class="text-blue-800 dark:text-blue-300 mb-2">Estadísticas del Día</h6>
+          <div class="flex justify-between text-sm"><span>Ventas:</span><span class="font-semibold">{{ estadisticasDia().ventas }}</span></div>
+          <div class="flex justify-between text-sm"><span>Ingresos:</span><span class="font-semibold text-green-600 dark:text-green-400">{{ formatearMoneda(estadisticasDia().ingresos) }}</span></div>
+          <div class="flex justify-between text-sm"><span>Ticket Promedio:</span><span class="font-semibold">{{ formatearMoneda(estadisticasDia().ticketPromedio) }}</span></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DIALOGS Y TOAST -->
+  <p-dialog header="Abrir Caja" [(visible)]="mostrarDialogoAbrirCaja" [modal]="true" [style]="{width:'400px'}">
+    <div class="flex flex-col gap-3">
+      <label class="font-medium">Monto Inicial</label>
+      <p-inputNumber [(ngModel)]="montoInicialCaja" mode="currency" currency="USD" locale="en-US" class="w-full"></p-inputNumber>
+      <div class="flex justify-end gap-2">
+        <button pButton label="Cancelar" (click)="mostrarDialogoAbrirCaja=false" class="p-button-text"></button>
+        <button pButton label="Abrir Caja" (click)="abrirCaja()" class="p-button-success"></button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <p-dialog header="Cuadre y Cierre de Caja" [(visible)]="mostrarDialogoCerrarCaja" [modal]="true" [style]="{width:'500px'}">
+    <div class="flex flex-col gap-4">
+      <div class="p-3 bg-gray-50 rounded">
+        <h5 class="font-bold mb-2">Resumen del Día</h5>
+        <div class="flex justify-between text-sm">
+          <span>Monto inicial:</span>
+          <span class="font-mono">${{ (montoEsperado - ventasEfectivoHoy).toFixed(2) }}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span>Ventas en efectivo:</span>
+          <span class="font-mono">${{ ventasEfectivoHoy.toFixed(2) }}</span>
+        </div>
+        <div class="flex justify-between text-sm font-bold border-t pt-1">
+          <span>Efectivo esperado:</span>
+          <span class="font-mono">${{ (+montoEsperado || 0).toFixed(2) }}</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="font-medium block mb-2">Efectivo contado en caja:</label>
+        <p-inputNumber [(ngModel)]="montoFinalCaja"
+                       mode="currency" currency="USD" locale="en-US"
+                       class="w-full"
+                       (onInput)="calcularDiferencia()"></p-inputNumber>
+      </div>
+
+      <div class="p-3 rounded" [class]="Math.abs(diferenciaCaja) > 5 ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'">
+        <div class="flex justify-between font-bold">
+          <span>Diferencia:</span>
+          <span class="font-mono" [class]="diferenciaCaja >= 0 ? 'text-green-600' : 'text-red-600'">
+            {{ diferenciaCaja >= 0 ? '+' : '' }}${{ diferenciaCaja.toFixed(2) }}
+          </span>
+        </div>
+        <p class="text-xs mt-1" *ngIf="Math.abs(diferenciaCaja) > 5">
+          ⚠️ Diferencia significativa detectada
+        </p>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button pButton label="Cancelar" (click)="mostrarDialogoCerrarCaja=false" class="p-button-text"></button>
+        <button pButton label="Cerrar Caja" (click)="cerrarCaja()"
+                [class]="Math.abs(diferenciaCaja) > 5 ? 'p-button-danger' : 'p-button-success'"></button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- DIÁLOGO DE TICKET PROFESIONAL -->
+  <p-dialog [(visible)]="mostrarDialogoTicket" [modal]="true" [style]="{width:'420px'}" [closable]="false" [showHeader]="false">
+    <div class="ticket-profesional" *ngIf="ventaActual">
+      <!-- Header elegante -->
+      <div class="ticket-header">
+        <div class="logo-section">
+          <div class="logo-placeholder">✂️</div>
+          <h1 class="business-name">BARBERÍA ELEGANTE</h1>
+          <p class="business-tagline">Estilo y Tradición</p>
+        </div>
+        <div class="business-info">
+          <p>📍 Av. Principal #123, Centro</p>
+          <p>📞 (555) 123-4567</p>
+          <p>🌐 www.barberiaelegante.com</p>
+          <p>📧 info@barberiaelegante.com</p>
+        </div>
+        <div class="separator"></div>
+      </div>
+
+      <!-- Info de transacción -->
+      <div class="transaction-info">
+        <div class="info-row">
+          <span class="label">TICKET #</span>
+          <span class="value">{{ ventaActual.id.toString().padStart(6, '0') }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">FECHA</span>
+          <span class="value">{{ getCurrentDateTime().split(',')[0] }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">HORA</span>
+          <span class="value">{{ getCurrentDateTime().split(',')[1] }}</span>
+        </div>
+        <div class="info-row" *ngIf="ventaActual.cliente">
+          <span class="label">CLIENTE</span>
+          <span class="value">{{ ventaActual.cliente.full_name }}</span>
+        </div>
+        <div class="info-row" *ngIf="ventaActual.empleado">
+          <span class="label">BARBERO</span>
+          <span class="value">{{ ventaActual.empleado.displayName || ventaActual.empleado.user?.full_name || ventaActual.empleado.user?.email }}</span>
+        </div>
+      </div>
+      <div class="separator"></div>
+
+      <!-- Items vendidos -->
+      <div class="items-section">
+        <div class="items-header">
+          <span class="col-desc">DESCRIPCIÓN</span>
+          <span class="col-qty">CANT</span>
+          <span class="col-price">PRECIO</span>
+          <span class="col-total">TOTAL</span>
+        </div>
+        <div class="separator-thin"></div>
+        <div *ngFor="let item of ventaActual.items" class="item-row">
+          <div class="item-desc">
+            <span class="item-name">{{ item.item.name }}</span>
+            <span class="item-type">{{ item.type === 'service' ? '🔧 Servicio' : '📦 Producto' }}</span>
+          </div>
+          <span class="item-qty">{{ item.quantity }}</span>
+          <span class="item-price">{{ formatearMoneda(item.price) }}</span>
+          <span class="item-total">{{ formatearMoneda(item.subtotal) }}</span>
+        </div>
+      </div>
+      <div class="separator"></div>
+
+      <!-- Totales -->
+      <div class="totals-section">
+        <div class="total-row">
+          <span class="total-label">SUBTOTAL</span>
+          <span class="total-value">{{ formatearMoneda(ventaActual.subtotal) }}</span>
+        </div>
+        <div class="total-row" *ngIf="ventaActual.descuento > 0">
+          <span class="total-label">DESCUENTO</span>
+          <span class="total-value discount">-{{ formatearMoneda(ventaActual.descuento) }}</span>
+        </div>
+        <div class="separator-thin"></div>
+        <div class="total-row final">
+          <span class="total-label">TOTAL PAGADO</span>
+          <span class="total-value">{{ formatearMoneda(ventaActual.total) }}</span>
+        </div>
+        <div class="payment-info">
+          <span class="payment-method">💳 {{ getPaymentMethodName(ventaActual.metodoPago) }}</span>
+        </div>
+      </div>
+
+      <!-- Firma del cliente -->
+      <div *ngIf="firmaCliente" class="signature-section">
+        <div class="separator"></div>
+        <p class="signature-label">Firma del cliente:</p>
+        <img [src]="firmaCliente" class="signature-image">
+      </div>
+
+      <!-- Código QR -->
+      <div class="qr-section">
+        <div class="separator"></div>
+        <div class="qr-container">
+          <canvas #qrCanvas width="80" height="80" class="qr-code"></canvas>
+        </div>
+        <p class="qr-label">Escanea para ver detalles</p>
+      </div>
+
+      <!-- Footer profesional -->
+      <div class="separator"></div>
+      <div class="footer-section">
+        <div class="thank-you">
+          <p class="main-message">¡GRACIAS POR SU VISITA!</p>
+          <p class="sub-message">Su satisfacción es nuestra prioridad</p>
+        </div>
+        <div class="footer-info">
+          <p>⭐ Síguenos en redes sociales</p>
+          <p>📱 Descarga nuestra app</p>
+          <p>🎁 Programa de fidelidad disponible</p>
+        </div>
+        <div class="legal-info">
+          <p>RUC: 20123456789</p>
+          <p>Autorizado por SUNAT</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones del ticket -->
+    <div class="ticket-actions">
+      <button pButton label="Imprimir" icon="pi pi-print" (click)="imprimirTicket()" class="p-button-outlined flex-1"></button>
+      <button pButton label="Cerrar" icon="pi pi-times" (click)="cerrarTicket()" class="p-button-success flex-1"></button>
+    </div>
+  </p-dialog>
+
+  <!-- DIÁLOGO DE PAGO EFECTIVO -->
+  <p-dialog header="Pago en Efectivo" [(visible)]="mostrarDialogoPago" [modal]="true" [style]="{width:'400px'}">
+    <div class="flex flex-col gap-4">
+      <div class="p-3 bg-gray-50 rounded">
+        <div class="flex justify-between text-lg font-bold">
+          <span>Total a pagar:</span>
+          <span class="text-primary-600">{{ formatearMoneda(calcularTotal()) }}</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="font-medium block mb-2">Monto recibido:</label>
+        <p-inputNumber [(ngModel)]="montoRecibido"
+                       mode="currency" currency="USD" locale="en-US"
+                       class="w-full"
+                       (onInput)="cambio = calcularCambio()"></p-inputNumber>
+      </div>
+
+      <div class="p-3 rounded" [class]="validarMontoRecibido() ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+        <div class="flex justify-between font-bold">
+          <span>Cambio:</span>
+          <span class="font-mono" [class]="cambio >= 0 ? 'text-green-600' : 'text-red-600'">
+            {{ formatearMoneda(calcularCambio()) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button pButton label="Cancelar" (click)="mostrarDialogoPago=false" class="p-button-text"></button>
+        <button pButton label="Confirmar Pago"
+                (click)="confirmarVenta()"
+                [disabled]="!validarMontoRecibido()"
+                class="p-button-success"></button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- DIÁLOGO DE ARQUEO -->
+  <p-dialog header="Arqueo de Caja (Solo Consulta)" [(visible)]="mostrarDialogoArqueo" [modal]="true" [style]="{width:'500px'}">
+    <div class="flex flex-col gap-4">
+      <p class="text-sm text-gray-600 mb-3">💡 Este arqueo es solo para consulta. El cuadre oficial se hace al cerrar caja.</p>
+      
+      <div *ngFor="let denom of denominaciones; trackBy: trackByDenominacion" class="flex items-center gap-3">
+        <span class="w-16 font-mono">${{ denom.valor }}</span>
+        <input type="number" pInputText [(ngModel)]="denom.cantidad" min="0" class="w-20" (input)="denom.total = denom.valor * denom.cantidad">
+        <span class="w-24 text-right font-mono">${{ denom.total.toFixed(2) }}</span>
+      </div>
+      
+      <div class="border-t pt-3">
+        <div class="flex justify-between font-bold text-lg">
+          <span>Total contado:</span>
+          <span class="font-mono">${{ calcularTotalArqueo().toFixed(2) }}</span>
+        </div>
+        <div class="flex justify-between text-sm text-gray-600 mt-2">
+          <span>Efectivo esperado:</span>
+          <span class="font-mono">${{ (obtenerMontoInicialCaja() + ventasEfectivoSesionActual).toFixed(2) }}</span>
+        </div>
+        <div class="flex justify-between font-semibold mt-1" [class]="calcularDiferenciaArqueo() >= 0 ? 'text-green-600' : 'text-red-600'">
+          <span>Diferencia:</span>
+          <span class="font-mono">{{ calcularDiferenciaArqueo() >= 0 ? '+' : '' }}${{ calcularDiferenciaArqueo().toFixed(2) }}</span>
+        </div>
+      </div>
+      
+      <div class="flex justify-end gap-2">
+        <button pButton label="Limpiar" (click)="limpiarArqueo()" class="p-button-outlined"></button>
+        <button pButton label="Cerrar" (click)="mostrarDialogoArqueo=false" class="p-button-success"></button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- DIÁLOGO DE HISTORIAL -->
+  <p-dialog header="Historial de Ventas (Últimos 7 días)" [(visible)]="mostrarDialogoHistorial" [modal]="true" [style]="{width:'800px'}">
+    <div class="flex flex-col gap-4">
+      <div *ngIf="cargandoHistorial" class="text-center p-4">
+        <i class="pi pi-spin pi-spinner text-2xl"></i>
+        <p>Cargando historial...</p>
+      </div>
+      <div *ngIf="!cargandoHistorial && historialVentas.length === 0" class="text-center p-4">
+        <p>No hay ventas registradas</p>
+      </div>
+      <div *ngIf="!cargandoHistorial && historialVentas.length > 0" class="max-h-96 overflow-y-auto">
+        <div *ngFor="let venta of historialVentas" class="border rounded p-3 mb-2 hover:bg-gray-50">
+          <div class="flex justify-between items-center">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <strong>Venta #{{ venta.id }}</strong>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{{ getPaymentMethodName(venta.payment_method) }}</span>
+              </div>
+              <p class="text-sm text-gray-600">{{ venta.date_time | date:'dd/MM/yyyy HH:mm' }}</p>
+              <p class="text-sm text-gray-600" *ngIf="venta.client">Cliente: {{ venta.client.full_name }}</p>
+            </div>
+            
+            <div class="text-right">
+              <div class="font-bold text-lg">${{ venta.total }}</div>
+            </div>
+            
+            <div class="flex gap-1 ml-4">
+              <button pButton icon="pi pi-eye" size="small" 
+                      (click)="visualizarVenta(venta)" pTooltip="Ver detalles"></button>
+              <button pButton icon="pi pi-print" size="small" 
+                      (click)="reimprimirTicket(venta)" pTooltip="Reimprimir"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <button pButton label="Cerrar" (click)="mostrarDialogoHistorial=false" class="p-button-text"></button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- DIÁLOGO DE PROMOCIONES -->
+  <p-dialog header="Promociones Disponibles" [(visible)]="mostrarDialogoPromociones" [modal]="true" [style]="{width:'600px'}">
+    <div class="flex flex-col gap-4">
+      <div *ngIf="promociones.length === 0" class="text-center p-4">
+        <p>No hay promociones disponibles</p>
+      </div>
+      <div *ngFor="let promocion of promociones" class="border rounded p-3">
+        <div class="flex justify-between items-center">
+          <div>
+            <h4 class="font-bold">{{ promocion.name }}</h4>
+            <p class="text-sm text-gray-600">{{ promocion.description }}</p>
+            <div class="text-sm">
+              <span *ngIf="promocion.type === 'percentage'">{{ promocion.discount_value }}% descuento</span>
+              <span *ngIf="promocion.type === 'fixed'">${{ promocion.discount_value }} descuento</span>
+              <span *ngIf="promocion.min_amount > 0"> - Mínimo ${{ promocion.min_amount }}</span>
+            </div>
+          </div>
+          <button pButton label="Aplicar" (click)="aplicarPromocion(promocion)" class="p-button-success"></button>
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <button pButton label="Cerrar" (click)="mostrarDialogoPromociones=false" class="p-button-text"></button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- DIÁLOGO DE FIRMA -->
+  <p-dialog header="Firma del Cliente" [(visible)]="mostrarDialogoFirma" [modal]="true" [style]="{width:'500px'}">
+    <div class="flex flex-col gap-4">
+      <p>Por favor, solicite al cliente que firme en el recuadro:</p>
+      <div class="border-2 border-gray-300 rounded">
+        <canvas #firmaCanvas
+                width="450"
+                height="200"
+                class="cursor-crosshair"
+                (mousedown)="iniciarFirma($event)"
+                (mousemove)="dibujarFirma($event)"
+                (mouseup)="terminarFirma()"
+                (mouseleave)="terminarFirma()"></canvas>
+      </div>
+      <div class="flex justify-between">
+        <button pButton label="Limpiar" icon="pi pi-eraser" (click)="limpiarFirma()" class="p-button-outlined"></button>
+        <div class="flex gap-2">
+          <button pButton label="Omitir" (click)="mostrarDialogoFirma=false; confirmarVenta()" class="p-button-text"></button>
+          <button pButton label="Confirmar" (click)="confirmarFirma()" class="p-button-success"></button>
+        </div>
+      </div>
+    </div>
+  </p-dialog>
+
+  <p-toast></p-toast>
+</div>
+
+<!-- Estilos profesionales para ticket -->
+<style>
+.ticket-profesional {
+  font-family: 'Courier New', monospace;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  background: white;
+  color: #000;
+  line-height: 1.4;
+}
+
+.ticket-header { text-align: center; margin-bottom: 16px; }
+.logo-placeholder { font-size: 32px; margin-bottom: 8px; }
+.business-name { font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
+.business-tagline { font-size: 12px; margin: 4px 0; font-style: italic; color: #666; }
+.business-info { font-size: 11px; line-height: 1.3; margin: 8px 0; }
+.business-info p { margin: 2px 0; }
+.separator { border-top: 2px dashed #000; margin: 12px 0; }
+.separator-thin { border-top: 1px solid #ccc; margin: 8px 0; }
+.transaction-info { margin-bottom: 16px; }
+.info-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+.label { font-weight: bold; }
+.value { font-family: 'Courier New', monospace; }
+.items-header { display: grid; grid-template-columns: 2fr 0.5fr 1fr 1fr; gap: 8px; font-size: 10px; font-weight: bold; margin-bottom: 8px; text-align: center; }
+.col-desc { text-align: left; }
+.item-row { display: grid; grid-template-columns: 2fr 0.5fr 1fr 1fr; gap: 8px; margin-bottom: 6px; font-size: 11px; align-items: center; }
+.item-desc { text-align: left; }
+.item-name { display: block; font-weight: bold; }
+.item-type { display: block; font-size: 9px; color: #666; }
+.item-qty, .item-price, .item-total { text-align: right; font-family: 'Courier New', monospace; }
+.total-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+.total-row.final { font-size: 14px; font-weight: bold; border-top: 2px solid #000; padding-top: 4px; margin-top: 8px; }
+.total-value { font-family: 'Courier New', monospace; }
+.discount { color: #e74c3c; }
+.payment-info { text-align: center; margin-top: 8px; font-size: 11px; background: #f8f9fa; padding: 4px; border-radius: 4px; }
+.signature-section { text-align: center; margin: 16px 0; }
+.signature-image { max-width: 200px; height: 60px; border: 1px solid #ccc; margin: 0 auto; display: block; }
+.qr-section { text-align: center; margin: 16px 0; }
+.qr-container { display: inline-block; padding: 8px; background: white; border: 1px solid #ccc; }
+.footer-section { text-align: center; margin-top: 16px; }
+.main-message { font-size: 14px; font-weight: bold; margin: 0; }
+.sub-message { font-size: 10px; margin: 4px 0; color: #666; }
+.footer-info { font-size: 9px; margin: 8px 0; line-height: 1.3; }
+.footer-info p { margin: 2px 0; }
+.legal-info { font-size: 8px; color: #999; margin-top: 8px; }
+.ticket-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+@media print {
+  body * { visibility: hidden; }
+  .ticket-profesional, .ticket-profesional * { visibility: visible; }
+  .ticket-profesional { position: absolute; left: 0; top: 0; width: 80mm; font-size: 10px; }
+  .ticket-actions { display: none; }
+}
+</style>

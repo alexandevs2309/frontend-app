@@ -6,8 +6,8 @@ import { Observable } from 'rxjs';
 export class TenantInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // Solo agregar tenant_id para APIs del backend
-    if (req.url.includes('localhost:8000/api/')) {
+    // Solo agregar tenant_id para APIs del backend, excepto earnings
+    if (req.url.includes('localhost:8000/api/') && !req.url.includes('/employees/earnings')) {
       const user = localStorage.getItem('user');
       let tenantId = null;
       

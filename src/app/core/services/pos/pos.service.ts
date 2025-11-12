@@ -102,6 +102,38 @@ export class PosService extends BaseApiService {
     return this.get(API_CONFIG.ENDPOINTS.POS.CURRENT_FORTNIGHT);
   }
 
+  // Nuevas funcionalidades
+  searchSales(params: any): Observable<any> {
+    return this.get(API_CONFIG.ENDPOINTS.POS.SEARCH_SALES, params);
+  }
+
+  cashCount(registerId: number, counts: any[]): Observable<any> {
+    return this.post(API_CONFIG.ENDPOINTS.POS.CASH_COUNT.replace('{id}', registerId.toString()), { counts });
+  }
+
+  // Promociones
+  getPromotions(): Observable<any> {
+    return this.get(API_CONFIG.ENDPOINTS.POS.PROMOTIONS);
+  }
+
+  applyPromotion(promotionId: number, cartTotal: number): Observable<any> {
+    return this.post(`${API_CONFIG.ENDPOINTS.POS.PROMOTIONS}${promotionId}/apply_promotion/`, { cart_total: cartTotal });
+  }
+
+  // Configuración
+  getPosConfiguration(): Observable<any> {
+    return this.get(API_CONFIG.ENDPOINTS.POS.CONFIGURATION);
+  }
+
+  updatePosConfiguration(config: any): Observable<any> {
+    return this.put(`${API_CONFIG.ENDPOINTS.POS.CONFIGURATION}1/`, config);
+  }
+
+  // Búsqueda por código de barras
+  searchByBarcode(barcode: string): Observable<any> {
+    return this.get(API_CONFIG.ENDPOINTS.INVENTORY.SEARCH_BY_BARCODE, { barcode });
+  }
+
   // Sale specific actions
   processPayment(saleId: number, paymentData: any): Observable<any> {
     return this.post(`${API_CONFIG.ENDPOINTS.POS.SALES}${saleId}/process_payment/`, paymentData);
@@ -113,5 +145,9 @@ export class PosService extends BaseApiService {
 
   printReceipt(saleId: number): Observable<any> {
     return this.get(`${API_CONFIG.ENDPOINTS.POS.SALES}${saleId}/print_receipt/`);
+  }
+
+  generateCashRegisterReport(registerId: number): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.POS.CASH_REGISTERS}${registerId}/report/`);
   }
 }
