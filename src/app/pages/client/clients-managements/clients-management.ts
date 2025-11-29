@@ -294,7 +294,7 @@ export class ClientsManagement implements OnInit {
             phone: cliente.phone || '',
             address: cliente.address || '',
             date_of_birth: (() => {
-                const fecha = cliente.birthday || cliente.date_of_birth;
+                const fecha = cliente.birthday;
                 return fecha ? new Date(fecha) : null;
             })(),
             gender: cliente.gender || '',
@@ -380,7 +380,7 @@ export class ClientsManagement implements OnInit {
 
 
     formatearFecha(cliente: any): string {
-        const fecha = cliente.birthday || cliente.date_of_birth;
+        const fecha = cliente.birthday;
         if (!fecha) return 'No especificada';
         try {
             return new Date(fecha).toLocaleDateString('es-ES');

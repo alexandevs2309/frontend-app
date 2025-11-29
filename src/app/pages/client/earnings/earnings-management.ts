@@ -80,11 +80,10 @@ export class EarningsManagement implements OnInit {
     private settingsService = inject(BarbershopSettingsService);
 
     constructor() {
-        console.log('🏗️ EarningsManagement constructor ejecutado');
-
+        // Constructor limpio
     }
 
-    private apiUrl = `${environment.apiUrl}/employees/earnings/`;
+    private apiUrl = `${environment.apiUrl}/employees/earnings/my_earnings/`;
 
     // Signals
     empleados = signal<EmployeeEarnings[]>([]);

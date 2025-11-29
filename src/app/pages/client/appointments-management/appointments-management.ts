@@ -276,14 +276,14 @@ export class AppointmentsManagement implements OnInit {
             }));
 
             this.empleadosOptions = usuarios
-                .filter((u: any) => ['Estilista', 'Manager'].includes(u.role))
+                .filter((u: any) => ['Estilista', 'Manager', 'Client-Staff', 'Cajera'].includes(u.role))
                 .map((u: any) => ({
                     label: u.full_name || u.email,
                     value: u.id
                 }));
 
             this.serviciosOptions = servicios.map((s: Service) => ({
-                label: `${s.name} - $${s.price} (${s.duration}min)`,
+                label: `${s.name} - $${s.price} (${s.duration || 30}min)`,
                 value: s.id
             }));
         } catch (error) {

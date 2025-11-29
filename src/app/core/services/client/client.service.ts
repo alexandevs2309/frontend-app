@@ -31,8 +31,6 @@ export interface Client {
 export class ClientService extends BaseApiService {
 
   getClients(params?: any): Observable<any> {
-        console.log(this.getClient)
-
     return this.get(API_CONFIG.ENDPOINTS.CLIENTS, params);
   }
 

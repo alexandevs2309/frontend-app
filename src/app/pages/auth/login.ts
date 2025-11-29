@@ -112,8 +112,10 @@ export class Login implements OnInit {
     private redirectUser(role: string): void {
         // Usar setTimeout para asegurar que el estado se actualice
         setTimeout(() => {
-            if (role === 'SuperAdmin') {
+            if (role === 'super_admin') {
                 this.router.navigate(['/admin/dashboard']);
+            } else if (role === 'admin') {
+                this.router.navigate(['/client/dashboard']);
             } else {
                 this.router.navigate(['/client/dashboard']);
             }

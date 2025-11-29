@@ -183,19 +183,9 @@ export class PosSystem implements OnInit {
             console.log('🎯 Empleados finales con displayName:', this.empleados);
 
             if (this.empleados.length === 0) {
-                this.messageService.add({
-                    severity: 'warn',
-                    summary: 'Sin empleados en tu tenant',
-                    detail: 'No hay empleados activos en tu organización. Contacta al administrador para crear empleados o verifica que estés logueado en el tenant correcto.',
-                    life: 8000
-                });
+                console.warn('No hay empleados activos disponibles');
             } else {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Empleados cargados',
-                    detail: `Se encontraron ${this.empleados.length} empleados disponibles`,
-                    life: 3000
-                });
+                console.log(`✅ ${this.empleados.length} empleados cargados correctamente`);
             }
 
             try {
