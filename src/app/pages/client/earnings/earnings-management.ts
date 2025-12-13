@@ -18,42 +18,48 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Observable, EMPTY, BehaviorSubject, combineLatest } from 'rxjs';
 import { map, catchError, finalize, startWith, debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { EmployeeEarnings, Period } from '../../../shared/interfaces/employee.interface';
+import { Period } from '../../../shared/interfaces/employee.interface';
 import { EarningsCalculatorService } from '../../../shared/services/earnings-calculator.service';
 import { CashRegisterStateService } from '../../../shared/services/cash-register-state.service';
 import { BarbershopSettingsService } from '../../../shared/services/barbershop-settings.service';
+import { Router } from '@angular/router';
 
-interface EarningsResponse {
-    employees: EmployeeEarnings[];
-    summary: {
-        total_generated: number;
-        total_paid: number;
-        total_pending: number;
+interface BusinessEarningsResponse {
+    business_summary: {
+        total_revenue: number;
+        total_costs: number;
+        net_profit: number;
+        profit_margin: number;
     };
+    services_performance: ServicePerformance[];
+    daily_earnings: DailyEarning[];
 }
 
-interface Sale {
-    id: number;
-    date_created: string;
-    client_name: string;
-    employee_id: number;
-    total: number;
-    details: SaleDetail[];
-}
-
-interface SaleDetail {
+interface ServicePerformance {
     service_name: string;
-    price: number;
-    commission_rate?: number;
+    total_sales: number;
+    quantity_sold: number;
+    revenue: number;
+    cost: number;
+    profit: number;
+    profit_margin: number;
 }
 
-interface ServiceDetail {
+interface DailyEarning {
     date: string;
-    client_name: string;
-    service_name: string;
-    price: number;
-    commission: number;
-    commission_rate?: number;
+    revenue: number;
+    costs: number;
+    profit: number;
+    transactions_count: number;
+}
+
+interface BusinessMetrics {
+    total_revenue: number;
+    total_costs: number;
+    net_profit: number;
+    profit_margin: number;
+    avg_transaction: number;
+    total_transactions: number;
 }
 
 interface LoadingStates {
@@ -64,30 +70,80 @@ interface LoadingStates {
 }
 
 @Component({
-    selector: 'app-earnings-management',
+    selector: 'app-business-earnings',
     standalone: true,
     imports: [CommonModule, ButtonModule, CardModule, TableModule, ScrollerModule, DatePickerModule, SelectModule, ToastModule, TagModule, DialogModule, TooltipModule, InputTextModule, FormsModule],
     providers: [MessageService],
     templateUrl: './earnings-management.html',
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EarningsManagement implements OnInit {
+export class BusinessEarnings implements OnInit {
     private posService = inject(PosService);
     private messageService = inject(MessageService);
     private http = inject(HttpClient);
     private earningsCalculator = inject(EarningsCalculatorService);
     private cashRegisterState = inject(CashRegisterStateService);
     private settingsService = inject(BarbershopSettingsService);
+    private router = inject(Router);
 
     constructor() {
-        // Constructor limpio
+        // Initialize period
+        this.periodoSeleccionado.set(this.earningsCalculator.getCurrentPeriod());
     }
 
-    private apiUrl = `${environment.apiUrl}/employees/earnings/my_earnings/`;
+    dateToFortnight(date: Date): { fortnight: number; year: number } {
+        const day = date.getDate();
+        return {
+            fortnight: day <= 15 ? 1 : 2,
+            year: date.getFullYear()
+        };
+    }
 
-    // Signals
-    empleados = signal<EmployeeEarnings[]>([]);
+    /**
+     * Convierte fecha a year/fortnight para backend
+     * @param referenceDate - Date object o string YYYY-MM-DD
+     * @returns {year: number, fortnight: number} donde fortnight es 1-24
+     */
+    dateToYearFortnight(referenceDate: Date | string): { year: number; fortnight: number } {
+        const date = typeof referenceDate === 'string' ? new Date(referenceDate) : referenceDate;
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1; // getMonth() returns 0-11
+        const day = date.getDate();
+        
+        // Calcular quincena: (mes - 1) * 2 + (día > 15 ? 2 : 1)
+        const fortnightInMonth = day > 15 ? 2 : 1;
+        const fortnight = (month - 1) * 2 + fortnightInMonth;
+        
+        return { year, fortnight };
+    }
+
+    /**
+     * Valida respuesta de ganancias del negocio del backend
+     */
+    validateBusinessResponse(response: any): boolean {
+        if (!response) return false;
+        if (!response.business_summary) return false;
+        if (typeof response.business_summary.total_revenue === 'undefined') return false;
+        if (typeof response.business_summary.net_profit === 'undefined') return false;
+        return true;
+    }
+
+    private apiUrl = `${environment.apiUrl}/reports/business_earnings/`;
+
+    // Signals para ganancias del negocio
+    businessMetrics = signal<BusinessMetrics>({
+        total_revenue: 0,
+        total_costs: 0,
+        net_profit: 0,
+        profit_margin: 0,
+        avg_transaction: 0,
+        total_transactions: 0
+    });
+    servicesPerformance = signal<ServicePerformance[]>([]);
+    dailyEarnings = signal<DailyEarning[]>([]);
     periodoSeleccionado = signal<Period>(this.earningsCalculator.getCurrentPeriod());
+    frequencySelected = signal<string>('monthly');
+    referenceDate = signal<Date>(new Date());
     loadingStates = signal<LoadingStates>({
         main: false,
         detail: false,
@@ -95,146 +151,151 @@ export class EarningsManagement implements OnInit {
         export: false
     });
 
-    // Subjects para filtros
-    private filtroRol$ = new BehaviorSubject<string>('');
-    private filtroEstado$ = new BehaviorSubject<string>('');
+    // Subjects para filtros de negocio
+    private filtroServicio$ = new BehaviorSubject<string>('');
     private filtroFecha$ = new BehaviorSubject<Date[]>([]);
 
-    // Computed signals
+    // Computed signals - SOLO GANANCIAS DEL NEGOCIO
     resumenCalculado = computed(() => {
-        const empleados = this.empleados();
-        const totalGenerado = empleados.reduce((sum, e) =>
-            sum + (e.payment_type === 'commission' ? (e.total_sales || 0) : (e.fixed_salary || 0)), 0);
-
-        const totalPagado = empleados
-            .filter(e => e.payment_status === 'paid')
-            .reduce((sum, e) => sum + e.total_earned, 0);
-
-        const totalPendiente = empleados
-            .filter(e => e.payment_status === 'pending')
-            .reduce((sum, e) => sum + e.total_earned, 0);
-
-        return { totalGenerado, totalPagado, totalPendiente };
+        const metrics = this.businessMetrics();
+        return {
+            totalIngresos: metrics.total_revenue,
+            totalCostos: metrics.total_costs,
+            gananciaNeta: metrics.net_profit,
+            margenGanancia: metrics.profit_margin,
+            promedioTransaccion: metrics.avg_transaction,
+            totalTransacciones: metrics.total_transactions
+        };
     });
 
-    empleadosFiltrados = computed(() => {
-        const empleados = this.empleados();
-        const rol = this.filtroRol$.value;
-        const estado = this.filtroEstado$.value;
+    serviciosFiltrados = computed(() => {
+        const servicios = this.servicesPerformance();
+        const filtro = this.filtroServicio$.value;
 
-        return empleados.filter(emp => {
-            const matchRol = !rol || emp.role === rol;
-            const matchEstado = !estado || emp.payment_status === estado;
-            return matchRol && matchEstado;
+        return servicios.filter(servicio => {
+            const matchServicio = !filtro || servicio.service_name.toLowerCase().includes(filtro.toLowerCase());
+            return matchServicio;
         });
     });
 
-    // Properties
-    mostrarDetalle = false;
-    mostrarConfiguracion = false;
-    empleadoSeleccionado: EmployeeEarnings | null = null;
-    empleadoConfiguracion: EmployeeEarnings | null = null;
-    detalleServicios: ServiceDetail[] = [];
+    // Properties para ganancias del negocio
+    mostrarDetalleServicio = false;
+    mostrarAnalisisRentabilidad = false;
+    servicioSeleccionado: ServicePerformance | null = null;
     filtroFecha: Date[] = [];
     cashRegisterData = computed(() => this.cashRegisterState.currentRegister());
 
-    // Payment configuration
-    tiposPago = [
-        { label: 'Sueldo Fijo', value: 'fixed' },
-        { label: 'Comisión', value: 'commission' },
-        { label: 'Mixto (Sueldo + Comisión)', value: 'mixed' }
+    // Filtros para análisis de negocio
+    tiposAnalisis = [
+        { label: 'Por Servicio', value: 'service' },
+        { label: 'Por Día', value: 'daily' },
+        { label: 'Por Mes', value: 'monthly' }
     ];
 
-    rolesEmpleados = [
-        { label: 'Todos', value: '' },
-        { label: 'Estilistas', value: 'stylist' },
-        { label: 'Asistentes', value: 'assistant' },
-        { label: 'Gerentes', value: 'manager' },
-        {label : 'Cajera', value: 'cajera'}
+    categoriasServicios = [
+        { label: 'Todos los Servicios', value: '' },
+        { label: 'Cortes', value: 'haircut' },
+        { label: 'Tratamientos', value: 'treatment' },
+        { label: 'Productos', value: 'product' }
     ];
 
-    estadosPago = [
-        { label: 'Todos', value: '' },
-        { label: 'Pendiente', value: 'pending' },
-        { label: 'Pagado', value: 'paid' },
-        { label: 'En Proceso', value: 'processing' }
+    frequencies = [
+        { label: 'Semanal', value: 'weekly' },
+        { label: 'Mensual', value: 'monthly' },
+        { label: 'Trimestral', value: 'quarterly' },
+        { label: 'Anual', value: 'yearly' }
     ];
+
+
 
     ngOnInit() {
-        console.log('💰 EarningsManagement iniciado');
+        console.log('💰 BusinessEarnings iniciado');
         this.setupDataStream();
         this.cargarDatosCaja();
     }
 
     private setupDataStream() {
-        console.log('🔄 Configurando stream de datos');
+        console.log('🔄 Configurando stream de datos del negocio');
         const params$ = combineLatest([
-            this.filtroRol$.pipe(startWith(''), debounceTime(300), distinctUntilChanged()),
-            this.filtroEstado$.pipe(startWith(''), debounceTime(300), distinctUntilChanged()),
+            this.filtroServicio$.pipe(startWith(''), debounceTime(300), distinctUntilChanged()),
             this.filtroFecha$.pipe(startWith([]), debounceTime(300))
         ]).pipe(
-            map(([rol, estado, fechas]) => {
+            map(([servicio, fechas]) => {
                 const periodo = this.periodoSeleccionado();
                 return {
-                    start_date: fechas.length ? fechas[0].toISOString().split('T')[0] : periodo.fechaInicio.toISOString().split('T')[0],
-                    end_date: fechas.length > 1 ? fechas[1].toISOString().split('T')[0] : periodo.fechaFin.toISOString().split('T')[0],
-                    role: rol,
-                    status: estado
+                    start_date: periodo.fechaInicio.toISOString().split('T')[0],
+                    end_date: periodo.fechaFin.toISOString().split('T')[0],
+                    service_filter: servicio,
+                    frequency: this.frequencySelected()
                 };
             })
         );
 
         params$.subscribe(params => {
-            console.log('📊 Parámetros generados:', params);
-            this.cargarDatos(params);
+            console.log('📊 Parámetros generados para negocio:', params);
+            this.cargarDatosNegocio(params);
         });
     }
 
-    private cargarDatos(params: any) {
+    private cargarDatosNegocio(params: any) {
         this.setLoading('main', true);
-        console.log('🔍 Cargando datos con params:', params);
+        console.log('🔍 Cargando datos del negocio con params:', params);
         console.log('🌐 URL completa:', this.apiUrl);
 
-        this.http.get<any>(this.apiUrl, { params })
+        this.http.get<BusinessEarningsResponse>(this.apiUrl, { params })
             .pipe(
                 map(response => {
-                    console.log('📥 Respuesta de la API:', response);
-                    return this.procesarRespuesta(response);
+                    console.log('📥 Respuesta de la API del negocio:', response);
+                    return this.procesarRespuestaNegocio(response);
                 }),
-                catchError(error => this.handleError('cargar datos', error)),
+                catchError(error => {
+                    console.error('❌ Error cargando datos del negocio:', error);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error de conexión',
+                        detail: 'No se pudieron cargar los datos de ganancias del negocio'
+                    });
+                    return this.handleError('cargar datos del negocio', error);
+                }),
                 finalize(() => this.setLoading('main', false))
             )
-            .subscribe(empleados => {
-                console.log('👥 Empleados procesados:', empleados);
-                if (empleados) this.empleados.set(empleados);
+            .subscribe({
+                next: (data) => {
+                    console.log('📊 Datos del negocio procesados:', data);
+                    if (data) {
+                        this.businessMetrics.set(data.metrics);
+                        this.servicesPerformance.set(data.services);
+                        this.dailyEarnings.set(data.daily);
+                    }
+                },
+                error: (error) => {
+                    console.error('❌ Error en suscripción del negocio:', error);
+                }
             });
     }
 
-    private procesarRespuesta(response: any): EmployeeEarnings[] {
-        console.log('🔄 Procesando respuesta:', response);
+    private procesarRespuestaNegocio(response: BusinessEarningsResponse): any {
+        console.log('🔄 Procesando respuesta del negocio:', response);
 
-        // Handle different response structures
-        let employees: EmployeeEarnings[] = [];
+        const metrics: BusinessMetrics = {
+            total_revenue: response.business_summary?.total_revenue || 0,
+            total_costs: response.business_summary?.total_costs || 0,
+            net_profit: response.business_summary?.net_profit || 0,
+            profit_margin: response.business_summary?.profit_margin || 0,
+            avg_transaction: 0,
+            total_transactions: 0
+        };
 
-        if (response?.employees) {
-            console.log('✅ Usando response.employees');
-            employees = response.employees;
-        } else if (Array.isArray(response)) {
-            console.log('✅ Usando array directo');
-            employees = response;
-        } else if (response?.results) {
-            console.log('✅ Usando response.results');
-            employees = response.results;
-        } else {
-            console.log('❌ Estructura de respuesta no reconocida:', Object.keys(response || {}));
+        const services = response.services_performance || [];
+        const daily = response.daily_earnings || [];
+
+        // Calcular métricas adicionales
+        if (daily.length > 0) {
+            metrics.total_transactions = daily.reduce((sum, d) => sum + d.transactions_count, 0);
+            metrics.avg_transaction = metrics.total_transactions > 0 ? metrics.total_revenue / metrics.total_transactions : 0;
         }
 
-        console.log('👤 Empleados encontrados:', employees.length);
-
-        return employees.map(emp => ({
-            ...emp,
-            total_earned: this.earningsCalculator.calculateTotalEarnings(emp)
-        }));
+        return { metrics, services, daily };
     }
 
     private cargarDatosCaja() {
@@ -260,70 +321,68 @@ export class EarningsManagement implements OnInit {
         this.loadingStates.update(states => ({ ...states, [type]: value }));
     }
 
-    configurarPago(empleado: EmployeeEarnings) {
-        this.empleadoConfiguracion = { ...empleado };
-        this.mostrarConfiguracion = true;
+    verDetalleServicio(servicio: ServicePerformance) {
+        this.servicioSeleccionado = servicio;
+        this.mostrarDetalleServicio = true;
     }
 
-    guardarConfiguracion() {
-        if (!this.empleadoConfiguracion) return;
-
-        this.setLoading('main', true);
-        const payload = {
-            payment_type: this.empleadoConfiguracion.payment_type,
-            fixed_salary: this.empleadoConfiguracion.fixed_salary,
-            commission_rate: this.empleadoConfiguracion.commission_rate
-        };
-
-        this.http.patch(`${environment.apiUrl}/employees/employees/${this.empleadoConfiguracion.id}/`, payload)
-            .pipe(
-                catchError(error => this.handleError('guardar configuración', error)),
-                finalize(() => this.setLoading('main', false))
-            )
-            .subscribe(() => {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Configuración guardada',
-                    detail: `Configuración de pago actualizada para ${this.empleadoConfiguracion!.full_name}`
-
-                });
-                this.mostrarConfiguracion = false;
-                this.refrescarDatos();
-            });
+    abrirAnalisisRentabilidad() {
+        this.mostrarAnalisisRentabilidad = true;
     }
 
     private cargarDatosSimulados() {
-        const empleadosData: EmployeeEarnings[] = [
+        const businessData: BusinessMetrics = {
+            total_revenue: 450000,
+            total_costs: 180000,
+            net_profit: 270000,
+            profit_margin: 60,
+            avg_transaction: 2500,
+            total_transactions: 180
+        };
+
+        const servicesData: ServicePerformance[] = [
             {
-                id: 1,
-                user_id: 1,
-                full_name: 'María García',
-                email: 'maria@salon.com',
-                role: 'stylist',
-                is_active: true,
-                payment_type: 'commission',
-                commission_rate: 40,
-                total_sales: 2125000,
-                total_earned: 850000,
-                services_count: 25,
-                payment_status: 'pending'
+                service_name: 'Corte Clásico',
+                total_sales: 85,
+                quantity_sold: 85,
+                revenue: 212500,
+                cost: 85000,
+                profit: 127500,
+                profit_margin: 60
             },
             {
-                id: 2,
-                user_id: 2,
-                full_name: 'Carlos López',
-                email: 'carlos@salon.com',
-                role: 'assistant',
-                is_active: true,
-                payment_type: 'fixed',
-                fixed_salary: 1200000,
-                total_sales: 0,
-                total_earned: 1200000,
-                services_count: 0,
-                payment_status: 'paid'
+                service_name: 'Tratamiento Capilar',
+                total_sales: 25,
+                quantity_sold: 25,
+                revenue: 125000,
+                cost: 50000,
+                profit: 75000,
+                profit_margin: 60
             }
         ];
-        this.empleados.set(empleadosData);
+
+        const dailyData: DailyEarning[] = [];
+        const today = new Date();
+        for (let i = 0; i < 30; i++) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            dailyData.push({
+                date: date.toISOString().split('T')[0],
+                revenue: Math.random() * 20000 + 5000,
+                costs: Math.random() * 8000 + 2000,
+                profit: 0,
+                transactions_count: Math.floor(Math.random() * 15) + 3
+            });
+        }
+        
+        // Calcular profit para cada día
+        dailyData.forEach(day => {
+            day.profit = day.revenue - day.costs;
+        });
+
+        this.businessMetrics.set(businessData);
+        this.servicesPerformance.set(servicesData);
+        this.dailyEarnings.set(dailyData);
     }
 
     periodoAnterior() {
@@ -380,25 +439,23 @@ export class EarningsManagement implements OnInit {
         const params = {
             start_date: periodo.fechaInicio.toISOString().split('T')[0],
             end_date: periodo.fechaFin.toISOString().split('T')[0],
-            role: this.filtroRol$.value,
-            status: this.filtroEstado$.value
+            service_filter: this.filtroServicio$.value,
+            frequency: this.frequencySelected()
         };
-        this.cargarDatos(params);
+        this.cargarDatosNegocio(params);
     }
 
-    aplicarFiltroRol(rol: string) {
-        this.filtroRol$.next(rol);
-    }
-
-    aplicarFiltroEstado(estado: string) {
-        this.filtroEstado$.next(estado);
+    aplicarFiltroServicio(servicio: string) {
+        this.filtroServicio$.next(servicio);
     }
 
     aplicarFiltroFecha(fechas: Date[]) {
+        console.log('📅 Aplicando filtro de fecha:', fechas);
         this.filtroFecha$.next(fechas);
     }
 
     aplicarFiltros() {
+        console.log('🔍 Aplicando filtros con fechas:', this.filtroFecha);
         this.aplicarFiltroFecha(this.filtroFecha);
     }
 
@@ -408,173 +465,99 @@ export class EarningsManagement implements OnInit {
         return `${inicio} - ${fin}`;
     }
 
-    exportarEmpleado(empleado: EmployeeEarnings) {
+    exportarServicio(servicio: ServicePerformance) {
         const data = {
-            'Empleado': empleado.full_name,
-            'Email': empleado.email,
-            'Rol': empleado.role,
-            'Tipo Pago': empleado.payment_type === 'commission' ? 'Comisión' : 'Fijo',
-            'Porcentaje/Sueldo': empleado.payment_type === 'commission' ? `${empleado.commission_rate}%` : this.formatearMoneda(empleado.fixed_salary || 0),
-            'Total Generado': this.formatearMoneda(empleado.total_earned),
-            'Servicios': empleado.services_count,
-            'Estado': this.getPaymentStatusLabel(empleado.payment_status)
+            'Servicio': servicio.service_name,
+            'Ventas': servicio.total_sales,
+            'Cantidad': servicio.quantity_sold,
+            'Ingresos': this.formatearMoneda(servicio.revenue),
+            'Costos': this.formatearMoneda(servicio.cost),
+            'Ganancia': this.formatearMoneda(servicio.profit),
+            'Margen %': `${servicio.profit_margin.toFixed(1)}%`
         };
 
         const csvContent = this.convertToCSV([data]);
-        this.downloadFile(csvContent, `empleado-${empleado.full_name}-${this.periodoSeleccionado().titulo}.csv`, 'text/csv');
-    }
-
-    exportarDetalleEmpleado() {
-        if (!this.empleadoSeleccionado) return;
-
-        const data = this.detalleServicios.map(servicio => ({
-            'Fecha': new Date(servicio.date).toLocaleDateString('es-ES'),
-            'Cliente': servicio.client_name,
-            'Servicio': servicio.service_name,
-            'Precio': this.formatearMoneda(servicio.price),
-            'Comisión': this.formatearMoneda(servicio.commission)
-        }));
-
-        const csvContent = this.convertToCSV(data);
-        this.downloadFile(csvContent, `detalle-${this.empleadoSeleccionado.full_name}-${this.periodoSeleccionado().titulo}.csv`, 'text/csv');
-    }
-
-    verHistorialPagos() {
-        if (!this.empleadoSeleccionado) return;
-
-        this.messageService.add({
-            severity: 'info',
-            summary: 'Historial de Pagos',
-            detail: `Funcionalidad en desarrollo para ${this.empleadoSeleccionado.full_name}`
-        });
+        this.downloadFile(csvContent, `servicio-${servicio.service_name}-${this.periodoSeleccionado().titulo}.csv`, 'text/csv');
     }
 
     limpiarFiltros() {
-        this.filtroRol$.next('');
-        this.filtroEstado$.next('');
+        this.filtroServicio$.next('');
         this.filtroFecha$.next([]);
     }
 
-    getRoleSeverity(role: string): 'success' | 'info' | 'warn' {
-        switch (role) {
-            case 'stylist': return 'success';
-            case 'manager': return 'info';
-            case 'assistant': return 'warn';
-            default: return 'info';
-        }
+    getProfitSeverity(margin: number): 'success' | 'warn' | 'danger' {
+        if (margin >= 50) return 'success';
+        if (margin >= 30) return 'warn';
+        return 'danger';
     }
 
-    getPaymentSeverity(status: string): 'success' | 'warn' | 'info' {
-        switch (status) {
-            case 'paid': return 'success';
-            case 'pending': return 'warn';
-            case 'processing': return 'info';
-            default: return 'info';
-        }
+    getPerformanceLabel(performance: number): string {
+        if (performance >= 80) return 'Excelente';
+        if (performance >= 60) return 'Bueno';
+        if (performance >= 40) return 'Regular';
+        return 'Bajo';
     }
 
-    getPaymentStatusLabel(status: string): string {
-        const labels: any = {
-            'pending': 'Pendiente',
-            'paid': 'Pagado',
-            'processing': 'En Proceso'
-        };
-        return labels[status] || status;
+    irAModuloPagos() {
+        this.router.navigate(['/client/pagos']);
     }
 
-    verDetalle(empleado: EmployeeEarnings) {
-        this.empleadoSeleccionado = empleado;
-        this.cargarDetalleServicios(empleado.id);
-        this.mostrarDetalle = true;
+    irAModuloEmpleados() {
+        this.router.navigate(['/client/employees']);
     }
 
-    private cargarDetalleServicios(empleadoId: number) {
+    private cargarDetalleServicio(servicioNombre: string) {
         this.setLoading('detail', true);
         const periodo = this.periodoSeleccionado();
 
         const params = {
-            employee_id: empleadoId.toString(),
+            service_name: servicioNombre,
             start_date: periodo.fechaInicio.toISOString().split('T')[0],
             end_date: periodo.fechaFin.toISOString().split('T')[0]
         };
 
-        this.http.get<Sale[]>(`${environment.apiUrl}/pos/sales/`, { params })
+        this.http.get<any>(`${environment.apiUrl}/reports/service_detail/`, { params })
             .pipe(
-                map(response => this.procesarDetalleServicios(response, empleadoId)),
-                catchError(error => this.handleError('cargar detalle', error)),
+                catchError(error => {
+                    console.error('❌ Error cargando detalle servicio:', error);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'No se pudo cargar el detalle del servicio'
+                    });
+                    return this.handleError('cargar detalle servicio', error);
+                }),
                 finalize(() => this.setLoading('detail', false))
             )
-            .subscribe(servicios => {
-                if (servicios) this.detalleServicios = servicios;
+            .subscribe({
+                next: (response) => {
+                    console.log('📊 Detalle del servicio cargado:', response);
+                },
+                error: (error) => {
+                    console.error('❌ Error en suscripción detalle servicio:', error);
+                }
             });
     }
 
-    private procesarDetalleServicios(response: any, empleadoId: number): ServiceDetail[] {
-        const empleado = this.empleados().find(e => e.id === empleadoId);
 
-        // Ensure response is an array
-        const sales = Array.isArray(response) ? response : [];
 
-        if (empleado?.payment_type === 'commission' && sales.length > 0) {
-            return sales.flatMap((sale: Sale) =>
-                (sale.details || []).map(detail => ({
-                    date: sale.date_created,
-                    client_name: sale.client_name,
-                    service_name: detail.service_name,
-                    price: detail.price,
-                    commission: (detail.price * (empleado.commission_rate || 0)) / 100,
-                    commission_rate: empleado.commission_rate
-                }))
-            );
-        } else {
-            const periodo = this.periodoSeleccionado();
-            return [{
-                date: periodo.fechaInicio.toISOString(),
-                client_name: 'Sueldo Fijo',
-                service_name: `Sueldo ${periodo.titulo}`,
-                price: empleado?.fixed_salary || 0,
-                commission: empleado?.fixed_salary || 0
-            }];
-        }
-    }
 
-    marcarComoPagado(empleado: EmployeeEarnings) {
-        this.setLoading('payment', true);
-        const periodo = this.periodoSeleccionado();
-
-        this.http.patch(`${this.apiUrl}${empleado.id}/mark-paid/`, {
-            period_start: periodo.fechaInicio.toISOString().split('T')[0],
-            period_end: periodo.fechaFin.toISOString().split('T')[0]
-        }).pipe(
-            catchError(error => this.handleError('marcar pago', error)),
-            finalize(() => this.setLoading('payment', false))
-        ).subscribe(() => {
-            empleado.payment_status = 'paid';
-            this.empleados.update(emps => [...emps]);
-            this.messageService.add({
-                severity: 'success',
-                summary: 'Éxito',
-                detail: `Pago marcado para ${empleado.full_name}`
-            });
-        });
-    }
 
     exportarExcel() {
         this.setLoading('export', true);
 
-        const data = this.empleados().map(e => ({
-            'Empleado': e.full_name,
-            'Email': e.email,
-            'Rol': e.role,
-            'Tipo Pago': e.payment_type === 'commission' ? 'Comisión' : 'Fijo',
-            'Porcentaje/Sueldo': e.payment_type === 'commission' ? `${e.commission_rate}%` : this.formatearMoneda(e.fixed_salary || 0),
-            'Total Generado': this.formatearMoneda(e.total_earned),
-            'Servicios': e.services_count,
-            'Estado': this.getPaymentStatusLabel(e.payment_status)
+        const data = this.servicesPerformance().map(s => ({
+            'Servicio': s.service_name,
+            'Ventas': s.total_sales,
+            'Cantidad': s.quantity_sold,
+            'Ingresos': this.formatearMoneda(s.revenue),
+            'Costos': this.formatearMoneda(s.cost),
+            'Ganancia': this.formatearMoneda(s.profit),
+            'Margen %': `${s.profit_margin.toFixed(1)}%`
         }));
 
         const csvContent = this.convertToCSV(data);
-        this.downloadFile(csvContent, `ganancias-${this.periodoSeleccionado().titulo}.csv`, 'text/csv');
+        this.downloadFile(csvContent, `ganancias-negocio-${this.periodoSeleccionado().titulo}.csv`, 'text/csv');
 
         setTimeout(() => this.setLoading('export', false), 1000);
     }
@@ -582,11 +565,18 @@ export class EarningsManagement implements OnInit {
     exportarPDF() {
         this.setLoading('export', true);
 
-        const data = this.empleados().map(e =>
-            `${e.full_name} - ${e.role} - ${this.formatearMoneda(e.total_earned)}`
-        ).join('\n');
+        const resumen = this.resumenCalculado();
+        const data = `REPORTE DE GANANCIAS DEL NEGOCIO\n${this.periodoSeleccionado().titulo}\n\n` +
+            `Ingresos Totales: ${this.formatearMoneda(resumen.totalIngresos)}\n` +
+            `Costos Totales: ${this.formatearMoneda(resumen.totalCostos)}\n` +
+            `Ganancia Neta: ${this.formatearMoneda(resumen.gananciaNeta)}\n` +
+            `Margen: ${resumen.margenGanancia.toFixed(1)}%\n\n` +
+            `SERVICIOS:\n` +
+            this.servicesPerformance().map(s =>
+                `${s.service_name}: ${this.formatearMoneda(s.profit)} (${s.profit_margin.toFixed(1)}%)`
+            ).join('\n');
 
-        this.downloadFile(data, `ganancias-${this.periodoSeleccionado().titulo}.txt`, 'text/plain');
+        this.downloadFile(data, `ganancias-negocio-${this.periodoSeleccionado().titulo}.txt`, 'text/plain');
 
         setTimeout(() => this.setLoading('export', false), 1000);
     }
@@ -613,21 +603,31 @@ export class EarningsManagement implements OnInit {
     }
 
     sincronizarConCaja() {
-        this.cashRegisterState.syncWithEarnings();
-        const cashData = this.cashRegisterData();
-        if (cashData?.is_open) {
-            this.messageService.add({
-                severity: 'info',
-                summary: 'Caja Abierta',
-                detail: `Caja actual: ${this.formatearMoneda(cashData.current_amount)}`
+        this.http.get<any>(`${environment.apiUrl}/pos/cashregisters/current/`)
+            .subscribe({
+                next: (response) => {
+                    if (response && response.is_open) {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Caja Abierta',
+                            detail: `Caja actual: ${this.formatearMoneda(response.current_amount || 0)}`
+                        });
+                    } else {
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Caja Cerrada',
+                            detail: 'No hay caja abierta actualmente'
+                        });
+                    }
+                },
+                error: () => {
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Caja Cerrada',
+                        detail: 'No hay caja abierta actualmente'
+                    });
+                }
             });
-        } else {
-            this.messageService.add({
-                severity: 'warn',
-                summary: 'Caja Cerrada',
-                detail: 'No hay caja abierta actualmente'
-            });
-        }
     }
 
     calcularProximoPago(): string {
@@ -648,5 +648,38 @@ export class EarningsManagement implements OnInit {
         }
 
         return proximoPago.toLocaleDateString('es-ES');
+    }
+
+    onFrequencyChange(frequency: string) {
+        this.frequencySelected.set(frequency);
+        this.refrescarDatos();
+    }
+
+    onReferenceDateChange(date: Date) {
+        this.referenceDate.set(date);
+        this.refrescarDatos();
+    }
+
+    /**
+     * Calcula el rendimiento promedio de los servicios
+     */
+    calcularRendimientoPromedio(): number {
+        const servicios = this.servicesPerformance();
+        if (servicios.length === 0) return 0;
+        
+        const totalMargen = servicios.reduce((sum, s) => sum + s.profit_margin, 0);
+        return totalMargen / servicios.length;
+    }
+
+    /**
+     * Obtiene el servicio más rentable
+     */
+    obtenerServicioMasRentable(): ServicePerformance | null {
+        const servicios = this.servicesPerformance();
+        if (servicios.length === 0) return null;
+        
+        return servicios.reduce((max, current) => 
+            current.profit_margin > max.profit_margin ? current : max
+        );
     }
 }

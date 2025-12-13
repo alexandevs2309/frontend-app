@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, HostListener, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, inject, signal, HostListener, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -42,7 +42,7 @@ export class PosSystem implements OnInit {
     private inventoryService = inject(InventoryService);
     private clientsService = inject(ClientService);
     private employeesService = inject(EmployeeService);
-
+    private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
 
     carrito = signal<CartItem[]>([]);
@@ -650,7 +650,10 @@ export class PosSystem implements OnInit {
 
 
     getCurrentDateTime(): string {
-        return new Date().toLocaleString('es-ES', {
+        const now = new Date();
+        // Redondear a minutos para evitar cambios constantes
+        now.setSeconds(0, 0);
+        return now.toLocaleString('es-ES', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',

@@ -63,6 +63,7 @@
              [class.border-green-200]="puedeAgregarMas(item)"
              [class.hover:border-green-400]="puedeAgregarMas(item)"
              (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
+          <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="w-full h-32 object-cover rounded mb-2">
           <div class="flex justify-between items-start mb-2">
             <h6 class="font-semibold">{{ item.name }}</h6>
             <span class="text-lg font-bold text-primary-600">{{ formatearMoneda(item.price) }}</span>

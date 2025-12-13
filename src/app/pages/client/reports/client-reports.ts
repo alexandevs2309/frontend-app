@@ -34,33 +34,32 @@ import { ReportService } from '../../../core/services/report/report.service';
     <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
       <div>
         <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Reportes y Análisis</h3>
-        <p class="text-gray-600 dark:text-gray-300 mt-1">Analiza el rendimiento de tu barbería</p>
+        <p class="text-gray-600 dark:text-gray-300 mt-1">Dashboard completo de tu barbería</p>
       </div>
 
-      <form [formGroup]="filtrosForm"
-            class="flex flex-col sm:flex-row flex-wrap gap-3 justify-end w-full lg:w-auto">
-        <p-datePicker formControlName="fechaInicio"
-                      placeholder="Fecha inicio"
-                      [showIcon]="true"
-                      dateFormat="dd/mm/yy"
-                      class="flex-1 sm:w-40 md:w-48"></p-datePicker>
-
-        <p-datePicker formControlName="fechaFin"
-                      placeholder="Fecha fin"
-                      [showIcon]="true"
-                      dateFormat="dd/mm/yy"
-                      class="flex-1 sm:w-40 md:w-48"></p-datePicker>
-
-        <button pButton label="Filtrar"
-                icon="pi pi-filter"
-                (click)="aplicarFiltros()"
-                class="p-button-primary w-full sm:w-auto"></button>
-      </form>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <!-- Pestañas -->
+        <div class="flex gap-2 mb-4 sm:mb-0">
+          <button pButton label="Dashboard" [class]="activeTab === 'dashboard' ? 'p-button-primary' : 'p-button-outlined'"
+                  (click)="activeTab = 'dashboard'" class="p-button-sm"></button>
+          <button pButton label="Finanzas" [class]="activeTab === 'finanzas' ? 'p-button-primary' : 'p-button-outlined'"
+                  (click)="activeTab = 'finanzas'" class="p-button-sm"></button>
+        </div>
+        
+        <!-- Filtros -->
+        <form [formGroup]="filtrosForm" class="flex gap-3">
+          <p-datePicker formControlName="fechaInicio" placeholder="Fecha inicio" [showIcon]="true" dateFormat="dd/mm/yy" class="w-40"></p-datePicker>
+          <p-datePicker formControlName="fechaFin" placeholder="Fecha fin" [showIcon]="true" dateFormat="dd/mm/yy" class="w-40"></p-datePicker>
+          <button pButton label="Filtrar" icon="pi pi-filter" (click)="aplicarFiltros()" class="p-button-primary"></button>
+        </form>
+      </div>
     </div>
   </div>
 
-  <!-- KPIs -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  <!-- CONTENIDO DASHBOARD -->
+  <div *ngIf="activeTab === 'dashboard'">
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <div *ngFor="let card of kpiCards" class="rounded-2xl p-6 shadow-sm transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md bg-white dark:bg-gray-800">
       <div class="text-gray-700 dark:text-gray-300 font-medium text-lg mb-2">{{ card.label }}</div>
       <div [ngClass]="card.color" class="font-bold text-3xl mb-2">{{ card.value }}</div>
@@ -156,11 +155,58 @@ import { ReportService } from '../../../core/services/report/report.service';
     </div>
   </div>
 
-  <!-- Horarios Pico -->
-  <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800 transition-colors">
-    <h5 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Análisis de Horarios Pico</h5>
-    <div class="h-72">
-      <p-chart type="bar" [data]="chartHorarios" [options]="barOptions"></p-chart>
+    <!-- Horarios Pico -->
+    <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800 transition-colors">
+      <h5 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Análisis de Horarios Pico</h5>
+      <div class="h-72">
+        <p-chart type="bar" [data]="chartHorarios" [options]="barOptions"></p-chart>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENIDO FINANZAS -->
+  <div *ngIf="activeTab === 'finanzas'">
+    <!-- Métricas Financieras -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800">
+        <div class="text-gray-700 dark:text-gray-300 font-medium text-lg mb-2">Ingresos Totales</div>
+        <div class="text-green-600 font-bold text-3xl mb-2">{{ formatearMoneda(finanzas().ingresos) }}</div>
+        <div class="text-green-600 text-sm font-medium">+12% vs mes anterior</div>
+      </div>
+      <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800">
+        <div class="text-gray-700 dark:text-gray-300 font-medium text-lg mb-2">Costos Totales</div>
+        <div class="text-red-600 font-bold text-3xl mb-2">{{ formatearMoneda(finanzas().costos) }}</div>
+        <div class="text-red-600 text-sm font-medium">+5% vs mes anterior</div>
+      </div>
+      <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800">
+        <div class="text-gray-700 dark:text-gray-300 font-medium text-lg mb-2">Ganancia Neta</div>
+        <div class="text-blue-600 font-bold text-3xl mb-2">{{ formatearMoneda(finanzas().ganancia) }}</div>
+        <div class="text-green-600 text-sm font-medium">+18% vs mes anterior</div>
+      </div>
+      <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800">
+        <div class="text-gray-700 dark:text-gray-300 font-medium text-lg mb-2">Margen %</div>
+        <div class="text-purple-600 font-bold text-3xl mb-2">{{ finanzas().margen.toFixed(1) }}%</div>
+        <div class="text-green-600 text-sm font-medium">+2% vs mes anterior</div>
+      </div>
+    </div>
+
+    <!-- Rentabilidad por Servicio -->
+    <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800">
+      <h5 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Rentabilidad por Servicio</h5>
+      <p-table [value]="serviciosRentabilidad()" responsiveLayout="scroll">
+        <ng-template pTemplate="header">
+          <tr><th>Servicio</th><th>Ingresos</th><th>Costos</th><th>Ganancia</th><th>Margen %</th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-servicio>
+          <tr>
+            <td class="font-medium">{{ servicio.nombre }}</td>
+            <td class="text-green-600 font-semibold">{{ formatearMoneda(servicio.ingresos) }}</td>
+            <td class="text-red-600 font-semibold">{{ formatearMoneda(servicio.costos) }}</td>
+            <td class="text-blue-600 font-semibold">{{ formatearMoneda(servicio.ganancia) }}</td>
+            <td><p-tag [value]="servicio.margen.toFixed(1) + '%'" [severity]="getMargenSeverity(servicio.margen)"></p-tag></td>
+          </tr>
+        </ng-template>
+      </p-table>
     </div>
   </div>
 </div>
@@ -172,6 +218,8 @@ import { ReportService } from '../../../core/services/report/report.service';
 export class ClientReports implements OnInit {
     private reportService = inject(ReportService);
     private fb = inject(FormBuilder);
+
+    activeTab = 'dashboard';
 
     kpis = signal({
         ingresos: 15420.50,
@@ -192,6 +240,20 @@ export class ClientReports implements OnInit {
         retencion: 78,
         enRiesgo: 12
     });
+
+    finanzas = signal({
+        ingresos: 45000,
+        costos: 18000,
+        ganancia: 27000,
+        margen: 60
+    });
+
+    serviciosRentabilidad = signal([
+        { nombre: 'Corte Clásico', ingresos: 15000, costos: 6000, ganancia: 9000, margen: 60 },
+        { nombre: 'Barba', ingresos: 8000, costos: 2400, ganancia: 5600, margen: 70 },
+        { nombre: 'Tratamiento', ingresos: 12000, costos: 4800, ganancia: 7200, margen: 60 },
+        { nombre: 'Afeitado', ingresos: 5000, costos: 1500, ganancia: 3500, margen: 70 }
+    ]);
 
     kpiCards = [
         {
@@ -383,7 +445,19 @@ export class ClientReports implements OnInit {
     aplicarFiltros() {
         const filtros = this.filtrosForm.value;
         console.log('Aplicando filtros:', filtros);
-        // Implementar filtrado por fechas
         this.cargarDatos();
+    }
+
+    formatearMoneda(valor: number): string {
+        return new Intl.NumberFormat('es-DO', {
+            style: 'currency',
+            currency: 'DOP'
+        }).format(valor);
+    }
+
+    getMargenSeverity(margen: number): 'success' | 'warn' | 'danger' {
+        if (margen >= 60) return 'success';
+        if (margen >= 40) return 'warn';
+        return 'danger';
     }
 }

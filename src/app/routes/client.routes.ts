@@ -20,6 +20,36 @@ export const clientRoutes: Routes = [
                 loadComponent: () => import('../pages/client/payments/payment').then(m => m.PaymentComponent)
             },
             {
+                path: 'pagos',
+                canActivate: [TrialGuard],
+                loadComponent: () => import('../pages/client/pagos/administracion-pagos').then(m => m.AdministracionPagos)
+            },
+            {
+                path: 'pagos/empleados',
+                canActivate: [TrialGuard],
+                loadComponent: () => import('../pages/client/pagos/pagos-empleados').then(m => m.PagosEmpleados)
+            },
+            {
+                path: 'pagos/historial',
+                canActivate: [TrialGuard],
+                loadComponent: () => import('../pages/client/pagos/historial-pagos').then(m => m.HistorialPagos)
+            },
+            {
+                path: 'pagos/configuracion',
+                canActivate: [TrialGuard],
+                loadComponent: () => import('../pages/client/pagos/configuracion-pagos').then(m => m.ConfiguracionPagos)
+            },
+            {
+                path: 'pagos/prestamos',
+                canActivate: [TrialGuard],
+                loadComponent: () => import('../pages/client/pagos/prestamos.component').then(m => m.PrestamosComponent)
+            },
+            {
+                path: 'pagos/reportes',
+                canActivate: [TrialGuard],
+                loadComponent: () => import('../pages/client/pagos/reportes.component').then(m => m.ReportesComponent)
+            },
+            {
                 path: 'checkout',
                 loadComponent: () => import('../pages/client/checkout/checkout').then(m => m.CheckoutComponent)
             },
@@ -47,7 +77,7 @@ export const clientRoutes: Routes = [
             {
                 path: 'earnings',
                 canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/client/earnings/earnings-management').then(m => m.EarningsManagement)
+                loadComponent: () => import('../pages/client/earnings/earnings-management').then(m => m.BusinessEarnings)
             },
             {
                 path: 'services',

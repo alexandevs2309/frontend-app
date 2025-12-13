@@ -36,9 +36,9 @@ export class RevenueStreamWidget implements OnInit, OnDestroy {
     }
 
     loadMonthlyRevenue() {
-        this.dashboardService.getMonthlyRevenue().subscribe({
+        this.dashboardService.getDashboardStats().subscribe({
             next: (data: any) => {
-                const revenue = Array.isArray(data) ? data : (data.results || []);
+                const revenue = data.monthly_revenue || [];
                 this.monthlyRevenue.set(revenue);
                 this.updateChart();
             },

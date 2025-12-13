@@ -156,7 +156,7 @@ export class BarbershopSettingsComponent implements OnInit {
       const formData = new FormData();
       formData.append('logo', file);
 
-      this.http.post(`${environment.apiUrl}/settings/upload-logo/`, formData)
+      this.http.post(`${environment.apiUrl}/settings/barbershop/upload_logo/`, formData)
         .subscribe({
           next: (response: any) => {
             this.settings.update(s => ({ ...s, logo: response.logo_url }));

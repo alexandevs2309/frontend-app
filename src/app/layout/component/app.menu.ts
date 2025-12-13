@@ -100,7 +100,7 @@ export class AppMenu implements OnInit, OnDestroy {
                 { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
                 { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: 'Punto de Venta', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
-                { label: 'Ganancias', icon: 'pi pi-fw pi-dollar', routerLink: ['/client/earnings'] },
+                { label: 'Pagos', icon: 'pi pi-fw pi-credit-card', routerLink: ['/client/pagos'] },
                 { label: 'Reportes', icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] },
                 { label: 'Configuración', icon: 'pi pi-fw pi-cog', routerLink: ['/client/settings'] }
             );
@@ -110,9 +110,9 @@ export class AppMenu implements OnInit, OnDestroy {
                 { label: 'Mis Citas', icon: 'pi pi-fw pi-calendar', routerLink: ['/client/appointments'] },
                 { label: 'Clientes', icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
                 { label: 'Ventas', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
-                { label: 'Mis Comisiones', icon: 'pi pi-fw pi-dollar', routerLink: ['/client/earnings'] },
                 { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
-                { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] }
+                { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
+                { label: 'Reportes', icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }
             );
         }
 

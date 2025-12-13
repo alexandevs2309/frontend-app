@@ -16,7 +16,7 @@ import { DashboardService } from '../../../core/services/dashboard/dashboard.ser
             <ul class="list-none p-0 m-0">
                 <li *ngFor="let service of topServices(); let i = index" class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
                     <div>
-                        <span class="text-surface-900 dark:text-surface-0 font-medium mr-2 mb-1 md:mb-0">{{service.service_name}}</span>
+                        <span class="text-surface-900 dark:text-surface-0 font-medium mr-2 mb-1 md:mb-0">{{service.name}}</span>
                         <div class="mt-1 text-muted-color">{{service.count}} veces solicitado</div>
                     </div>
                     <div class="mt-2 md:mt-0 flex items-center">
@@ -44,9 +44,9 @@ export class BestSellingWidget implements OnInit {
     }
 
     loadTopServices() {
-        this.dashboardService.getTopServices(5).subscribe({
+        this.dashboardService.getDashboardStats().subscribe({
             next: (data: any) => {
-                const services = Array.isArray(data) ? data : (data.results || []);
+                const services = data.top_services || [];
                 this.topServices.set(services.slice(0, 5));
                 this.maxCount = services.length > 0 ? Math.max(...services.map((s: any) => s.count || 1), 1) : 1;
             },

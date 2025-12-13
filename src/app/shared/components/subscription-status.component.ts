@@ -9,7 +9,7 @@ import { SubscriptionService } from '../../core/services/subscription/subscripti
   standalone: true,
   imports: [CommonModule, ButtonModule],
   template: `
-    <div *ngIf="subscriptionInfo" class="subscription-status" [ngClass]="getStatusClass()">
+    <div *ngIf="subscriptionInfo && !isSuperAdmin()" class="subscription-status" [ngClass]="getStatusClass()">
       <div class="status-content">
         <div class="status-info">
           <span class="plan-name">{{ subscriptionInfo.plan_display }}</span>
@@ -130,6 +130,10 @@ export class SubscriptionStatusComponent implements OnInit {
     const daysInGrace = this.subscriptionInfo.days_in_grace || 0;
     
     return status !== 'active' || daysInGrace > 0;
+  }
+
+  isSuperAdmin(): boolean {
+    return this.subscriptionInfo?.is_superadmin === true;
   }
 
   upgrade() {

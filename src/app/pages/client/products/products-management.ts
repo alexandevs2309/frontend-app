@@ -119,7 +119,7 @@ import { InventoryService, Product } from '../../../core/services/inventory/inve
                         </td>
                         <td>
                             <p-tag [value]="producto.sku || 'Sin Sku'"
-                                severity="info" *ngif="producto.sku">
+                                severity="info" *ngIf="producto.sku">
                             </p-tag>
                             <code class="bg-gray-100 px-2 py-1 rounded text-sm">{{producto.sku}}</code>
                         </td>
