@@ -87,7 +87,7 @@ import { environment } from '../../../../environments/environment';
                 <div [ngClass]="empleado.net_balance < 0 ? 'text-red-600' : empleado.pending_amount > 0 ? 'text-orange-600' : 'text-gray-400'">
                   {{ formatearMoneda(empleado.pending_amount || 0) }}
                 </div>
-                <div *ngIf="empleado.total_earned > 0" class="text-xs text-green-600">
+                <div *ngIf="empleado.total_earned > 0 && empleado.payment_status === 'paid'" class="text-xs text-green-600">
                   Ya pagado: {{ formatearMoneda(empleado.total_earned) }}
                 </div>
                 <div *ngIf="empleado.total_loans > 0" class="text-xs text-blue-600">
@@ -263,11 +263,12 @@ export class PagosEmpleados implements OnInit {
           const pendingAmount = pendienteActual?.total_amount || 0;
           
           // Determinar estado correcto
-          let paymentStatus = 'paid';
-          if (pendingAmount > 0) {
+          let paymentStatus = 'no_earnings';
+          
+          if (emp.payment_status === 'paid') {
+            paymentStatus = 'paid';
+          } else if (pendingAmount > 0 || emp.total_earned > 0) {
             paymentStatus = 'pending';
-          } else if (emp.total_earned === 0) {
-            paymentStatus = 'no_earnings';
           }
           
           return {
@@ -276,7 +277,7 @@ export class PagosEmpleados implements OnInit {
             full_name: emp.employee_name,
             email: emp.employee_name,
             total_earned: emp.total_earned || 0, // Monto ya pagado en la quincena
-            pending_amount: pendingAmount, // Monto pendiente de pagar
+            pending_amount: emp.payment_status === 'pending' ? (emp.total_earned || pendingAmount) : pendingAmount, // Monto pendiente de pagar
             payment_type: emp.salary_type || 'commission',
             commission_percentage: emp.commission_percentage || 0,
             payment_status: paymentStatus,

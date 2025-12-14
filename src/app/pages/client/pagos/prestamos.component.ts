@@ -68,11 +68,25 @@ import { PagosService } from './services/pagos.service';
             <td>{{ formatearMoneda(prestamo.remaining_balance) }}</td>
             <td>{{ prestamo.request_date | date:'dd/MM/yyyy' }}</td>
             <td>
-              <button *ngIf="prestamo.status === 'Activo'"
-                      pButton icon="pi pi-times"
-                      class="p-button-danger p-button-sm"
-                      (click)="cancelarPrestamo(prestamo.id)"
-                      pTooltip="Cancelar"></button>
+              <div class="flex gap-1">
+                <button *ngIf="prestamo.status === 'Activo'"
+                        pButton icon="pi pi-times"
+                        class="p-button-warning p-button-sm"
+                        (click)="solicitarCancelacion(prestamo)"
+                        pTooltip="Solicitar Cancelación"></button>
+                        
+                <button *ngIf="prestamo.status === 'Cancelación Pendiente'"
+                        pButton icon="pi pi-check"
+                        class="p-button-success p-button-sm"
+                        (click)="aprobarCancelacion(prestamo.id)"
+                        pTooltip="Aprobar"></button>
+                        
+                <button *ngIf="prestamo.status === 'Cancelación Pendiente'"
+                        pButton icon="pi pi-times"
+                        class="p-button-danger p-button-sm"
+                        (click)="rechazarCancelacion(prestamo.id)"
+                        pTooltip="Rechazar"></button>
+              </div>
             </td>
           </tr>
         </ng-template>
@@ -106,19 +120,19 @@ import { PagosService } from './services/pagos.service';
           <div>
             <label class="block text-sm font-medium mb-2">Monto (RD$)</label>
             <input type="number" pInputText [(ngModel)]="nuevoPrestamo.amount"
-                   class="w-full" placeholder="5000" min="100" max="100000">
+                   class="w-full" placeholder="5000" min="100" max="100000" step="100">
           </div>
 
           <div>
             <label class="block text-sm font-medium mb-2">Número de Cuotas</label>
             <input type="number" pInputText [(ngModel)]="nuevoPrestamo.installments"
-                   class="w-full" placeholder="6" min="1" max="24">
+                   class="w-full" placeholder="6" min="1" max="24" step="1">
           </div>
 
           <div>
             <label class="block text-sm font-medium mb-2">Motivo</label>
             <textarea pInputTextarea [(ngModel)]="nuevoPrestamo.reason"
-                      class="w-full" rows="3" placeholder="Descripción del préstamo"></textarea>
+                      class="w-full" rows="3" placeholder="Descripción del préstamo" maxlength="500"></textarea>
           </div>
         </div>
 
@@ -127,6 +141,28 @@ import { PagosService } from './services/pagos.service';
                   (click)="cerrarDialogoNuevo()"></button>
           <button pButton label="Crear Solicitud" class="p-button-success"
                   [loading]="guardando()" (click)="crearPrestamo()"></button>
+        </ng-template>
+      </p-dialog>
+
+      <!-- Diálogo solicitar cancelación -->
+      <p-dialog header="Solicitar Cancelación" [(visible)]="mostrarDialogoCancelacion"
+                [modal]="true" [style]="{width: '400px'}">
+        <div class="space-y-4">
+          <p>Empleado: <strong>{{ prestamoSeleccionado?.employee_name }}</strong></p>
+          <p>Monto: <strong>{{ formatearMoneda(prestamoSeleccionado?.amount) }}</strong></p>
+          
+          <div>
+            <label class="block text-sm font-medium mb-2">Motivo de cancelación</label>
+            <textarea pInputTextarea [(ngModel)]="motivoCancelacion"
+                      class="w-full" rows="3" placeholder="Explique por qué desea cancelar este préstamo" maxlength="500"></textarea>
+          </div>
+        </div>
+
+        <ng-template pTemplate="footer">
+          <button pButton label="Cancelar" class="p-button-outlined"
+                  (click)="cerrarDialogoCancelacion()"></button>
+          <button pButton label="Solicitar Cancelación" class="p-button-warning"
+                  [loading]="guardando()" (click)="confirmarSolicitudCancelacion()"></button>
         </ng-template>
       </p-dialog>
 
@@ -145,6 +181,9 @@ export class PrestamosComponent implements OnInit {
   cargando = signal(false);
   guardando = signal(false);
   mostrarDialogoNuevo = false;
+  mostrarDialogoCancelacion = false;
+  prestamoSeleccionado: any = null;
+  motivoCancelacion = '';
 
   nuevoPrestamo = {
     employee_id: null,
@@ -229,25 +268,7 @@ export class PrestamosComponent implements OnInit {
     });
   }
 
-  cancelarPrestamo(prestamoId: number) {
-    this.phase2Service.cancelLoan(prestamoId).subscribe({
-      next: (response) => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Préstamo Cancelado',
-          detail: response.message || 'Préstamo cancelado correctamente'
-        });
-        this.cargarPrestamos();
-      },
-      error: (error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: error.error?.error || 'Error al cancelar préstamo'
-        });
-      }
-    });
-  }
+
 
   private validarPrestamo(): boolean {
     if (!this.nuevoPrestamo.employee_id) {
@@ -277,6 +298,24 @@ export class PrestamosComponent implements OnInit {
       return false;
     }
 
+    if (this.nuevoPrestamo.amount > 100000) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'El monto no puede exceder RD$100,000'
+      });
+      return false;
+    }
+
+    if (this.nuevoPrestamo.installments < 1 || this.nuevoPrestamo.installments > 24) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Las cuotas deben estar entre 1 y 24'
+      });
+      return false;
+    }
+
     return true;
   }
 
@@ -291,12 +330,106 @@ export class PrestamosComponent implements OnInit {
     };
   }
 
+  solicitarCancelacion(prestamo: any) {
+    this.prestamoSeleccionado = prestamo;
+    this.motivoCancelacion = '';
+    this.mostrarDialogoCancelacion = true;
+  }
+
+  confirmarSolicitudCancelacion() {
+    if (!this.motivoCancelacion.trim()) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Debe especificar el motivo de cancelación'
+      });
+      return;
+    }
+
+    this.guardando.set(true);
+    this.phase2Service.requestCancellation(this.prestamoSeleccionado.id, this.motivoCancelacion).subscribe({
+      next: (response) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Solicitud Enviada',
+          detail: response.message
+        });
+        this.cerrarDialogoCancelacion();
+        this.cargarPrestamos();
+        this.guardando.set(false);
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.error?.error || 'Error al solicitar cancelación'
+        });
+        this.guardando.set(false);
+      }
+    });
+  }
+
+  aprobarCancelacion(prestamoId: number) {
+    if (!confirm('¿Está seguro de aprobar esta cancelación? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    
+    this.phase2Service.approveCancellation(prestamoId).subscribe({
+      next: (response) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Cancelación Aprobada',
+          detail: response.message
+        });
+        this.cargarPrestamos();
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.error?.error || 'Error al aprobar cancelación'
+        });
+      }
+    });
+  }
+
+  rechazarCancelacion(prestamoId: number) {
+    if (!confirm('¿Está seguro de rechazar esta cancelación?')) {
+      return;
+    }
+    
+    this.phase2Service.rejectCancellation(prestamoId).subscribe({
+      next: (response) => {
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Cancelación Rechazada',
+          detail: response.message
+        });
+        this.cargarPrestamos();
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.error?.error || 'Error al rechazar cancelación'
+        });
+      }
+    });
+  }
+
+  cerrarDialogoCancelacion() {
+    this.mostrarDialogoCancelacion = false;
+    this.prestamoSeleccionado = null;
+    this.motivoCancelacion = '';
+  }
+
   getStatusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' {
     switch (status) {
       case 'Aprobado': return 'success';
       case 'Activo': return 'info';
-      case 'Pendiente': return 'warn';
-      case 'Rechazado': return 'danger';
+      case 'Cancelación Pendiente': return 'warn';
+      case 'Completado': return 'success';
+      case 'Cancelado': return 'danger';
       default: return 'info';
     }
   }

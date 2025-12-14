@@ -16,8 +16,16 @@ export class Phase2Service extends BaseApiService {
     return this.post('/employees/loans/', loanData);
   }
 
-  cancelLoan(loanId: number): Observable<any> {
-    return this.post(`/employees/loans/${loanId}/cancel/`, {});
+  requestCancellation(loanId: number, reason: string): Observable<any> {
+    return this.post(`/employees/loans/${loanId}/request_cancellation/`, { reason });
+  }
+
+  approveCancellation(loanId: number): Observable<any> {
+    return this.post(`/employees/loans/${loanId}/approve_cancellation/`, {});
+  }
+
+  rejectCancellation(loanId: number): Observable<any> {
+    return this.post(`/employees/loans/${loanId}/reject_cancellation/`, {});
   }
 
   // Reportes

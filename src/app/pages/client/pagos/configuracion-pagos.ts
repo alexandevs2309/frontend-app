@@ -36,29 +36,25 @@ import { Router } from '@angular/router';
           <div>
             <h4 class="font-medium mb-3">Descuentos Legales (República Dominicana)</h4>
             <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <input type="checkbox" [(ngModel)]="configuracionGlobal.aplicarAFP" class="rounded">
-                  <span class="text-sm">AFP (2.87%)</span>
+              <div class="bg-blue-50 p-3 rounded">
+                <p class="text-sm font-medium text-blue-800 mb-2">🇩🇴 República Dominicana</p>
+                <div class="space-y-1 text-sm text-blue-700">
+                  <div class="flex justify-between">
+                    <span>AFP:</span>
+                    <span class="font-medium">2.87%</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>SFS:</span>
+                    <span class="font-medium">3.04%</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>ISR:</span>
+                    <span class="font-medium">Escala progresiva</span>
+                  </div>
                 </div>
-                <span class="text-xs text-gray-500">Solo fin de mes</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <input type="checkbox" [(ngModel)]="configuracionGlobal.aplicarSFS" class="rounded">
-                  <span class="text-sm">SFS (3.04%)</span>
-                </div>
-                <span class="text-xs text-gray-500">Solo fin de mes</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <input type="checkbox" [(ngModel)]="configuracionGlobal.aplicarISR" class="rounded">
-                  <span class="text-sm">ISR (Según escala)</span>
-                </div>
-                <span class="text-xs text-gray-500">Solo fin de mes</span>
-              </div>
-              <div class="bg-yellow-50 p-2 rounded text-xs text-yellow-700">
-                ⚠️ Los descuentos legales se aplicarán solo en pagos de fin de mes para evitar descuentos excesivos.
+                <p class="text-xs text-blue-600 mt-2">
+                  ✅ Las deducciones se aplican automáticamente según la legislación del país.
+                </p>
               </div>
             </div>
           </div>
@@ -149,25 +145,11 @@ import { Router } from '@angular/router';
             <p class="text-sm text-gray-600">{{ empleadoSeleccionado.user?.email }}</p>
           </div>
 
-          <!-- Descuentos Legales -->
-          <div class="bg-yellow-50 p-4 rounded mb-4">
-            <h4 class="font-medium mb-3">Descuentos Legales (Solo fin de mes)</h4>
-            <div class="space-y-2">
-              <div class="flex items-center gap-2">
-                <input type="checkbox" [(ngModel)]="configuracionGlobal.aplicarAFP" class="rounded">
-                <span class="text-sm">AFP (2.87%)</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <input type="checkbox" [(ngModel)]="configuracionGlobal.aplicarSFS" class="rounded">
-                <span class="text-sm">SFS (3.04%)</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <input type="checkbox" [(ngModel)]="configuracionGlobal.aplicarISR" class="rounded">
-                <span class="text-sm">ISR (Según escala)</span>
-              </div>
-            </div>
-            <p class="text-xs text-yellow-700 mt-2">
-              ⚠️ Los descuentos se aplicarán solo en pagos de fin de mes (quincenas pares: 2, 4, 6, etc.)
+          <!-- Información de Descuentos Legales -->
+          <div class="bg-blue-50 p-3 rounded mb-4">
+            <h4 class="font-medium mb-2 text-blue-800">🇩🇴 Descuentos Legales Automáticos</h4>
+            <p class="text-sm text-blue-700">
+              AFP (2.87%), SFS (3.04%) e ISR se aplican automáticamente en pagos de fin de mes según la legislación dominicana.
             </p>
           </div>
 
