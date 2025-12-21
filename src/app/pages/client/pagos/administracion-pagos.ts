@@ -23,14 +23,10 @@ import { PagosService } from './services/pagos.service';
           <p class="text-gray-600">Panel general de pagos y conciliación</p>
         </div>
         <div class="flex gap-2">
-          <button pButton label="Procesar Pagos" icon="pi pi-credit-card" 
-                  class="p-button-success" (click)="irAPagosEmpleados()"></button>
           <button pButton label="Préstamos" icon="pi pi-money-bill" 
                   class="p-button-warning" (click)="irAPrestamos()"></button>
           <button pButton label="Reportes" icon="pi pi-chart-bar" 
                   class="p-button-info" (click)="irAReportes()"></button>
-          <button pButton label="Configuración" icon="pi pi-cog" 
-                  class="p-button-outlined" (click)="irAConfiguracion()"></button>
         </div>
       </div>
 
@@ -39,7 +35,8 @@ import { PagosService } from './services/pagos.service';
         <p-card>
           <div class="text-center">
             <div class="text-3xl font-bold text-orange-600">{{ metricas().pendientes }}</div>
-            <div class="text-sm text-gray-600">Pagos Pendientes</div>
+            <div class="text-sm text-gray-600">Obligaciones por Comisiones</div>
+            <div class="text-xs text-gray-500 mt-1">Dinero que se debe a empleados por comisiones generadas</div>
             <div class="text-xs text-orange-600 mt-1">{{ formatearMoneda(metricas().montoPendiente) }}</div>
           </div>
         </p-card>
@@ -104,52 +101,7 @@ import { PagosService } from './services/pagos.service';
         </p-card>
       </div>
 
-      <!-- Resumen de empleados -->
-      <p-card header="Resumen por Empleado">
-        <p-table [value]="resumenEmpleados()" [loading]="cargando()" responsiveLayout="scroll">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Empleado</th>
-              <th>Tipo de Pago</th>
-              <th>Último Pago</th>
-              <th>Pendiente</th>
-              <th>Total Mes</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-empleado>
-            <tr>
-              <td>
-                <div>
-                  <div class="font-medium">{{ empleado.full_name }}</div>
-                  <div class="text-sm text-gray-500">{{ empleado.email }}</div>
-                </div>
-              </td>
-              <td>
-                <p-tag [value]="empleado.payment_type === 'commission' ? 'Comisión' : 'Fijo'" 
-                       [severity]="empleado.payment_type === 'commission' ? 'success' : 'info'"></p-tag>
-              </td>
-              <td>{{ empleado.last_payment_date ? (empleado.last_payment_date | date:'dd/MM/yyyy') : '-' }}</td>
-              <td class="font-bold text-orange-600">{{ formatearMoneda(empleado.pending_amount) }}</td>
-              <td class="font-bold text-green-600">{{ formatearMoneda(empleado.month_total) }}</td>
-              <td>
-                <p-tag [value]="empleado.status === 'pending' ? 'Pendiente' : 'Al día'" 
-                       [severity]="empleado.status === 'pending' ? 'warn' : 'success'"></p-tag>
-              </td>
-              <td>
-                <div class="flex gap-1">
-                  <button pButton icon="pi pi-credit-card" class="p-button-text p-button-sm" 
-                          pTooltip="Pagar" (click)="pagarEmpleado(empleado)"
-                          [disabled]="empleado.pending_amount === 0"></button>
-                  <button pButton icon="pi pi-eye" class="p-button-text p-button-sm" 
-                          pTooltip="Ver detalles" (click)="verDetallesEmpleado(empleado)"></button>
-                </div>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </p-card>
+
 
       <p-toast></p-toast>
     </div>
@@ -171,7 +123,7 @@ export class AdministracionPagos implements OnInit {
     promedioSalario: 0
   });
 
-  resumenEmpleados = signal<any[]>([]);
+
   cargando = signal(false);
 
   chartPagosPorMetodo: any = {
@@ -219,7 +171,7 @@ export class AdministracionPagos implements OnInit {
     
     this.pagosService.obtenerHistorialPagos({ year, fortnight }).subscribe({
       next: (response) => {
-        this.procesarResumenEmpleados(response);
+
         this.procesarMetricas(response);
         this.cargando.set(false);
       },
@@ -243,7 +195,7 @@ export class AdministracionPagos implements OnInit {
       empleadosActivos: 0,
       promedioSalario: 0
     });
-    this.resumenEmpleados.set([]);
+
   }
 
   procesarMetricas(data: any) {
@@ -274,32 +226,7 @@ export class AdministracionPagos implements OnInit {
     });
   }
 
-  procesarResumenEmpleados(data: any) {
-    const empleados = data?.employees || [];
-    const empleadosArray = Array.isArray(empleados) ? empleados : [];
-    const pendingSummary = data?.pending_summary || {};
-    const pendingPayments = pendingSummary.pending_payments || [];
-    
-    const resumen = empleadosArray.map((emp: any) => {
-      // Buscar pendientes actuales para este empleado
-      const pendienteActual = pendingPayments.find((p: any) => p.employee_id === emp.employee_id);
-      const pendingAmount = pendienteActual?.total_amount || 0;
-      const totalActual = (emp.total_earned || 0) + pendingAmount;
-      
-      return {
-        ...emp,
-        full_name: emp.employee_name,
-        email: emp.employee_name,
-        payment_type: emp.salary_type || 'commission',
-        status: pendingAmount > 0 ? 'pending' : 'paid',
-        pending_amount: pendingAmount,
-        month_total: totalActual,
-        last_payment_date: emp.payment_status === 'paid' ? emp.paid_at : null
-      };
-    });
 
-    this.resumenEmpleados.set(resumen);
-  }
 
   irAPagosEmpleados() {
     this.router.navigate(['/client/pagos/empleados']);
@@ -321,18 +248,7 @@ export class AdministracionPagos implements OnInit {
     this.router.navigate(['/client/pagos/reportes']);
   }
 
-  pagarEmpleado(empleado: any) {
-    // Navegar directamente a pagos de empleados
-    this.router.navigate(['/client/pagos']);
-  }
 
-  verDetallesEmpleado(empleado: any) {
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Detalles',
-      detail: `Ver detalles de ${empleado.full_name}`
-    });
-  }
 
   formatearMoneda(valor: number): string {
     return `$${valor?.toFixed(2) || '0.00'}`;

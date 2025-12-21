@@ -14,24 +14,23 @@ import { PagosService, PagoEmpleado } from './services/pagos.service';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { PayrollStatusUtil } from '../../../shared/utils/payroll-status.util';
+import { PayrollStatusBadgeComponent } from '../../../shared/components/payroll-status-badge.component';
+import { CommissionBalanceComponent } from '../../../shared/components/commission-balance.component';
 
 @Component({
   selector: 'app-pagos-empleados',
   standalone: true,
-  imports: [CommonModule, ButtonModule, CardModule, TableModule, DialogModule, SelectModule, InputTextModule, ToastModule, TagModule, FormsModule],
+  imports: [CommonModule, ButtonModule, CardModule, TableModule, DialogModule, SelectModule, InputTextModule, ToastModule, TagModule, FormsModule, PayrollStatusBadgeComponent, CommissionBalanceComponent],
   providers: [MessageService],
   template: `
     <div class="p-6">
       <div class="flex justify-between items-center mb-6">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">💳 Pagos a Empleados</h1>
-          <p class="text-gray-600">Procesar pagos pendientes de empleados</p>
+          <h1 class="text-3xl font-bold text-gray-900">💳 Obligaciones a Empleados</h1>
+          <p class="text-gray-600">Procesar obligaciones pendientes de empleados</p>
         </div>
         <div class="flex gap-2">
-          <button pButton label="Historial" icon="pi pi-history" 
-                  class="p-button-outlined" (click)="verHistorial()"></button>
-          <button pButton label="Configuración" icon="pi pi-cog" 
-                  class="p-button-outlined" (click)="verConfiguracion()"></button>
           <button pButton label="Préstamos" icon="pi pi-money-bill" 
                   class="p-button-warning" (click)="irAPrestamos()"></button>
           <button pButton label="Reportes" icon="pi pi-chart-bar" 
@@ -39,54 +38,49 @@ import { environment } from '../../../../environments/environment';
         </div>
       </div>
 
-      <!-- Resumen de pagos -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <p-card>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-orange-600">{{ empleadosPendientes().length }}</div>
-            <div class="text-sm text-gray-600">Empleados Pendientes</div>
-          </div>
-        </p-card>
-        <p-card>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-green-600">{{ formatearMoneda(totalPendiente()) }}</div>
-            <div class="text-sm text-gray-600">Total a Pagar</div>
-          </div>
-        </p-card>
-        <p-card>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600">{{ empleadosPagados().length }}</div>
-            <div class="text-sm text-gray-600">Ya Pagados</div>
-          </div>
-        </p-card>
-      </div>
 
+
+      <!-- Barra de búsqueda global -->
+      <div class="mb-6">
+        <input type="text" pInputText [(ngModel)]="filtroGlobal" 
+               placeholder="Buscar empleado por nombre, email o ID..." 
+               class="w-full" 
+               (ngModelChange)="filtrarTodos()">
+      </div>
+      
       <!-- Tabla de empleados -->
-      <p-card header="Todos los Empleados">
-        <p-table [value]="empleados()" [loading]="cargando()" responsiveLayout="scroll">
+      <p-card header="Empleados con Obligaciones Pendientes" *ngIf="tieneEmpleadosPeriodoFiltrados()">
+        <p-table [value]="empleadosFiltrados()" [loading]="cargando()" responsiveLayout="scroll">
           <ng-template pTemplate="header">
             <tr>
               <th>Empleado</th>
-              <th>Período</th>
-              <th>Monto Pendiente</th>
-              <th>Tipo</th>
-              <th>Estado</th>
+              <th *ngIf="tieneEmpleadosPeriodo()">Período</th>
+              <th *ngIf="tieneEmpleadosPeriodo()">Balance del Período</th>
+              <th *ngIf="tieneEmpleadosPeriodo()">Tipo</th>
+              <th *ngIf="tieneEmpleadosPeriodo()">Estado</th>
               <th>Acciones</th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-empleado>
-            <tr>
+            <tr *ngIf="empleado.commission_payment_mode !== 'ON_DEMAND'">
               <td>
-                <div>
-                  <div class="font-medium">{{ empleado.full_name }}</div>
-                  <div class="text-sm text-gray-500">{{ empleado.email }}</div>
+                <div class="font-medium">{{ empleado.full_name }}</div>
+                <div class="text-sm text-gray-500">ID: {{ empleado.id }} • {{ empleado.email }}</div>
+              </td>
+              <td>
+                <div class="font-medium">{{ empleado.period_display || 'Quincena ' + empleado.fortnight_number + '/' + empleado.fortnight_year }}</div>
+                <div class="text-xs" [style.color]="getStatusColor(empleado.period_status)">
+                  <i [class]="getStatusIcon(empleado.period_status)"></i>
+                  {{ empleado.period_status_display || getStatusLabel(empleado.period_status) }}
                 </div>
               </td>
-              <td>{{ empleado.period_display || 'Quincena ' + empleado.fortnight_number + '/' + empleado.fortnight_year }}</td>
-              <td class="font-bold">
-                <div [ngClass]="empleado.net_balance < 0 ? 'text-red-600' : empleado.pending_amount > 0 ? 'text-orange-600' : 'text-gray-400'">
-                  {{ formatearMoneda(empleado.pending_amount || 0) }}
-                </div>
+              <td class="font-bold" [ngClass]="empleado.net_balance < 0 ? 'text-red-600' : empleado.pending_amount > 0 ? 'text-orange-600' : 'text-gray-400'">
+                <span *ngIf="empleado.pending_amount > 0">{{ formatearMoneda(empleado.pending_amount) }}</span>
+                <span *ngIf="empleado.pending_amount === 0" class="text-gray-500 italic">
+                  {{ getUnifiedStatusMessage(empleado) }}
+                </span>
+                <div *ngIf="empleado.pending_amount > 0" class="text-xs text-gray-500" pTooltip="Comisiones generadas por ventas realizadas en este período">del período</div>
+                
                 <div *ngIf="empleado.total_earned > 0 && empleado.payment_status === 'paid'" class="text-xs text-green-600">
                   Ya pagado: {{ formatearMoneda(empleado.total_earned) }}
                 </div>
@@ -102,8 +96,14 @@ import { environment } from '../../../../environments/environment';
                        [severity]="empleado.payment_type === 'commission' ? 'success' : 'info'"></p-tag>
               </td>
               <td>
-                <p-tag [value]="getEstadoLabel(empleado.payment_status)" 
-                       [severity]="getEstadoSeverity(empleado.payment_status)"></p-tag>
+                <app-payroll-status-badge
+                  [status]="empleado.period_status || empleado.payment_status"
+                  [statusDisplay]="empleado.period_status_display"
+                  [periodDisplay]="empleado.period_display"
+                  [periodDates]="empleado.period_dates"
+                  [showPeriodInfo]="false"
+                  [compact]="true">
+                </app-payroll-status-badge>
               </td>
               <td>
                 <button pButton 
@@ -117,25 +117,65 @@ import { environment } from '../../../../environments/environment';
           </ng-template>
         </p-table>
       </p-card>
+      
+      <!-- Panel separado para empleados ON_DEMAND -->
+      <div *ngIf="tieneEmpleadosOnDemandFiltrados()" class="mt-8">
+        <p-card header="Empleados con Retiro Inmediato">
+          <div class="space-y-6">
+            <div *ngFor="let empleado of empleadosOnDemandFiltrados()" class="border-b border-gray-100 last:border-b-0 pb-6 last:pb-0">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="font-semibold text-lg text-gray-800">{{ empleado.full_name }}</h3>
+                  <p class="text-sm text-gray-500">ID: {{ empleado.id }} • {{ empleado.email }}</p>
+                </div>
+                <p-tag value="Retiro Inmediato" severity="success" class="text-sm"></p-tag>
+              </div>
+              
+              <!-- Tarjeta ON_DEMAND con ancho completo -->
+              <app-commission-balance 
+                [employeeId]="empleado.id"
+                [commissionPaymentMode]="empleado.commission_payment_mode">
+              </app-commission-balance>
+            </div>
+          </div>
+        </p-card>
+      </div>
 
       <!-- Diálogo de pago -->
       <p-dialog [(visible)]="mostrarDialogoPago" header="Procesar Pago" [modal]="true" [style]="{width: '500px'}">
         <div *ngIf="empleadoSeleccionado" class="space-y-4">
           <div class="bg-gray-50 p-4 rounded">
             <h4 class="font-medium">{{ empleadoSeleccionado.full_name }}</h4>
-            <p class="text-sm text-gray-600">{{ empleadoSeleccionado.period_display || 'Quincena ' + empleadoSeleccionado.fortnight_number + '/' + empleadoSeleccionado.fortnight_year }}</p>
+            <p class="text-sm text-gray-600">{{ empleadoSeleccionado.period_display || 'Período ' + empleadoSeleccionado.fortnight_number + '/' + empleadoSeleccionado.fortnight_year }}</p>
             <div class="mt-2">
               <p class="text-sm text-gray-600">Tipo: {{ empleadoSeleccionado.payment_type === 'commission' ? 'Comisión' : empleadoSeleccionado.payment_type === 'fixed' ? 'Sueldo Fijo' : 'Mixto' }}</p>
-              <p class="text-lg font-bold text-orange-600">Monto pendiente: {{ formatearMoneda(montoCalculado) }}</p>
-              <p *ngIf="empleadoSeleccionado.total_earned > 0" class="text-sm text-green-600">Ya pagado en esta quincena: {{ formatearMoneda(empleadoSeleccionado.total_earned) }}</p>
+              
+              <!-- Mostrar información según el modo -->
+              <div *ngIf="empleadoSeleccionado.commission_payment_mode === 'PER_PERIOD'">
+                <p class="text-lg font-bold text-orange-600">Monto del período: {{ formatearMoneda(montoCalculado) }}</p>
+                <p *ngIf="empleadoSeleccionado.total_earned > 0" class="text-sm text-green-600">Ya pagado en este período: {{ formatearMoneda(empleadoSeleccionado.total_earned) }}</p>
+              </div>
+              
+              <div *ngIf="empleadoSeleccionado.commission_payment_mode === 'ON_DEMAND'" class="bg-yellow-50 p-3 rounded border border-yellow-200">
+                <p class="text-sm text-yellow-800 font-medium mb-2">
+                  <i class="pi pi-info-circle mr-1"></i>
+                  Este empleado usa modo Retiro Inmediato
+                </p>
+                <p class="text-xs text-yellow-700">
+                  Las comisiones se retiran individualmente. Este pago es para períodos anteriores al modo Retiro Inmediato.
+                </p>
+              </div>
             </div>
           </div>
 
           <!-- Información de préstamos -->
           <div class="bg-blue-50 p-3 rounded" *ngIf="empleadoSeleccionado.total_loans > 0">
             <h4 class="text-sm font-medium text-blue-800 mb-2">💰 Préstamos Activos</h4>
-            <p class="text-sm text-blue-700">
+            <p class="text-sm text-blue-700 mb-1">
               Saldo pendiente: {{ formatearMoneda(empleadoSeleccionado.total_loans) }}
+            </p>
+            <p class="text-xs text-blue-600">
+              Los préstamos se descuentan automáticamente al momento del pago
             </p>
             
             <div class="mt-3">
@@ -166,7 +206,10 @@ import { environment } from '../../../../environments/environment';
 
           <!-- Monto final -->
           <div class="bg-green-50 p-3 rounded">
-            <p class="text-sm text-gray-600">Monto a pagar:</p>
+            <p class="text-sm text-gray-600">
+              <span *ngIf="empleadoSeleccionado.commission_payment_mode === 'PER_PERIOD'">Monto a pagar:</span>
+              <span *ngIf="empleadoSeleccionado.commission_payment_mode === 'ON_DEMAND'">Monto del período anterior:</span>
+            </p>
             <p class="text-2xl font-bold text-green-600">{{ formatearMoneda(montoFinal) }}</p>
           </div>
 
@@ -229,8 +272,12 @@ export class PagosEmpleados implements OnInit {
     { label: 'Otro', value: 'other' }
   ];
 
-  empleadosPendientes = signal<any[]>([]);
-  empleadosPagados = signal<any[]>([]);
+
+  
+  // Filtro de búsqueda global
+  filtroGlobal = '';
+  empleadosFiltrados = signal<any[]>([]);
+  empleadosOnDemandFiltrados = signal<any[]>([]);
 
   ngOnInit() {
     this.cargarEmpleados();
@@ -247,20 +294,40 @@ export class PagosEmpleados implements OnInit {
     const quincenaEnMes = day <= 15 ? 1 : 2;
     const fortnight = (month - 1) * 2 + quincenaEnMes;
     
-    // Usar earnings_summary que devuelve todos los empleados
-    this.pagosService.obtenerHistorialPagos({ year, fortnight }).subscribe({
-      next: (response) => {
-        const empleados = response?.employees || [];
+    // OPCIÓN A: Cruzar earnings_summary con /employees/
+    Promise.all([
+      this.pagosService.obtenerHistorialPagos({ year, fortnight }).toPromise(),
+      this.pagosService.obtenerEmpleados().toPromise()
+    ]).then(([earningsResponse, employeesResponse]) => {
+      const empleados = earningsResponse?.employees || [];
+      const employeesData = employeesResponse?.results || employeesResponse || [];
+      
+      // Crear mapa de empleados por ID para merge eficiente
+      const employeesMap = new Map();
+      employeesData.forEach((emp: any) => {
+        employeesMap.set(emp.id, emp);
+      });
+      
+      console.log('🔍 EMPLOYEES MAP:', employeesMap);
+      
+      // Agregar información de período a cada empleado
+      const empleadosConPeriodo = empleados.map((emp: any) => {
+        console.log('EMPLOYEE FULL:', emp);
         
-        // Obtener pendientes actuales
-        const pendingSummary = response?.pending_summary || {};
-        const pendingPayments = pendingSummary.pending_payments || [];
+        // MERGE: Combinar datos de earnings_summary con /employees/
+        const employeeDetails = employeesMap.get(emp.employee_id) || {};
+        console.log('EMPLOYEE DETAILS:', employeeDetails);
         
-        // Agregar información de período a cada empleado
-        const empleadosConPeriodo = empleados.map((emp: any) => {
-          // Buscar pendientes actuales para este empleado
-          const pendienteActual = pendingPayments.find((p: any) => p.employee_id === emp.employee_id);
-          const pendingAmount = pendienteActual?.total_amount || 0;
+        // USAR SOLO LOS DATOS DIRECTOS DEL BACKEND
+        const pendingAmount = emp.pending_amount || 0;
+        const realPendingSaleIds = emp.pending_sale_ids || [];
+          
+          console.log(`👤 EMPLEADO ${emp.employee_name}:`, {
+            pending_amount: emp.pending_amount,
+            pending_sale_ids: emp.pending_sale_ids,
+            final_amount: pendingAmount,
+            final_sale_ids: realPendingSaleIds
+          });
           
           // Determinar estado correcto
           let paymentStatus = 'no_earnings';
@@ -276,37 +343,49 @@ export class PagosEmpleados implements OnInit {
             id: emp.employee_id,
             full_name: emp.employee_name,
             email: emp.employee_name,
-            total_earned: emp.total_earned || 0, // Monto ya pagado en la quincena
-            pending_amount: emp.payment_status === 'pending' ? (emp.total_earned || pendingAmount) : pendingAmount, // Monto pendiente de pagar
+            total_earned: emp.total_earned || 0,
+            pending_amount: pendingAmount,
             payment_type: emp.salary_type || 'commission',
             commission_percentage: emp.commission_percentage || 0,
             payment_status: paymentStatus,
             fortnight_year: year,
             fortnight_number: fortnight,
-            period_display: `Quincena ${fortnight}/${year}`,
-            pending_sale_ids: pendienteActual?.sale_ids || []
+            period_display: emp.period_display || `Período ${fortnight}/${year}`,
+            pending_sale_ids: realPendingSaleIds,
+
+            // Campos ON_DEMAND - MERGE desde /employees/
+            commission_payment_mode: employeeDetails.commission_payment_mode || 'PER_PERIOD',
+            commission_on_demand_since: employeeDetails.commission_on_demand_since,
+            // Nuevos campos de estado del período
+            period_status: emp.period_status || paymentStatus,
+            period_status_display: emp.period_status_display,
+            period_dates: emp.period_dates
           };
         });
         
-        this.empleados.set(empleadosConPeriodo);
-        this.empleadosPendientes.set(empleadosConPeriodo.filter((e: any) => e.payment_status === 'pending'));
-        this.empleadosPagados.set(empleadosConPeriodo.filter((e: any) => e.payment_status === 'paid'));
+        // Ordenar por prioridad de pago
+        const empleadosOrdenados = PayrollStatusUtil.sortByPaymentPriority(empleadosConPeriodo);
+        
+        this.empleados.set(empleadosOrdenados);
+
+        
+        // Inicializar filtro global
+        this.filtrarTodos();
+        
         this.cargando.set(false);
-      },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Error al cargar empleados'
-        });
-        this.cargando.set(false);
-      }
+      
+    }).catch((error) => {
+      console.error('Error cargando datos:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error al cargar empleados'
+      });
+      this.cargando.set(false);
     });
   }
 
-  totalPendiente() {
-    return this.empleadosPendientes().reduce((sum, emp) => sum + (emp.pending_amount || 0), 0);
-  }
+
 
   abrirDialogoPago(empleado: any) {
     this.empleadoSeleccionado = empleado;
@@ -315,9 +394,16 @@ export class PagosEmpleados implements OnInit {
     this.notasPago = '';
 
     
-    // USAR DATOS YA DISPONIBLES del empleado
+    // USAR DATOS DIRECTOS del backend
     this.saleIds = empleado.pending_sale_ids || [];
     this.montoCalculado = empleado.pending_amount || 0;
+    
+    console.log('🔍 DEBUG DATOS DIRECTOS:', {
+      empleado: empleado.employee_name || empleado.full_name,
+      pending_amount: empleado.pending_amount,
+      pending_sale_ids: empleado.pending_sale_ids,
+      sale_ids_count: this.saleIds.length
+    });
     
     // Si no hay pendientes, usar monto total para pago de quincena
     if (this.montoCalculado === 0) {
@@ -383,14 +469,26 @@ export class PagosEmpleados implements OnInit {
       idempotency_key: idempotencyKey
     };
     
-    // Solo pago por ventas pendientes
+    // VALIDACIÓN CRÍTICA: Solo pago por ventas pendientes REALES
     if (this.saleIds && this.saleIds.length > 0) {
       pagoData.sale_ids = this.saleIds;
+      console.log('✅ ENVIANDO PAGO:', {
+        employee_id: pagoData.employee_id,
+        sale_ids: pagoData.sale_ids,
+        amount: this.montoFinal
+      });
     } else {
+      console.error('❌ ERROR DATOS DIRECTOS:', {
+        empleado: this.empleadoSeleccionado.employee_name || this.empleadoSeleccionado.full_name,
+        pending_amount: this.empleadoSeleccionado.pending_amount,
+        sale_ids: this.saleIds,
+        mensaje: 'Backend indica monto pendiente pero no hay sale_ids'
+      });
+      
       this.messageService.add({
-        severity: 'warn',
-        summary: 'Sin Pendientes',
-        detail: 'No hay ventas pendientes para pagar a este empleado'
+        severity: 'error',
+        summary: 'Error de Datos',
+        detail: 'Monto pendiente sin ventas identificadas. Contacte al administrador.'
       });
       this.procesandoPago.set(false);
       return;
@@ -568,27 +666,160 @@ export class PagosEmpleados implements OnInit {
 
   getBotonLabel(empleado: any): string {
     if (empleado.pending_amount > 0) {
-      return `Pagar $${empleado.pending_amount.toFixed(2)}`;
+      return `Pagar Período`;
     } else if (empleado.payment_status === 'paid') {
       return 'Pagado';
     } else {
-      return 'Sin Pendientes';
+      return 'Sin Actividad';
+    }
+  }
+  
+  getNoActivityMessage(empleado: any): string {
+    if (empleado.payment_status === 'paid' && empleado.total_earned > 0) {
+      return 'Período ya pagado';
+    } else if (empleado.salary_type === 'commission') {
+      return 'Sin ventas en este período';
+    } else if (empleado.salary_type === 'fixed') {
+      return 'Período sin configurar';
+    }
+    return 'Sin actividad';
+  }
+  
+  getUnifiedStatusMessage(empleado: any): string {
+    if (empleado.payment_status === 'paid' && empleado.total_earned > 0) {
+      return 'Período completado';
+    } else if (empleado.salary_type === 'commission') {
+      return 'Período en curso (sin ventas aún)';
+    } else if (empleado.salary_type === 'fixed') {
+      return 'Período en curso (monto pendiente de configurar)';
+    }
+    return 'Período en curso';
+  }
+  
+  filtrarTodos() {
+    const filtro = this.filtroGlobal.toLowerCase().trim();
+    
+    // Filtrar empleados PER_PERIOD
+    const empleadosPeriodo = this.empleados().filter(emp => emp.commission_payment_mode !== 'ON_DEMAND');
+    if (!filtro) {
+      this.empleadosFiltrados.set(empleadosPeriodo);
+    } else {
+      const filtradosPeriodo = empleadosPeriodo.filter(emp => 
+        emp.full_name?.toLowerCase().includes(filtro) ||
+        emp.email?.toLowerCase().includes(filtro) ||
+        emp.id?.toString().includes(filtro)
+      );
+      this.empleadosFiltrados.set(filtradosPeriodo);
+    }
+    
+    // Filtrar empleados ON_DEMAND
+    const empleadosOnDemand = this.getEmpleadosOnDemand();
+    if (!filtro) {
+      this.empleadosOnDemandFiltrados.set(empleadosOnDemand);
+    } else {
+      const filtradosOnDemand = empleadosOnDemand.filter(emp => 
+        emp.full_name?.toLowerCase().includes(filtro) ||
+        emp.email?.toLowerCase().includes(filtro) ||
+        emp.id?.toString().includes(filtro)
+      );
+      this.empleadosOnDemandFiltrados.set(filtradosOnDemand);
+    }
+  }
+  
+  tieneEmpleadosPeriodoFiltrados(): boolean {
+    return this.empleadosFiltrados().length > 0;
+  }
+  
+  tieneEmpleadosOnDemandFiltrados(): boolean {
+    return this.empleadosOnDemandFiltrados().length > 0;
+  }
+  
+  getPeriodTooltip(empleado: any): string {
+    switch(empleado.salary_type) {
+      case 'commission':
+        if (empleado.pending_amount > 0) {
+          return `Las ventas de este período (${empleado.services_count}) ya están contabilizadas. El monto mostrado es la comisión por pagar.`;
+        } else {
+          return `No hubo ventas en el período ${empleado.period_display}. Las ventas se contabilizan automáticamente cuando se realizan.`;
+        }
+      
+      case 'fixed':
+        return `Sueldo fijo del período ${empleado.period_display}. Las ventas no afectan este monto.`;
+      
+      default:
+        return `Monto calculado para el período ${empleado.period_display}.`;
     }
   }
 
+  // Métodos para estados usando la utilidad
+  getStatusColor(status: string): string {
+    return PayrollStatusUtil.getStatusColor(status);
+  }
+
+  getStatusIcon(status: string): string {
+    return PayrollStatusUtil.getStatusIcon(status);
+  }
+
+  getStatusLabel(status: string): string {
+    return PayrollStatusUtil.getStatusLabel(status);
+  }
+
+  getStatusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+    return PayrollStatusUtil.getStatusSeverity(status);
+  }
+
+  // Métodos legacy para compatibilidad
   getEstadoLabel(status: string): string {
-    switch (status) {
-      case 'paid': return 'Pagado';
-      case 'pending': return 'Pendiente';
-      default: return 'Sin Ganancias';
-    }
+    return this.getStatusLabel(status);
   }
 
   getEstadoSeverity(status: string): 'success' | 'warn' | 'info' {
-    switch (status) {
-      case 'paid': return 'success';
-      case 'pending': return 'warn';
-      default: return 'info';
-    }
+    const severity = this.getStatusSeverity(status);
+    return severity === 'danger' ? 'warn' : severity === 'secondary' ? 'info' : severity as 'success' | 'warn' | 'info';
+  }
+  
+  debugPendingSales() {
+    this.http.get(`${environment.apiUrl}/employees/payments/debug_pending_sales/`).subscribe({
+      next: (response: any) => {
+        console.log('🐛 DEBUG PENDING SALES:', response);
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Debug Info',
+          detail: `Encontrados ${response.total_employees_with_pending} empleados con pendientes. Ver consola.`,
+          life: 5000
+        });
+      },
+      error: (error) => {
+        console.error('Error en debug:', error);
+      }
+    });
+  }
+  
+  esElegibleParaOnDemand(empleado: any): boolean {
+    const esElegible = empleado.salary_type === 'commission' && 
+                      empleado.commission_payment_mode === 'ON_DEMAND' && 
+                      empleado.commission_on_demand_since != null;
+    
+    console.log('ELEGIBILIDAD ON_DEMAND:', {
+      empleado: empleado.full_name,
+      salary_type: empleado.salary_type,
+      commission_payment_mode: empleado.commission_payment_mode,
+      commission_on_demand_since: empleado.commission_on_demand_since,
+      esElegible
+    });
+    
+    return esElegible;
+  }
+  
+  tieneEmpleadosOnDemand(): boolean {
+    return this.empleados().some(emp => this.esElegibleParaOnDemand(emp));
+  }
+  
+  tieneEmpleadosPeriodo(): boolean {
+    return this.empleados().some(emp => emp.commission_payment_mode !== 'ON_DEMAND');
+  }
+  
+  getEmpleadosOnDemand(): any[] {
+    return this.empleados().filter(emp => this.esElegibleParaOnDemand(emp));
   }
 }

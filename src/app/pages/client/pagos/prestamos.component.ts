@@ -25,6 +25,17 @@ import { PagosService } from './services/pagos.service';
   providers: [MessageService],
   template: `
     <div class="p-6">
+      <!-- Bloque informativo -->
+      <div class="bg-blue-50 p-4 rounded mb-6 border border-blue-200">
+        <h4 class="text-sm font-medium text-blue-800 mb-2">💰 ¿Cuándo se descuentan los préstamos?</h4>
+        <p class="text-sm text-blue-700 mb-2">
+          Los préstamos se descuentan automáticamente al momento del pago.
+        </p>
+        <p class="text-xs text-blue-600">
+          ⚠️ Importante: El balance mostrado NO incluye descuentos de préstamos hasta que se procese un retiro.
+        </p>
+      </div>
+      
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Préstamos y Anticipos</h1>
         <div class="flex gap-2">

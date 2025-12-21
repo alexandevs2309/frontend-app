@@ -34,22 +34,14 @@ import { Router } from '@angular/router';
       <p-card header="Configuraciones Globales" class="mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 class="font-medium mb-3">Descuentos Legales (República Dominicana)</h4>
+            <h4 class="font-medium mb-3">Descuentos Legales por País</h4>
             <div class="space-y-3">
               <div class="bg-blue-50 p-3 rounded">
-                <p class="text-sm font-medium text-blue-800 mb-2">🇩🇴 República Dominicana</p>
+                <p class="text-sm font-medium text-blue-800 mb-2">{{ getCountryFlag(tenantCountry) }} {{ getCountryName(tenantCountry) }}</p>
                 <div class="space-y-1 text-sm text-blue-700">
-                  <div class="flex justify-between">
-                    <span>AFP:</span>
-                    <span class="font-medium">2.87%</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>SFS:</span>
-                    <span class="font-medium">3.04%</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>ISR:</span>
-                    <span class="font-medium">Escala progresiva</span>
+                  <div *ngFor="let tax of getCountryTaxes(tenantCountry)" class="flex justify-between">
+                    <span>{{ tax }}:</span>
+                    <span class="font-medium">Automático</span>
                   </div>
                 </div>
                 <p class="text-xs text-blue-600 mt-2">
@@ -91,6 +83,7 @@ import { Router } from '@angular/router';
               <th>Tipo de Pago</th>
               <th>Salario/Comisión</th>
               <th>Frecuencia</th>
+              <th>Modo Comisión</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -123,6 +116,13 @@ import { Router } from '@angular/router';
               </td>
               <td>{{ getFrecuenciaLabel(empleado.payment_frequency) }}</td>
               <td>
+                <div *ngIf="empleado.salary_type === 'commission' || empleado.salary_type === 'mixed'">
+                  <p-tag [value]="getModoComisionLabel(empleado.commission_payment_mode)" 
+                         [severity]="getModoComisionSeverity(empleado.commission_payment_mode)"></p-tag>
+                </div>
+                <span *ngIf="empleado.salary_type === 'fixed'" class="text-gray-400 text-sm">N/A</span>
+              </td>
+              <td>
                 <p-tag [value]="empleado.is_active ? 'Activo' : 'Inactivo'" 
                        [severity]="empleado.is_active ? 'success' : 'danger'"></p-tag>
               </td>
@@ -147,9 +147,9 @@ import { Router } from '@angular/router';
 
           <!-- Información de Descuentos Legales -->
           <div class="bg-blue-50 p-3 rounded mb-4">
-            <h4 class="font-medium mb-2 text-blue-800">🇩🇴 Descuentos Legales Automáticos</h4>
+            <h4 class="font-medium mb-2 text-blue-800">{{ getCountryFlag(tenantCountry) }} Descuentos Legales Automáticos</h4>
             <p class="text-sm text-blue-700">
-              AFP (2.87%), SFS (3.04%) e ISR se aplican automáticamente en pagos de fin de mes según la legislación dominicana.
+              {{ getCountryTaxDescription(tenantCountry) }}
             </p>
           </div>
 
@@ -182,6 +182,35 @@ import { Router } from '@angular/router';
             <label class="block text-sm font-medium mb-2">Porcentaje de Comisión (%)</label>
             <input type="number" pInputText [(ngModel)]="configuracion.commission_rate" 
                    class="w-full" placeholder="40" min="0" max="100" step="0.01">
+          </div>
+
+          <!-- Modo de Pago de Comisiones -->
+          <div *ngIf="configuracion.payment_type === 'commission' || configuracion.payment_type === 'mixed'" 
+               class="space-y-3">
+            <label class="block text-sm font-medium mb-2">Modo de Pago de Comisiones</label>
+            <p-select [(ngModel)]="configuracion.commission_payment_mode" [options]="modosPagoComision" 
+                      optionLabel="label" optionValue="value" class="w-full"></p-select>
+            
+            <div *ngIf="configuracion.commission_payment_mode" class="bg-gray-50 p-3 rounded text-sm">
+              <div *ngFor="let modo of modosPagoComision">
+                <div *ngIf="modo.value === configuracion.commission_payment_mode" class="text-gray-700">
+                  <i class="pi pi-info-circle mr-2"></i>{{ modo.description }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Fecha de inicio ON_DEMAND -->
+            <div *ngIf="configuracion.commission_payment_mode === 'ON_DEMAND'" class="bg-yellow-50 p-3 rounded">
+              <label class="block text-sm font-medium mb-2 text-yellow-800">
+                <i class="pi pi-calendar mr-2"></i>Fecha de Inicio ON_DEMAND
+              </label>
+              <input type="date" pInputText [(ngModel)]="configuracion.commission_on_demand_since" 
+                     class="w-full" [min]="getFechaMinima()">
+              <p class="text-xs text-yellow-700 mt-2">
+                ⚠️ Las comisiones generadas antes de esta fecha seguirán el modo PER_PERIOD.
+                Solo las comisiones posteriores estarán disponibles para retiro inmediato.
+              </p>
+            </div>
           </div>
 
           <!-- Cálculo automático -->
@@ -219,11 +248,13 @@ export class ConfiguracionPagos implements OnInit {
   guardando = signal(false);
   mostrarDialogoConfig = false;
   empleadoSeleccionado: any = null;
+  tenantCountry = 'DO'; // Default República Dominicana
 
   configuracion: ConfiguracionPago = {
     employee_id: 0,
     payment_type: 'commission',
-    payment_frequency: 'biweekly'
+    payment_frequency: 'biweekly',
+    commission_payment_mode: 'PER_PERIOD'
   };
 
   configuracionGlobal: any = {};
@@ -241,8 +272,22 @@ export class ConfiguracionPagos implements OnInit {
     { label: 'Mensual', value: 'monthly' }
   ];
 
+  modosPagoComision = [
+    { label: 'Por Período (Tradicional)', value: 'PER_PERIOD', description: 'Comisiones se pagan según la frecuencia establecida' },
+    { label: 'A Demanda (Retiro Inmediato)', value: 'ON_DEMAND', description: 'Empleado puede retirar comisiones cuando desee' }
+  ];
+
   ngOnInit() {
+    this.detectarPaisTenant();
     this.cargarEmpleados();
+  }
+
+  detectarPaisTenant() {
+    // Obtener país del tenant desde localStorage (guardado en login)
+    const loginData = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    this.tenantCountry = loginData.tenant?.country || 'DO';
+    
+    console.log('País del tenant detectado:', this.tenantCountry);
   }
 
   cargarEmpleados() {
@@ -258,7 +303,9 @@ export class ConfiguracionPagos implements OnInit {
           salary_type: emp.salary_type || emp.payment_type || 'commission',
           commission_percentage: emp.commission_percentage || emp.commission_rate || 0,
           contractual_monthly_salary: emp.contractual_monthly_salary || emp.salary_amount || 0,
-          payment_frequency: emp.payment_frequency || 'biweekly'
+          payment_frequency: emp.payment_frequency || 'biweekly',
+          commission_payment_mode: emp.commission_payment_mode || 'PER_PERIOD',
+          commission_on_demand_since: emp.commission_on_demand_since || null
         }));
         this.empleados.set(empleadosMapeados);
         this.cargando.set(false);
@@ -281,7 +328,9 @@ export class ConfiguracionPagos implements OnInit {
       payment_type: empleado.salary_type || 'commission',
       contractual_monthly_salary: empleado.contractual_monthly_salary || 0,
       commission_rate: empleado.commission_percentage || 0,
-      payment_frequency: empleado.payment_frequency || 'biweekly'
+      payment_frequency: empleado.payment_frequency || 'biweekly',
+      commission_payment_mode: empleado.commission_payment_mode || 'PER_PERIOD',
+      commission_on_demand_since: empleado.commission_on_demand_since || null
     };
     this.configuracionGlobal = {
       aplicarAFP: empleado.apply_afp || false,
@@ -309,6 +358,8 @@ export class ConfiguracionPagos implements OnInit {
       commission_percentage: this.configuracion.commission_rate || 0,
       contractual_monthly_salary: this.configuracion.contractual_monthly_salary || 0,
       payment_frequency: this.configuracion.payment_frequency,
+      commission_payment_mode: this.configuracion.commission_payment_mode || 'PER_PERIOD',
+      commission_on_demand_since: this.configuracion.commission_on_demand_since || null,
       apply_afp: this.configuracionGlobal.aplicarAFP || false,
       apply_sfs: this.configuracionGlobal.aplicarSFS || false,
       apply_isr: this.configuracionGlobal.aplicarISR || false
@@ -432,5 +483,70 @@ export class ConfiguracionPagos implements OnInit {
   formatearMoneda(valor: any): string {
     const num = parseFloat(valor) || 0;
     return `$${num.toFixed(2)}`;
+  }
+
+  getCountryFlag(countryCode: string): string {
+    const flags: any = {
+      'DO': '🇩🇴',
+      'US': '🇺🇸', 
+      'MX': '🇲🇽',
+      'CO': '🇨🇴',
+      'ES': '🇪🇸'
+    };
+    return flags[countryCode] || '🌍';
+  }
+
+  getCountryName(countryCode: string): string {
+    const names: any = {
+      'DO': 'República Dominicana',
+      'US': 'Estados Unidos',
+      'MX': 'México', 
+      'CO': 'Colombia',
+      'ES': 'España'
+    };
+    return names[countryCode] || 'País no configurado';
+  }
+
+  getCountryTaxes(countryCode: string): string[] {
+    const taxes: any = {
+      'DO': ['AFP (2.87%)', 'SFS (3.04%)', 'ISR (Progresivo)'],
+      'US': ['Sin descuentos obligatorios'],
+      'MX': ['IMSS (2.5%)', 'INFONAVIT (5%)'],
+      'CO': ['Salud (4%)', 'Pensión (4%)'],
+      'ES': ['Próximamente']
+    };
+    return taxes[countryCode] || ['No configurado'];
+  }
+
+  getCountryTaxDescription(countryCode: string): string {
+    const descriptions: any = {
+      'DO': 'AFP, SFS e ISR se aplican automáticamente en pagos de fin de mes según la legislación dominicana.',
+      'US': 'Sin descuentos federales obligatorios. Los impuestos se manejan por separado.',
+      'MX': 'IMSS e INFONAVIT se aplican según el régimen fiscal del empleado.',
+      'CO': 'Salud y Pensión se aplican para empleados formales según ley colombiana.',
+      'ES': 'Reglas fiscales españolas próximamente.'
+    };
+    return descriptions[countryCode] || 'Reglas fiscales no configuradas para este país.';
+  }
+
+  getFechaMinima(): string {
+    // Fecha mínima: hoy
+    return new Date().toISOString().split('T')[0];
+  }
+
+  getModoComisionLabel(modo: string): string {
+    const labels: any = {
+      'PER_PERIOD': 'Por Período',
+      'ON_DEMAND': 'A Demanda'
+    };
+    return labels[modo] || 'Por Período';
+  }
+
+  getModoComisionSeverity(modo: string): 'success' | 'info' | 'warn' {
+    switch (modo) {
+      case 'PER_PERIOD': return 'info';
+      case 'ON_DEMAND': return 'success';
+      default: return 'info';
+    }
   }
 }

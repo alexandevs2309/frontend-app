@@ -34,6 +34,8 @@ export interface ConfiguracionPago {
   commission_rate?: number;
   commission_percentage?: number;
   payment_frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+  commission_payment_mode?: 'PER_PERIOD' | 'ON_DEMAND';
+  commission_on_demand_since?: string;
 }
 
 @Injectable({
@@ -78,7 +80,8 @@ export class PagosService extends BaseApiService {
 
   // Configuración de pagos
   actualizarConfiguracionPago(employeeId: number, config: any): Observable<any> {
-    return this.patch(`/employees/employees/${employeeId}/update_payment_config/`, config);
+    const payload = { employee_id: employeeId, ...config };
+    return this.post('/employees/payments/update_employee_config/', payload);
   }
 
 
@@ -122,8 +125,53 @@ export class PagosService extends BaseApiService {
     return this.get('/employees/employees/');
   }
 
+  // ON_DEMAND - Saldo de comisiones (usar endpoint existente)
+  obtenerSaldoComision(employeeId: number): Observable<any> {
+    // Usar endpoint de earnings para obtener datos del empleado
+    return this.get('/employees/payments/earnings_summary/', { employee_id: employeeId });
+  }
+
+  // ON_DEMAND - Retirar comisiones
+  retirarComision(employeeId: number, amount: number): Observable<any> {
+    const payload = {
+      employee_id: employeeId,
+      withdraw_amount: Number(amount),  // Backend espera withdraw_amount como number
+      payment_method: 'cash',
+      payment_reference: '',
+      payment_notes: ''
+    };
+    
+    console.log('WITHDRAW PAYLOAD FINAL:', payload);
+    return this.post('/employees/payments/withdraw_commission/', payload);
+  }
+
+  // ON_DEMAND - Historial de retiros
+  obtenerHistorialRetiros(params?: { employee_id?: number; start_date?: string; end_date?: string }): Observable<any> {
+    return this.get('/employees/payments/commission_withdrawals/', params);
+  }
+
+  // ON_DEMAND - Retirar comisiones usando el flujo de pagos normal
+  retirarComisionConAceptacion(payload: { employee_id: number; withdraw_amount: number; employee_acceptance: boolean; apply_loan_deduction?: boolean }): Observable<any> {
+    // Usar el endpoint pay_employee con sale_ids vacíos para retiro ON_DEMAND
+    const paymentPayload = {
+      employee_id: payload.employee_id,
+      sale_ids: [], // Vacío = usar todas las ventas pendientes
+      payment_method: 'cash',
+      payment_reference: `RETIRO_${Date.now()}`,
+      apply_loan_deduction: payload.apply_loan_deduction || false
+    };
+    
+    console.log('RETIRO USANDO PAY_EMPLOYEE:', paymentPayload);
+    return this.post('/employees/payments/pay_employee/', paymentPayload);
+  }
+
   // Pagos anticipados
   obtenerLimitesAnticipados(): Observable<any> {
     return this.get('/employees/payments/advance_payment_info/');
+  }
+
+  // NUEVO: Preview de pago para verificar préstamos
+  obtenerPreviewPago(payload: { employee_id: number; sale_ids?: number[]; year?: number; fortnight?: number; apply_loan_deduction: boolean }): Observable<any> {
+    return this.post('/employees/payments/preview_payment/', payload);
   }
 }

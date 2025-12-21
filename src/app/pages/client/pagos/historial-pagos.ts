@@ -13,11 +13,14 @@ import { PagosService, HistorialPago } from './services/pagos.service';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { PayrollStatusUtil } from '../../../shared/utils/payroll-status.util';
+import { PayrollStatusBadgeComponent } from '../../../shared/components/payroll-status-badge.component';
+import { WithdrawalHistoryComponent } from '../../../shared/components/withdrawal-history.component';
 
 @Component({
   selector: 'app-historial-pagos',
   standalone: true,
-  imports: [CommonModule, ButtonModule, CardModule, TableModule, DatePickerModule, SelectModule, ToastModule, TagModule, FormsModule],
+  imports: [CommonModule, ButtonModule, CardModule, TableModule, DatePickerModule, SelectModule, ToastModule, TagModule, FormsModule, PayrollStatusBadgeComponent, WithdrawalHistoryComponent],
   providers: [MessageService],
   template: `
     <div class="p-6">
@@ -94,6 +97,9 @@ import { environment } from '../../../../environments/environment';
         </p-card>
       </div>
 
+      <!-- Historial de Retiros ON_DEMAND -->
+      <app-withdrawal-history class="mb-6"></app-withdrawal-history>
+      
       <!-- Tabla de historial -->
       <p-card header="Historial de Pagos">
         <p-table [value]="historialFiltrado()" [loading]="cargando()" 
@@ -102,7 +108,7 @@ import { environment } from '../../../../environments/environment';
             <tr>
               <th>Fecha</th>
               <th>Empleado</th>
-              <th>Período</th>
+              <th>Período y Estado</th>
               <th>Monto</th>
               <th>Método</th>
               <th>Referencia</th>
@@ -119,10 +125,24 @@ import { environment } from '../../../../environments/environment';
                   <div class="text-sm text-gray-500">{{ pago.employee?.email }}</div>
                 </div>
               </td>
-              <td>{{ pago.period }}</td>
+              <td>
+                <div class="font-medium">{{ pago.period }}</div>
+                <app-payroll-status-badge
+                  [status]="pago.period_status || (pago.is_advance_payment ? 'paid' : 'paid')"
+                  [statusDisplay]="pago.period_status_display || (pago.is_advance_payment ? 'Pagado anticipadamente' : 'Pagado')"
+                  [periodDisplay]="pago.period"
+                  [showPeriodInfo]="false"
+                  [compact]="true">
+                </app-payroll-status-badge>
+              </td>
               <td class="font-bold" [ngClass]="pago.is_advance_payment ? 'text-red-600' : 'text-green-600'">
                 {{ formatearMoneda(pago.amount_paid) }}
-                <span *ngIf="pago.is_advance_payment" class="text-xs block text-red-500">(ANTICIPADO)</span>
+                <div *ngIf="pago.is_advance_payment" class="flex items-center gap-1 mt-1">
+                  <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold border border-red-300">⚠️ ANTICIPADO</span>
+                  <i class="pi pi-info-circle text-red-500" 
+                     pTooltip="Pago realizado antes del período regular" 
+                     tooltipPosition="top"></i>
+                </div>
               </td>
               <td>
                 <p-tag [value]="getMetodoLabel(pago.payment_method)" 
@@ -195,8 +215,15 @@ export class HistorialPagos implements OnInit {
   cargarHistorial() {
     this.cargando.set(true);
     
-    // Cargar historial real de pagos procesados
-    this.pagosService.obtenerReportePagos().subscribe({
+    // Usar el mismo endpoint que la pantalla principal
+    const hoy = new Date();
+    const year = hoy.getFullYear();
+    const month = hoy.getMonth() + 1;
+    const day = hoy.getDate();
+    const quincenaEnMes = day <= 15 ? 1 : 2;
+    const fortnight = (month - 1) * 2 + quincenaEnMes;
+    
+    this.pagosService.obtenerHistorialPagos({ year, fortnight }).subscribe({
       next: (response: any) => {
         // Procesar datos reales del backend
         const historialReal = this.procesarHistorialReal(response);
@@ -226,27 +253,33 @@ export class HistorialPagos implements OnInit {
   }
 
   private procesarHistorialReal(response: any): HistorialPago[] {
-    const empleados = response?.employees || response || [];
+    const empleados = response?.employees || [];
     const empleadosArray = Array.isArray(empleados) ? empleados : [];
     
-    // Incluir empleados pagados (normal y anticipado)
-    return empleadosArray
-      .filter((emp: any) => (emp.payment_status === 'paid' || emp.payment_status === 'paid_advance') && emp.total_earned > 0)
-      .map((emp: any) => ({
+    // Solo incluir empleados que tienen pagos realizados (total_earned > 0 Y payment_status = 'paid')
+    const empleadosPagados = empleadosArray.filter((emp: any) => {
+      const tienePago = emp.total_earned > 0 && emp.payment_status === 'paid';
+      return tienePago;
+    });
+    
+    return empleadosPagados.map((emp: any) => ({
+      id: emp.employee_id || emp.id,
+      employee: {
         id: emp.employee_id || emp.id,
-        employee: {
-          id: emp.employee_id || emp.id,
-          full_name: emp.employee_name || emp.full_name,
-          email: emp.employee_email || emp.email || emp.employee_name
-        },
-        period: emp.period || `Quincena ${response.summary?.fortnight || 'N/A'}/${response.summary?.year || new Date().getFullYear()}`,
-        amount_paid: emp.total_earned || 0,
-        payment_method: emp.payment_method || 'cash',
-        payment_reference: emp.payment_reference || '',
-        paid_at: emp.paid_at || new Date().toISOString(),
-        receipt_number: emp.receipt_number || `REC-${emp.employee_id}-${Date.now()}`,
-        is_advance_payment: emp.is_advance_payment || false
-      }));
+        full_name: emp.employee_name || emp.full_name,
+        email: emp.employee_email || emp.email || emp.employee_name
+      },
+      period: emp.period_display || `Período ${response.summary?.fortnight || 'N/A'}/${response.summary?.year || new Date().getFullYear()}`,
+      amount_paid: emp.total_earned || 0,
+      payment_method: emp.payment_method || 'cash',
+      payment_reference: emp.payment_reference || '',
+      paid_at: emp.paid_at || new Date().toISOString(),
+      receipt_number: emp.receipt_number || `REC-${emp.employee_id}-${Date.now()}`,
+      is_advance_payment: emp.is_advance_payment || false,
+      period_status: emp.period_status || 'paid',
+      period_status_display: emp.period_status_display || 'Pagado',
+      period_dates: emp.period_dates
+    }));
   }
 
   private extraerEmpleadosUnicos(historial: HistorialPago[]): any[] {

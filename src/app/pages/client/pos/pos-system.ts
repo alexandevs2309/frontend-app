@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, HostListener, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, signal, HostListener, ViewChild, ElementRef, ChangeDetectionStrategy, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -34,20 +34,43 @@ interface CartItem {
     standalone: true,
     imports: [CommonModule, ButtonModule, InputTextModule, SelectModule, TableModule, CardModule, DividerModule, ToastModule, DialogModule, InputNumberModule, TooltipModule, FormsModule],
     providers: [MessageService],
-    templateUrl: './pos-system.html',
+    templateUrl: './pos-system.html'
 })
 export class PosSystem implements OnInit {
-    private posService = inject(PosService);
-    private servicesService = inject(ServiceService);
-    private inventoryService = inject(InventoryService);
-    private clientsService = inject(ClientService);
-    private employeesService = inject(EmployeeService);
-    private cdr = inject(ChangeDetectorRef);
-    private messageService = inject(MessageService);
+    private readonly posService = inject(PosService);
+    private readonly servicesService = inject(ServiceService);
+    private readonly inventoryService = inject(InventoryService);
+    private readonly clientsService = inject(ClientService);
+    private readonly employeesService = inject(EmployeeService);
+    private readonly messageService = inject(MessageService);
 
+    // Signals principales
     carrito = signal<CartItem[]>([]);
     cajaAbierta = signal(false);
     estadisticasDia = signal({ ventas: 0, ingresos: 0, ticketPromedio: 0 });
+
+    // Computed signals para cálculos automáticos
+    subtotal = computed(() => this.carrito().reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0));
+    total = computed(() => {
+        const subtotal = this.subtotal();
+        const descuentoValor = Number(this.descuento) || 0;
+        const descuentoFinal = this.tipoDescuento === '%' ? (subtotal * descuentoValor / 100) : descuentoValor;
+        return Math.max(0, subtotal - descuentoFinal);
+    });
+    puedeVenderComputed = computed(() => {
+        const carrito = this.carrito();
+        const tieneItems = carrito.length > 0;
+        const tienePago = this.metodoPagoSeleccionado() !== '';
+        const cajaAbierta = this.cajaAbierta();
+        const totalValido = this.total() > 0;
+
+        // Si hay servicios, DEBE haber empleado seleccionado
+        const tieneServicios = carrito.some(item => item.type === 'service');
+        const empleadoSeleccionado = this.empleadoSeleccionado();
+        const empleadoValido = !tieneServicios || !!(empleadoSeleccionado && empleadoSeleccionado.id);
+
+        return tieneItems && tienePago && cajaAbierta && totalValido && empleadoValido;
+    });
 
     servicios: any[] = [];
     productos: any[] = [];
@@ -60,8 +83,8 @@ export class PosSystem implements OnInit {
     categoriaSeleccionada = '';
     busqueda = '';
     clienteSeleccionado: any = null;
-    empleadoSeleccionado: any = null;
-    metodoPagoSeleccionado = '';
+    empleadoSeleccionado = signal<any>(null);
+    metodoPagoSeleccionado = signal<string>('');
     descuento = 0;
     tipoDescuento: '$' | '%' = '$';
 
@@ -118,13 +141,20 @@ export class PosSystem implements OnInit {
         { label: 'Mixto', value: 'mixed' }
     ];
 
+    constructor() {
+        // Effect para auto-guardar estadísticas cuando cambien
+        effect(() => {
+            const stats = this.estadisticasDia();
+            this.guardarEstadisticas(stats);
+        });
+    }
+
     ngOnInit() {
         this.cargarDatos();
         this.verificarEstadoCaja();
         this.cargarEstadisticasGuardadas();
         this.cargarPromociones();
         this.cargarConfiguracion();
-
         this.setupKeyboardShortcuts();
     }
 
@@ -302,6 +332,8 @@ export class PosSystem implements OnInit {
             item.subtotal = item.price * item.quantity;
             return newCart;
         });
+        // Forzar recálculo inmediato
+        setTimeout(() => this.puedeVenderComputed(), 0);
     }
 
     removerDelCarrito(index: number) {
@@ -311,8 +343,8 @@ export class PosSystem implements OnInit {
     limpiarCarrito() {
         this.carrito.set([]);
         this.clienteSeleccionado = null;
-        this.empleadoSeleccionado = null;
-        this.metodoPagoSeleccionado = '';
+        this.empleadoSeleccionado.set(null);
+        this.metodoPagoSeleccionado.set('');
         this.descuento = 0;
         this.tipoDescuento = '$';
         this.resetearPago();
@@ -333,15 +365,11 @@ export class PosSystem implements OnInit {
     }
 
     calcularSubtotal(): number {
-        return this.carrito().reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
+        return this.subtotal();
     }
 
     calcularTotal(): number {
-        const subtotal = this.calcularSubtotal();
-        const descuentoValor = Number(this.descuento) || 0;
-        const descuentoFinal = this.tipoDescuento === '%' ?
-            (subtotal * descuentoValor / 100) : descuentoValor;
-        return Math.max(0, subtotal - descuentoFinal);
+        return this.total();
     }
 
     alternarTipoDescuento() {
@@ -354,18 +382,14 @@ export class PosSystem implements OnInit {
     }
 
     puedeVender(): boolean {
-        return this.carrito().length > 0 &&
-               this.metodoPagoSeleccionado !== '' &&
-               this.cajaAbierta() &&
-               (!this.tieneServicios() || this.empleadoSeleccionado !== null) &&
-               this.calcularTotal() > 0;
+        return this.puedeVenderComputed();
     }
 
     obtenerMensajeValidacion(): string {
         if (this.carrito().length === 0) return 'Agregue items al carrito';
         if (!this.cajaAbierta()) return 'Debe abrir la caja registradora';
-        if (!this.metodoPagoSeleccionado) return 'Seleccione un método de pago';
-        if (this.tieneServicios() && !this.empleadoSeleccionado) return 'Seleccione un empleado';
+        if (!this.metodoPagoSeleccionado()) return 'Seleccione un método de pago';
+        if (this.tieneServicios() && !this.empleadoSeleccionado()) return 'Seleccione un empleado para los servicios';
         if (this.calcularTotal() <= 0) return 'El total debe ser mayor a cero';
         return '';
     }
@@ -389,7 +413,7 @@ export class PosSystem implements OnInit {
 
         console.log('✅ PUEDE VENDER - Continuando...');
 
-        if (this.metodoPagoSeleccionado === 'cash' || this.metodoPagoSeleccionado === 'mixed') {
+        if (this.metodoPagoSeleccionado() === 'cash' || this.metodoPagoSeleccionado() === 'mixed') {
             console.log('💰 Método efectivo/mixto - Abriendo diálogo pago');
             this.mostrarDialogoPago = true;
             return;
@@ -411,8 +435,8 @@ export class PosSystem implements OnInit {
         try {
             const ventaData = {
                 client: this.clienteSeleccionado?.id || null,
-                employee_id: this.empleadoSeleccionado?.id || null,
-                payment_method: this.metodoPagoSeleccionado,
+                employee_id: this.empleadoSeleccionado()?.id ?? null,
+                payment_method: this.metodoPagoSeleccionado(),
                 discount: Number(this.descuento) || 0,
                 total: this.calcularTotal(),
                 paid: this.calcularTotal(),
@@ -630,7 +654,7 @@ export class PosSystem implements OnInit {
         const totalVenta = this.calcularTotal();
 
         // Si es pago en efectivo, agregar a ventas en efectivo de la sesión
-        if (this.metodoPagoSeleccionado === 'cash') {
+        if (this.metodoPagoSeleccionado() === 'cash') {
             this.ventasEfectivoSesionActual += totalVenta;
         }
 
@@ -1333,7 +1357,7 @@ ${this.carrito().map(item =>
             descuento: this.descuento,
             total: this.calcularTotal(),
             cliente: this.clienteSeleccionado?.full_name || 'Cliente General',
-            empleado: this.empleadoSeleccionado?.displayName || this.empleadoSeleccionado?.user?.full_name || 'N/A',
+            empleado: this.empleadoSeleccionado()?.displayName || this.empleadoSeleccionado()?.user?.full_name || 'N/A',
             metodoPago: this.metodoPagoSeleccionado
         };
     }

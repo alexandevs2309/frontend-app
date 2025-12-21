@@ -148,7 +148,7 @@
         <!-- Empleado -->
         <div *ngIf="tieneServicios()">
           <label class="block font-medium mb-1">Empleado ({{ empleados.length }} disponibles)</label>
-          <p-select [options]="empleados" [(ngModel)]="empleadoSeleccionado"
+          <p-select [options]="empleados" [ngModel]="empleadoSeleccionado()" (ngModelChange)="empleadoSeleccionado.set($event)"
                     optionLabel="displayName"
                     placeholder="Seleccionar empleado"
                     class="w-full">
@@ -178,19 +178,20 @@
         <!-- Método de pago -->
         <div>
           <label class="block font-medium mb-1">Método de Pago</label>
-          <p-select [options]="metodosPago" [(ngModel)]="metodoPagoSeleccionado" optionLabel="label" optionValue="value" placeholder="Seleccionar método" class="w-full"></p-select>
+          <p-select [options]="metodosPago" [ngModel]="metodoPagoSeleccionado()" (ngModelChange)="metodoPagoSeleccionado.set($event)" optionLabel="label" optionValue="value" placeholder="Seleccionar método" class="w-full"></p-select>
         </div>
 
+        
         <!-- Botones -->
         <div class="flex flex-col gap-2">
           <button pButton
-                  [label]="procesandoVenta ? 'Procesando...' : (puedeVender() ? 'Procesar Venta' : obtenerMensajeValidacion())"
+                  [label]="procesandoVenta ? 'Procesando...' : (puedeVenderComputed() ? 'Procesar Venta' : obtenerMensajeValidacion())"
                   [icon]="procesandoVenta ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
-                  [disabled]="!puedeVender() || procesandoVenta"
+                  [disabled]="!puedeVenderComputed() || procesandoVenta"
                   [loading]="procesandoVenta"
                   (click)="procesarVenta()"
                   class="p-button-success w-full"
-                  [pTooltip]="!puedeVender() ? obtenerMensajeValidacion() : ''"></button>
+                  [pTooltip]="!puedeVenderComputed() ? obtenerMensajeValidacion() : ''"></button>
           <button pButton label="Limpiar" icon="pi pi-trash" (click)="limpiarCarrito()" class="p-button-outlined w-full" [disabled]="carrito().length === 0 || procesandoVenta"></button>
           <button pButton label="Historial" icon="pi pi-history" (click)="mostrarDialogoHistorial=true; cargarHistorialVentas()" class="p-button-outlined w-full" size="small" [disabled]="procesandoVenta"></button>
         </div>
@@ -253,9 +254,20 @@
             {{ diferenciaCaja >= 0 ? '+' : '' }}${{ diferenciaCaja.toFixed(2) }}
           </span>
         </div>
-        <p class="text-xs mt-1" *ngIf="Math.abs(diferenciaCaja) > 5">
-          ⚠️ Diferencia significativa detectada
-        </p>
+        <div class="text-xs mt-2" [class]="Math.abs(diferenciaCaja) > 5 ? 'text-red-700' : 'text-green-700'">
+          <p *ngIf="diferenciaCaja > 5">
+            ℹ️ Sobra dinero: Verifique si hay ingresos no registrados o errores de conteo
+          </p>
+          <p *ngIf="diferenciaCaja < -5">
+            ⚠️ Falta dinero: Revise gastos no registrados o posibles errores de conteo
+          </p>
+          <p *ngIf="Math.abs(diferenciaCaja) <= 5">
+            ✅ Diferencia aceptable: El cuadre está dentro del rango normal
+          </p>
+          <p class="mt-1 font-medium">
+            🔍 Debe verificar y confirmar antes de cerrar la caja
+          </p>
+        </div>
       </div>
 
       <div class="flex justify-end gap-2">
