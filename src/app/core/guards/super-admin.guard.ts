@@ -16,7 +16,7 @@ export class SuperAdminGuard implements CanActivate {
   canActivate(): Observable<boolean> | boolean {
     return this.authService.currentUser$.pipe(
       map(user => {
-        if (user && user.role === 'SuperAdmin') {
+        if (user && user.role === 'SUPER_ADMIN') {
           return true;
         } else {
           this.router.navigate(['/auth/login']);

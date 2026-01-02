@@ -1,5 +1,30 @@
 :root {
-    --surface-ground: var(--p-surface-100);
-    --code-background: var(--p-surface-900);
-    --code-color: var(--p-surface-200);
+    /* Paleta Lavanda Fintech - Variables PrimeNG */
+    --primary-color: #7C6AF2;
+    --primary-color-text: #FFFFFF;
+    --surface-ground: #F8F9FF;
+    --surface-card: #FFFFFF;
+    --surface-border: #E5E7EB;
+    --text-color: #1F2937;
+    --text-color-secondary: #6B7280;
+    
+    /* Variables PrimeNG específicas */
+    --p-primary-color: #7C6AF2;
+    --p-primary-contrast-color: #FFFFFF;
+    --p-text-color: #1F2937;
+    --p-text-muted-color: #6B7280;
+    --p-content-border-color: #E5E7EB;
+    --p-content-background: #FFFFFF;
+    --p-content-hover-background: #F8F9FF;
+    --p-overlay-popover-background: #FFFFFF;
+    --p-mask-background: rgba(0, 0, 0, 0.4);
+    
+    /* Variables específicas de Sakai */
+    --surface-100: #F8F9FF;
+    --surface-200: #E9E6FF;
+    --surface-900: #1F2937;
+    
+    /* Código */
+    --code-background: var(--surface-900);
+    --code-color: var(--surface-200);
 }

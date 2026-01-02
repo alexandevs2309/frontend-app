@@ -42,11 +42,7 @@ export const API_CONFIG = {
     // Employees
     EMPLOYEES: {
       BASE: '/employees/employees/',
-      SCHEDULES: '/employees/schedules/',
-      EARNINGS: '/employees/earnings/',
-      FORTNIGHT_SUMMARIES: '/employees/fortnight-summaries/',
-      CURRENT_FORTNIGHT: '/employees/earnings/current_fortnight/',
-      MY_EARNINGS: '/employees/earnings/my_earnings/'
+      SCHEDULES: '/employees/schedules/'
     },
     
     // Appointments
@@ -72,8 +68,6 @@ export const API_CONFIG = {
       ACTIVE_PROMOTIONS: '/pos/promotions/active/',
       CATEGORIES: '/pos/categories/',
       CONFIG: '/pos/config/',
-      MY_EARNINGS: '/employees/earnings/my_earnings/',
-      CURRENT_FORTNIGHT: '/employees/earnings/current_fortnight/',
       SEARCH_SALES: '/pos/sales/search_sales/',
       PRINT_RECEIPT: '/pos/sales/{id}/print_receipt/',
       CASH_COUNT: '/pos/cashregisters/{id}/cash_count/'

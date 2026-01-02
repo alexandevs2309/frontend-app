@@ -49,7 +49,7 @@ export class AppMenu implements OnInit, OnDestroy {
 
     
     private updateMenuForUser(role: string) {
-        if (role === 'SuperAdmin') {
+        if (role === 'SUPER_ADMIN') {
             this.model = this.getAdminMenu();
         } else {
             this.buildClientMenu();
@@ -90,8 +90,8 @@ export class AppMenu implements OnInit, OnDestroy {
             { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/client/dashboard'] }
         ];
 
-        if (userRole === 'Client-Admin') {
-            // Client-Admin: All features available
+        if (userRole === 'CLIENT_ADMIN') {
+            // CLIENT_ADMIN: All features available
             menuItems.push(
                 { label: 'Usuarios', icon: 'pi pi-fw pi-user', routerLink: ['/client/users'] },
                 { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
@@ -100,12 +100,13 @@ export class AppMenu implements OnInit, OnDestroy {
                 { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
                 { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: 'Punto de Venta', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
+                { label: 'Nómina', icon: 'pi pi-fw pi-wallet', routerLink: ['/client/payroll'] },
                 { label: 'Pagos', icon: 'pi pi-fw pi-credit-card', routerLink: ['/client/pagos'] },
                 { label: 'Reportes', icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] },
                 { label: 'Configuración', icon: 'pi pi-fw pi-cog', routerLink: ['/client/settings'] }
             );
-        } else if (userRole === 'Client-Staff') {
-            // Client-Staff: Limited features
+        } else if (userRole === 'CLIENT_STAFF') {
+            // CLIENT_STAFF: Limited features
             menuItems.push(
                 { label: 'Mis Citas', icon: 'pi pi-fw pi-calendar', routerLink: ['/client/appointments'] },
                 { label: 'Clientes', icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },

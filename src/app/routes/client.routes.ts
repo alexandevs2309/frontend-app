@@ -7,7 +7,7 @@ export const clientRoutes: Routes = [
     {
         path: 'client',
         canActivate: [AuthGuard, RoleGuard],
-        data: { roles: ['Client-Admin', 'Client-Staff'] },
+        data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF'] },
         component: AppLayout,
         children: [
             {
@@ -19,36 +19,7 @@ export const clientRoutes: Routes = [
                 path: 'payment',
                 loadComponent: () => import('../pages/client/payments/payment').then(m => m.PaymentComponent)
             },
-            {
-                path: 'pagos',
-                canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/client/pagos/administracion-pagos').then(m => m.AdministracionPagos)
-            },
-            {
-                path: 'pagos/empleados',
-                canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/client/pagos/pagos-empleados').then(m => m.PagosEmpleados)
-            },
-            {
-                path: 'pagos/historial',
-                canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/client/pagos/historial-pagos').then(m => m.HistorialPagos)
-            },
-            {
-                path: 'pagos/configuracion',
-                canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/client/pagos/configuracion-pagos').then(m => m.ConfiguracionPagos)
-            },
-            {
-                path: 'pagos/prestamos',
-                canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/client/pagos/prestamos.component').then(m => m.PrestamosComponent)
-            },
-            {
-                path: 'pagos/reportes',
-                canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/client/pagos/reportes.component').then(m => m.ReportesComponent)
-            },
+
             {
                 path: 'checkout',
                 loadComponent: () => import('../pages/client/checkout/checkout').then(m => m.CheckoutComponent)
@@ -75,9 +46,10 @@ export const clientRoutes: Routes = [
                 loadComponent: () => import('../pages/client/pos/pos-system').then(m => m.PosSystem)
             },
             {
-                path: 'earnings',
+                path: 'payroll',
                 canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/client/earnings/earnings-management').then(m => m.BusinessEarnings)
+                loadComponent: () => import('../pages/client/payroll/payroll.component').then(m => m.PayrollComponent),
+                loadChildren: () => import('../pages/client/payroll/payroll.routes').then(m => m.PAYROLL_ROUTES)
             },
             {
                 path: 'services',

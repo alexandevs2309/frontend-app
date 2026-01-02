@@ -1,12 +1,92 @@
-/* src/styles.css (o similar) */
-.glass-effect {
-  background-color: rgba(255, 255, 255, 0.15); /* Fondo blanco semi-transparente */
-  backdrop-filter: blur(10px) saturate(180%); /* El toque mágico del desenfoque */
-  border: 1px solid rgba(255, 255, 255, 0.3); /* Borde sutil */
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); /* Sombra elegante */
+/* Paleta Lavanda Fintech - Estilos Globales */
+:root {
+  /* Tokens de color */
+  --brand: #7C6AF2;
+  --brand-soft: #E9E6FF;
+  --brand-hover: #6B5AE0;
+  --surface: #FFFFFF;
+  --surface-soft: #F8F9FF;
+  --text: #1F2937;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --border: #E5E7EB;
+  --accent: #F472B6;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --error: #F87171;
 }
 
-/* Animaciones para el hero */
+/* Aplicación global de la paleta */
+body {
+  background-color: var(--surface-soft, #F8F9FF);
+  color: var(--text, #1F2937);
+}
+
+/* Cards y superficies */
+.p-card,
+.p-panel,
+.p-dialog {
+  background-color: var(--surface, #FFFFFF) !important;
+  border-color: var(--border, #E5E7EB) !important;
+}
+
+/* Botones primarios */
+.p-button:not(.p-button-outlined):not(.p-button-text) {
+  background-color: var(--brand, #7C6AF2) !important;
+  border-color: var(--brand, #7C6AF2) !important;
+}
+
+.p-button:not(.p-button-outlined):not(.p-button-text):hover {
+  background-color: var(--brand-hover, #6B5AE0) !important;
+  border-color: var(--brand-hover, #6B5AE0) !important;
+}
+
+/* Botones outlined */
+.p-button-outlined {
+  color: var(--brand, #7C6AF2) !important;
+  border-color: var(--brand, #7C6AF2) !important;
+}
+
+.p-button-outlined:hover {
+  background-color: var(--brand-soft, #E9E6FF) !important;
+}
+
+/* Tags y badges */
+.p-tag.p-tag-success {
+  background-color: var(--success, #34D399) !important;
+}
+
+.p-tag.p-tag-warn {
+  background-color: var(--warning, #FBBF24) !important;
+}
+
+.p-tag.p-tag-danger {
+  background-color: var(--error, #F87171) !important;
+}
+
+/* Inputs y formularios */
+.p-inputtext,
+.p-select,
+.p-textarea {
+  border-color: var(--border, #E5E7EB) !important;
+}
+
+.p-inputtext:focus,
+.p-select:focus,
+.p-textarea:focus {
+  border-color: var(--brand, #7C6AF2) !important;
+  box-shadow: 0 0 0 1px var(--brand-soft, #E9E6FF) !important;
+}
+
+/* Glass effect actualizado */
+.glass-effect {
+  background-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(124, 106, 242, 0.1);
+}
+
+/* Animaciones existentes conservadas */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -100,7 +180,6 @@
   animation: slideUp 0.8s ease-out forwards;
 }
 
-/* Animaciones direccionales para cards */
 @keyframes slideInFromLeft {
   0% {
     opacity: 0;
@@ -161,7 +240,6 @@
   }
 }
 
-/* Clases de animación con estado inicial */
 .feature-card {
   opacity: 0 !important;
   transform: translateY(50px) scale(0.9) !important;
@@ -192,7 +270,6 @@
   animation: slideInFromBottom 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-/* Sistema de animaciones global */
 .animate-on-scroll {
   opacity: 0;
   transform: translateY(50px) scale(0.9);
@@ -204,7 +281,6 @@
   transform: translateY(0) scale(1) !important;
 }
 
-/* Stagger animations con direcciones diferentes */
 .group:nth-child(1) { animation-delay: 0.1s; }
 .group:nth-child(2) { animation-delay: 0.2s; }
 .group:nth-child(3) { animation-delay: 0.3s; }
@@ -212,13 +288,10 @@
 .group:nth-child(5) { animation-delay: 0.5s; }
 .group:nth-child(6) { animation-delay: 0.6s; }
 
-
-
-/* Preferir variables de PrimeNG si están definidas; fallback a Tailwind */
+/* Report cards con paleta actualizada */
 .report-card {
-  background: var(--surface-card, #ffffff);
-  color: var(--text-color, #111827);
+  background: var(--surface, #FFFFFF);
+  color: var(--text, #1F2937);
   transition: background-color .2s, color .2s;
+  border: 1px solid var(--border, #E5E7EB);
 }
-
-/* En dark mode, Sakai suele definir las mismas variables; si no, Tailwind dark: será aplicado */

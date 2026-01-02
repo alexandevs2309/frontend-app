@@ -30,18 +30,20 @@ import { Subscription } from 'rxjs';
             <div class="grid grid-cols-12 gap-8">
                 @if (isSuperAdmin(user)) {
                     <app-saas-stats-widget class="contents" />
+                    <div class="col-span-12 xl:col-span-6">
+                        <app-notifications-widget />
+                    </div>
                 } @else {
                     <app-stats-widget class="contents" />
+                    <div class="col-span-12 xl:col-span-6">
+                        <app-recent-sales-widget />
+                        <app-best-selling-widget />
+                    </div>
+                    <div class="col-span-12 xl:col-span-6">
+                        <app-revenue-stream-widget />
+                        <app-notifications-widget />
+                    </div>
                 }
-                
-                <div class="col-span-12 xl:col-span-6">
-                    <app-recent-sales-widget />
-                    <app-best-selling-widget />
-                </div>
-                <div class="col-span-12 xl:col-span-6">
-                    <app-revenue-stream-widget />
-                    <app-notifications-widget />
-                </div>
             </div>
         }
     `
@@ -75,6 +77,6 @@ export class AdminDashboard implements OnInit, OnDestroy {
     }
 
     isSuperAdmin(user: any): boolean {
-        return user?.role === 'SuperAdmin';
+        return user?.role === 'SUPER_ADMIN';
     }
 }

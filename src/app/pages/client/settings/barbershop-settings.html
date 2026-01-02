@@ -5,7 +5,22 @@
       <i class="pi pi-cog text-3xl"></i>
       <div>
         <h1 class="text-3xl font-bold">⚙️ Configuración de Peluquería</h1>
-        <p class="text-sm opacity-90">Personaliza tu negocio: precios, horarios, moneda y más</p>
+        <p class="text-sm opacity-90">Personaliza tu negocio con gobierno defensivo</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADVERTENCIA DE GOBIERNO -->
+  <div class="rounded-xl p-4 shadow-sm bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 mb-6">
+    <div class="flex items-start gap-3">
+      <i class="pi pi-shield text-yellow-600 dark:text-yellow-400 text-xl mt-1"></i>
+      <div>
+        <h6 class="font-semibold text-yellow-900 dark:text-yellow-100">Gobierno de Configuraciones</h6>
+        <p class="text-yellow-700 dark:text-yellow-200 text-sm mt-1">
+          🔴 <strong>Críticas</strong>: Afectan cálculos financieros (requieren confirmación)
+          🟡 <strong>Sensibles</strong>: Afectan operaciones
+          🟢 <strong>Cosméticas</strong>: Solo apariencia
+        </p>
       </div>
     </div>
   </div>
@@ -37,32 +52,48 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Moneda</label>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <i class="pi pi-exclamation-triangle text-red-600"></i>
+            Moneda
+          </label>
           <p-select [(ngModel)]="settings().currency" [options]="currencies"
                     optionLabel="label" optionValue="value" class="w-full"
                     (onChange)="onCurrencyChange($event.value)">
           </p-select>
+          <small class="text-red-600 dark:text-red-400">ADVERTENCIA: No se puede cambiar si existen transacciones</small>
         </div>
       </div>
     </div>
 
-    <!-- CONFIGURACIÓN DE PAGOS -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
+    <!-- CONFIGURACIÓN DE PAGOS - ZONA ROJA -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors border-l-4 border-red-500">
       <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-        <i class="pi pi-money-bill text-green-600 dark:text-green-400"></i>
-        Configuración de Pagos por Defecto
+        <i class="pi pi-exclamation-triangle text-red-600 dark:text-red-400"></i>
+        🔴 Configuración de Pagos (CRÍTICA)
       </h3>
+      <div class="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
+        <p class="text-red-800 dark:text-red-200 text-sm">
+          <i class="pi pi-exclamation-triangle mr-2"></i>
+          <strong>ADVERTENCIA:</strong> Estos cambios afectan cálculos financieros en POS, Pagos y Reportes.
+        </p>
+      </div>
 
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Comisión por Defecto (%)</label>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <i class="pi pi-exclamation-triangle text-red-600"></i>
+            Comisión por Defecto (%)
+          </label>
           <input type="number" pInputText [(ngModel)]="settings().default_commission_rate"
                  class="w-full" placeholder="40" min="0" max="100">
           <small class="text-gray-500 dark:text-gray-400">Porcentaje que se aplicará a nuevos empleados por comisión</small>
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Sueldo Fijo por Defecto ({{settings().currency_symbol}})</label>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <i class="pi pi-exclamation-triangle text-red-600"></i>
+            Sueldo Fijo por Defecto ({{settings().currency_symbol}})
+          </label>
           <input type="number" pInputText [(ngModel)]="settings().default_fixed_salary"
                  class="w-full" placeholder="1200000" min="0">
           <small class="text-gray-500 dark:text-gray-400">Sueldo que se aplicará a nuevos empleados con pago fijo</small>
@@ -110,44 +141,59 @@
       </div>
     </div>
 
-    <!-- POLÍTICAS Y REGLAS -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
+    <!-- POLÍTICAS Y REGLAS - ZONA AMARILLA -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors border-l-4 border-orange-500">
       <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-        <i class="pi pi-shield text-red-600 dark:text-red-400"></i>
-        Políticas y Reglas
+        <i class="pi pi-info-circle text-orange-600 dark:text-orange-400"></i>
+        🟡 Políticas y Reglas (SENSIBLE)
       </h3>
 
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Impuesto (%)</label>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <i class="pi pi-exclamation-triangle text-red-600"></i>
+            Impuesto (%)
+          </label>
           <input type="number" pInputText [(ngModel)]="settings().tax_rate"
                  class="w-full" placeholder="19" min="0" max="100" step="0.01">
-          <small class="text-gray-500 dark:text-gray-400">Porcentaje de impuesto aplicado a los servicios</small>
+          <small class="text-red-600 dark:text-red-400">CRÍTICO: Afecta cálculos de impuestos en POS</small>
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Descuento Máximo (%)</label>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <i class="pi pi-info-circle text-orange-600"></i>
+            Descuento Máximo (%)
+          </label>
           <input type="number" pInputText [(ngModel)]="settings().service_discount_limit"
                  class="w-full" placeholder="20" min="0" max="100">
           <small class="text-gray-500 dark:text-gray-400">Descuento máximo permitido en servicios</small>
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Cancelación Gratuita (horas)</label>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <i class="pi pi-info-circle text-orange-600"></i>
+            Cancelación Gratuita (horas)
+          </label>
           <input type="number" pInputText [(ngModel)]="settings().cancellation_policy_hours"
                  class="w-full" placeholder="24" min="1">
           <small class="text-gray-500 dark:text-gray-400">Horas antes de la cita para cancelar sin costo</small>
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Tolerancia Llegada Tarde (minutos)</label>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <i class="pi pi-cog text-gray-600"></i>
+            Tolerancia Llegada Tarde (minutos)
+          </label>
           <input type="number" pInputText [(ngModel)]="settings().late_arrival_grace_minutes"
                  class="w-full" placeholder="15" min="0">
           <small class="text-gray-500 dark:text-gray-400">Minutos de gracia para llegadas tardías</small>
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Reserva Anticipada (días)</label>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <i class="pi pi-info-circle text-orange-600"></i>
+            Reserva Anticipada (días)
+          </label>
           <input type="number" pInputText [(ngModel)]="settings().booking_advance_days"
                  class="w-full" placeholder="30" min="1">
           <small class="text-gray-500 dark:text-gray-400">Días máximos para reservar con anticipación</small>
@@ -196,4 +242,73 @@
   </div>
 
   <p-toast></p-toast>
+  
+  <!-- DIÁLOGO DE CONFIRMACIÓN CRÍTICA -->
+  <p-dialog header="⚠️ Confirmación de Cambios Críticos" 
+            [visible]="showCriticalDialog()" 
+            [modal]="true" 
+            [closable]="false"
+            [style]="{width: '600px'}">
+    
+    <div class="space-y-4">
+      <div class="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <i class="pi pi-exclamation-triangle text-red-600 text-xl mt-1"></i>
+          <div>
+            <h4 class="font-semibold text-red-900 dark:text-red-100 mb-2">ADVERTENCIA: Cambios Críticos Detectados</h4>
+            <p class="text-red-800 dark:text-red-200 text-sm">
+              Los siguientes cambios afectan cálculos financieros y pueden impactar POS, Pagos y Reportes.
+              <strong>Confirme que comprende las consecuencias antes de continuar.</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div *ngFor="let change of criticalChanges()" 
+             class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="font-medium text-gray-900 dark:text-gray-100">{{ change.setting }}</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ change.impact }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                <span class="font-medium">Anterior:</span> {{ change.old_value || 'No definido' }} → 
+                <span class="font-medium">Nuevo:</span> {{ change.new_value }}
+              </div>
+            </div>
+            <div class="ml-3">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                    [ngClass]="{
+                      'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300': change.type === 'critical',
+                      'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300': change.type === 'sensitive'
+                    }">
+                {{ change.type === 'critical' ? 'CRÍTICO' : 'SENSIBLE' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+        <p class="text-yellow-800 dark:text-yellow-200 text-sm">
+          <i class="pi pi-info-circle mr-2"></i>
+          <strong>Nota:</strong> Estos cambios serán registrados en el log de auditoría para trazabilidad.
+        </p>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-3">
+        <button pButton label="Cancelar" 
+                class="p-button-outlined p-button-secondary" 
+                (click)="cancelCriticalChanges()">
+        </button>
+        <button pButton label="Confirmar y Guardar" 
+                class="p-button-danger" 
+                (click)="confirmCriticalChanges()"
+                [loading]="loading()">
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
 </div>

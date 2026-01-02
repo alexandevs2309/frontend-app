@@ -8,13 +8,13 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { ServiceService, Service } from '../../../core/services/service/service.service';
+import { ServiceService, Service, ServiceCategory } from '../../../core/services/service/service.service';
 
 @Component({
     selector: 'app-services-management',
@@ -28,7 +28,7 @@ import { ServiceService, Service } from '../../../core/services/service/service.
         InputTextModule,
         TextareaModule,
         InputNumberModule,
-        SelectModule,
+        MultiSelectModule,
         CheckboxModule,
         TagModule,
         ToastModule,
@@ -85,10 +85,17 @@ import { ServiceService, Service } from '../../../core/services/service/service.
                             </div>
                         </td>
                         <td>
-                            <p-tag [value]="servicio.category || 'Sin categoría'"
-                                   severity="info" *ngIf="servicio.category">
-                            </p-tag>
-                            <span class="text-gray-400" *ngIf="!servicio.category">Sin categoría</span>
+                            <div class="flex flex-wrap gap-1" *ngIf="servicio.category_names && servicio.category_names.length > 0; else singleCategory">
+                                <p-tag *ngFor="let categoryName of servicio.category_names" 
+                                       [value]="categoryName" severity="info">
+                                </p-tag>
+                            </div>
+                            <ng-template #singleCategory>
+                                <p-tag [value]="servicio.category || 'Sin categoría'"
+                                       severity="info" *ngIf="servicio.category">
+                                </p-tag>
+                                <span class="text-gray-400" *ngIf="!servicio.category">Sin categoría</span>
+                            </ng-template>
                         </td>
                         <td class="font-medium">\${{servicio.price}}</td>
                         <td>{{servicio.duration}} min</td>
@@ -130,12 +137,20 @@ import { ServiceService, Service } from '../../../core/services/service/service.
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block font-medium mb-1">Categoría</label>
-                            <p-select formControlName="category" [options]="categoriasOptions"
-                                        optionLabel="label" optionValue="value"
-                                        placeholder="Seleccionar categoría" class="w-full"
-                                        [showClear]="true">
-                            </p-select>
+                            <label class="block font-medium mb-1">Categorías</label>
+                            <p-multiSelect formControlName="categories" 
+                                          [options]="categoriasDisponibles" 
+                                          optionLabel="name" 
+                                          optionValue="id"
+                                          placeholder="Seleccionar categorías" 
+                                          class="w-full"
+                                          [showClear]="true"
+                                          display="chip"
+                                          *ngIf="categoriasDisponibles.length > 0">
+                            </p-multiSelect>
+                            <div *ngIf="categoriasDisponibles.length === 0" class="text-gray-500">
+                                Cargando categorías...
+                            </div>
                         </div>
                         <div>
                             <label class="block font-medium mb-1">Duración (minutos) *</label>
@@ -184,6 +199,7 @@ export class ServicesManagement implements OnInit {
     guardando = signal(false);
     mostrarDialogo = false;
     servicioSeleccionado: Service | null = null;
+    categoriasDisponibles: ServiceCategory[] = [];
 
     categoriasOptions = [
         { label: 'Corte de Cabello', value: 'Corte de Cabello' },
@@ -199,6 +215,7 @@ export class ServicesManagement implements OnInit {
         name: ['', [Validators.required, Validators.maxLength(100)]],
         description: [''],
         category: [''],
+        categories: [[]],
         price: [0, [Validators.required, Validators.min(0)]],
         duration: [30, [Validators.required, Validators.min(5)]],
         is_active: [true]
@@ -206,6 +223,19 @@ export class ServicesManagement implements OnInit {
 
     ngOnInit() {
         this.cargarServicios();
+        this.cargarCategorias();
+    }
+
+    async cargarCategorias() {
+        try {
+            const response: any = await this.serviceService.getServiceCategories().toPromise();
+            // El backend devuelve un objeto paginado con 'results'
+            this.categoriasDisponibles = response?.results || response || [];
+            console.log('Categorías cargadas:', this.categoriasDisponibles);
+        } catch (error) {
+            console.error('Error cargando categorías:', error);
+            this.categoriasDisponibles = [];
+        }
     }
 
     async cargarServicios() {
@@ -232,6 +262,7 @@ export class ServicesManagement implements OnInit {
             name: '',
             description: '',
             category: '',
+            categories: [],
             price: 0,
             duration: 30,
             is_active: true
@@ -245,6 +276,7 @@ export class ServicesManagement implements OnInit {
             name: servicio.name,
             description: servicio.description || '',
             category: servicio.category || '',
+            categories: servicio.categories || [],
             price: servicio.price,
             duration: servicio.duration,
             is_active: servicio.is_active

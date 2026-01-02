@@ -31,6 +31,11 @@
                   placeholder="Todas las categorías"
                   (onChange)="filtrarItems()" class="flex-1" [disabled]="cargandoDatos"></p-select>
         <input pInputText [(ngModel)]="busqueda" placeholder="Buscar..." (input)="filtrarItems()" class="flex-1" [disabled]="cargandoDatos">
+        <button pButton [icon]="vistaCompacta ? 'pi pi-th-large' : 'pi pi-list'" 
+                [class]="vistaCompacta ? 'p-button-success' : 'p-button-outlined'" 
+                (click)="vistaCompacta = !vistaCompacta" 
+                [pTooltip]="vistaCompacta ? 'Vista normal' : 'Vista compacta'" 
+                [disabled]="cargandoDatos"></button>
         <button pButton icon="pi pi-qrcode" [class]="modoScanner ? 'p-button-success' : 'p-button-outlined'" (click)="modoScanner = !modoScanner" pTooltip="Scanner (Ctrl+B)" [disabled]="cargandoDatos"></button>
         <button pButton icon="pi pi-refresh" (click)="cargarDatos()" [loading]="cargandoDatos" pTooltip="Recargar datos" class="p-button-outlined"></button>
       </div>
@@ -53,35 +58,100 @@
       </div>
 
       <!-- GRID DE ITEMS -->
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" *ngIf="!cargandoDatos; else loadingTemplate">
-        <div *ngFor="let item of itemsFiltrados"
-             class="p-4 rounded-lg shadow transition bg-white dark:bg-gray-800 border-2 border-transparent"
-             [class.hover:shadow-lg]="puedeAgregarMas(item)"
-             [class.cursor-pointer]="puedeAgregarMas(item)"
-             [class.opacity-50]="!puedeAgregarMas(item)"
-             [class.cursor-not-allowed]="!puedeAgregarMas(item)"
-             [class.border-green-200]="puedeAgregarMas(item)"
-             [class.hover:border-green-400]="puedeAgregarMas(item)"
-             (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
-          <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="w-full h-32 object-cover rounded mb-2">
-          <div class="flex justify-between items-start mb-2">
-            <h6 class="font-semibold">{{ item.name }}</h6>
-            <span class="text-lg font-bold text-primary-600">{{ formatearMoneda(item.price) }}</span>
+      <div *ngIf="!cargandoDatos; else loadingTemplate">
+        
+        <!-- Vista Normal (Tarjetas) -->
+        <div *ngIf="!vistaCompacta" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div *ngFor="let item of itemsFiltrados"
+               class="p-4 rounded-lg shadow transition bg-white dark:bg-gray-800 border-2 border-transparent"
+               [class.hover:shadow-lg]="puedeAgregarMas(item)"
+               [class.cursor-pointer]="puedeAgregarMas(item)"
+               [class.opacity-50]="!puedeAgregarMas(item)"
+               [class.cursor-not-allowed]="!puedeAgregarMas(item)"
+               [class.border-green-200]="puedeAgregarMas(item)"
+               [class.hover:border-green-400]="puedeAgregarMas(item)"
+               (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
+            <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="w-full h-32 object-cover rounded mb-2">
+            <div class="flex justify-between items-start mb-2">
+              <h6 class="font-semibold">{{ item.name }}</h6>
+              <span class="text-lg font-bold text-primary-600">{{ formatearMoneda(item.price) }}</span>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-2" *ngIf="item.description">{{ item.description }}</p>
+            <div class="flex justify-between items-center">
+              <span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ item.category || 'General' }}</span>
+              <div *ngIf="tipoActivo==='products'" class="text-xs">
+                <span [class]="obtenerStockDisponible(item) > 5 ? 'text-green-600' : obtenerStockDisponible(item) > 0 ? 'text-yellow-600' : 'text-red-600'">
+                  Stock: {{ obtenerStockDisponible(item) }}
+                </span>
+                <span *ngIf="obtenerStockDisponible(item) === 0" class="ml-1 text-red-600 font-semibold">AGOTADO</span>
+              </div>
+            </div>
           </div>
-          <p class="text-sm text-gray-600 dark:text-gray-300 mb-2" *ngIf="item.description">{{ item.description }}</p>
-          <div class="flex justify-between items-center">
-            <span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ item.category || 'General' }}</span>
-            <div *ngIf="tipoActivo==='products'" class="text-xs">
-              <span [class]="obtenerStockDisponible(item) > 5 ? 'text-green-600' : obtenerStockDisponible(item) > 0 ? 'text-yellow-600' : 'text-red-600'">
-                Stock: {{ obtenerStockDisponible(item) }}
-              </span>
-              <span *ngIf="obtenerStockDisponible(item) === 0" class="ml-1 text-red-600 font-semibold">AGOTADO</span>
+        </div>
+
+        <!-- Vista Compacta (Lista) -->
+        <div *ngIf="vistaCompacta" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            <div *ngFor="let item of itemsFiltrados" 
+                 class="flex items-center p-3 transition-colors"
+                 [class.hover:bg-gray-50]="puedeAgregarMas(item)"
+                 [class.cursor-pointer]="puedeAgregarMas(item)"
+                 [class.opacity-50]="!puedeAgregarMas(item)"
+                 [class.cursor-not-allowed]="!puedeAgregarMas(item)"
+                 [class.hover:bg-green-50]="puedeAgregarMas(item) && tipoActivo === 'services'"
+                 [class.hover:bg-blue-50]="puedeAgregarMas(item) && tipoActivo === 'products'"
+                 (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
+              
+              <!-- Icono de tipo -->
+              <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                   [class.bg-green-100]="tipoActivo === 'services'"
+                   [class.text-green-600]="tipoActivo === 'services'"
+                   [class.bg-blue-100]="tipoActivo === 'products'"
+                   [class.text-blue-600]="tipoActivo === 'products'">
+                <i [class]="tipoActivo === 'services' ? 'pi pi-cut' : 'pi pi-box'" class="text-sm"></i>
+              </div>
+              
+              <!-- Información principal -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h6 class="font-semibold text-sm truncate">{{ item.name }}</h6>
+                  <!-- Indicador de empleado requerido para servicios -->
+                  <span *ngIf="tipoActivo === 'services'" 
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    <i class="pi pi-user text-xs mr-1"></i>Empleado
+                  </span>
+                </div>
+                <div class="flex items-center gap-3 text-xs text-gray-500">
+                  <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ item.category || 'General' }}</span>
+                  <span *ngIf="tipoActivo === 'products'" 
+                        [class]="obtenerStockDisponible(item) > 5 ? 'text-green-600' : obtenerStockDisponible(item) > 0 ? 'text-yellow-600' : 'text-red-600'">
+                    Stock: {{ obtenerStockDisponible(item) }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Precio -->
+              <div class="flex-shrink-0 text-right">
+                <span class="text-lg font-bold text-primary-600">{{ formatearMoneda(item.price) }}</span>
+                <div *ngIf="tipoActivo === 'products' && obtenerStockDisponible(item) === 0" 
+                     class="text-xs text-red-600 font-semibold">AGOTADO</div>
+              </div>
+              
+              <!-- Botón de agregar -->
+              <div class="flex-shrink-0 ml-3">
+                <button *ngIf="puedeAgregarMas(item)" 
+                        pButton icon="pi pi-plus" 
+                        size="small" 
+                        class="p-button-rounded p-button-success"
+                        (click)="$event.stopPropagation(); agregarAlCarrito(item)"
+                        [pTooltip]="'Agregar ' + item.name"></button>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Mensaje cuando no hay items -->
-        <div *ngIf="itemsFiltrados.length === 0" class="col-span-full text-center py-8">
+        <div *ngIf="itemsFiltrados.length === 0" class="text-center py-8">
           <i class="pi pi-search text-4xl text-gray-400 mb-4"></i>
           <p class="text-gray-500">No se encontraron {{ tipoActivo === 'services' ? 'servicios' : 'productos' }}</p>
           <button pButton label="Limpiar filtros" (click)="categoriaSeleccionada=''; busqueda=''; filtrarItems()" class="p-button-text mt-2"></button>
@@ -204,6 +274,22 @@
           <div class="flex justify-between text-sm"><span>Ticket Promedio:</span><span class="font-semibold">{{ formatearMoneda(estadisticasDia().ticketPromedio) }}</span></div>
         </div>
 
+        <!-- Pagos NO en Efectivo (Solo Informativo) -->
+        <div *ngIf="pagosNoCash().length > 0" class="p-3 bg-amber-50 dark:bg-amber-900 rounded-lg border border-amber-200">
+          <h6 class="text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
+            <i class="pi pi-info-circle"></i>
+            Ingresos por Otros Métodos
+          </h6>
+          <div *ngFor="let pago of pagosNoCash()" class="flex justify-between text-sm mb-1">
+            <span>{{ pago.metodo }}:</span>
+            <span class="font-semibold text-amber-700">{{ formatearMoneda(pago.total) }}</span>
+          </div>
+          <div class="text-xs text-amber-700 mt-2 p-2 bg-amber-100 rounded border-l-4 border-amber-400">
+            <i class="pi pi-exclamation-triangle mr-1"></i>
+            <strong>Nota:</strong> Estos montos NO afectan el arqueo de caja
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -224,7 +310,7 @@
   <p-dialog header="Cuadre y Cierre de Caja" [(visible)]="mostrarDialogoCerrarCaja" [modal]="true" [style]="{width:'500px'}">
     <div class="flex flex-col gap-4">
       <div class="p-3 bg-gray-50 rounded">
-        <h5 class="font-bold mb-2">Resumen del Día</h5>
+        <h5 class="font-bold mb-2">🧦 Resumen del Día - Solo Efectivo</h5>
         <div class="flex justify-between text-sm">
           <span>Monto inicial:</span>
           <span class="font-mono">${{ (montoEsperado - ventasEfectivoHoy).toFixed(2) }}</span>
@@ -236,6 +322,22 @@
         <div class="flex justify-between text-sm font-bold border-t pt-1">
           <span>Efectivo esperado:</span>
           <span class="font-mono">${{ (+montoEsperado || 0).toFixed(2) }}</span>
+        </div>
+      </div>
+
+      <!-- Pagos NO en Efectivo (Solo Informativo) -->
+      <div *ngIf="pagosNoCash().length > 0" class="p-3 bg-blue-50 rounded border border-blue-200">
+        <h5 class="font-bold mb-2 text-blue-800 flex items-center gap-2">
+          <i class="pi pi-info-circle"></i>
+          📊 Ingresos por Otros Métodos
+        </h5>
+        <div *ngFor="let pago of pagosNoCash()" class="flex justify-between text-sm mb-1">
+          <span>{{ pago.metodo }}:</span>
+          <span class="font-mono text-blue-700">${{ pago.total.toFixed(2) }}</span>
+        </div>
+        <div class="text-xs text-blue-700 mt-2 p-2 bg-blue-100 rounded border-l-4 border-blue-400">
+          <i class="pi pi-shield mr-1"></i>
+          <strong>Importante:</strong> Estos montos NO se incluyen en el arqueo de caja físico
         </div>
       </div>
 

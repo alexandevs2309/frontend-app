@@ -7,7 +7,7 @@ export const adminRoutes: Routes = [
     {
         path: 'admin',
         canActivate: [AuthGuard, SuperAdminGuard],
-        data: { roles: ['SuperAdmin'] },
+        data: { roles: ['SUPER_ADMIN'] },
         component: AppLayout,
         children: [
             { 

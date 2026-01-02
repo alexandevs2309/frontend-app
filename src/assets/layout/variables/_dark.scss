@@ -1,5 +1,29 @@
 :root[class*='app-dark'] {
-    --surface-ground: var(--p-surface-950);
-    --code-background: var(--p-surface-800);
-    --code-color: var(--p-surface-100);
+    /* Paleta Lavanda Fintech - Modo Oscuro */
+    --primary-color: #8B7CF6;
+    --primary-color-text: #FFFFFF;
+    --surface-ground: #111827;
+    --surface-card: #1F2937;
+    --surface-border: #374151;
+    --text-color: #F9FAFB;
+    --text-color-secondary: #D1D5DB;
+    
+    /* Variables PrimeNG modo oscuro */
+    --p-primary-color: #8B7CF6;
+    --p-primary-contrast-color: #FFFFFF;
+    --p-text-color: #F9FAFB;
+    --p-text-muted-color: #D1D5DB;
+    --p-content-border-color: #374151;
+    --p-content-background: #1F2937;
+    --p-content-hover-background: #374151;
+    --p-overlay-popover-background: #1F2937;
+    
+    /* Variables específicas de Sakai modo oscuro */
+    --surface-950: #111827;
+    --surface-800: #1F2937;
+    --surface-100: #F3F4F6;
+    
+    /* Código */
+    --code-background: var(--surface-800);
+    --code-color: var(--surface-100);
 }

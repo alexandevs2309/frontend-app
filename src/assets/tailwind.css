@@ -8,4 +8,23 @@
     --breakpoint-lg: 992px;
     --breakpoint-xl: 1200px;
     --breakpoint-2xl: 1920px;
+    
+    /* Paleta Lavanda Fintech */
+    --color-brand: #7C6AF2;
+    --color-brand-soft: #E9E6FF;
+    --color-brand-hover: #6B5AE0;
+    
+    --color-surface: #FFFFFF;
+    --color-surface-soft: #F8F9FF;
+    
+    --color-text: #1F2937;
+    --color-text-secondary: #6B7280;
+    --color-text-muted: #9CA3AF;
+    
+    --color-border: #E5E7EB;
+    
+    --color-accent: #F472B6;
+    --color-success: #34D399;
+    --color-warning: #FBBF24;
+    --color-error: #F87171;
 }

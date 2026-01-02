@@ -71,7 +71,7 @@ export class AuthService extends BaseApiService {
         tap(response => {
           this.setAuthData(response);
           // Load entitlements for client users after successful login
-          if (response.user?.role !== 'SuperAdmin') {
+          if (response.user?.role !== 'SUPER_ADMIN') {
             this.trialService.loadTrialStatus();
           }
         })
@@ -184,15 +184,18 @@ export class AuthService extends BaseApiService {
   }
 
   isSuperAdmin(): boolean {
-    return this.hasRole('SuperAdmin');
+    const user = this.getCurrentUser();
+    return user?.role === 'SUPER_ADMIN';
   }
 
   isClientAdmin(): boolean {
-    return this.hasRole('ClientAdmin');
+    const user = this.getCurrentUser();
+    return user?.role === 'CLIENT_ADMIN';
   }
 
   isClientStaff(): boolean {
-    return this.hasRole('ClientStaff');
+    const user = this.getCurrentUser();
+    return user?.role === 'CLIENT_STAFF';
   }
 
   getToken(): string | null {
@@ -208,9 +211,13 @@ export class AuthService extends BaseApiService {
     localStorage.setItem('access_token', response.access);
     localStorage.setItem('refresh_token', response.refresh);
     
+    // Normalizar rol antes de almacenar
+    const normalizedRole = this.normalizeRole(response.user?.role);
+    
     // Agregar tenant_id si viene en la respuesta
     const userWithTenant = {
       ...response.user,
+      role: normalizedRole,
       tenant_id: response.tenant ? response.tenant.id : null
     };
     
@@ -225,7 +232,7 @@ export class AuthService extends BaseApiService {
     this.isAuthenticatedSubject.next(true);
     
     // Load trial status for non-admin users
-    if (response.user?.role !== 'SuperAdmin') {
+    if (normalizedRole !== 'SUPER_ADMIN') {
       this.trialService.loadTrialStatus();
     }
     
@@ -251,16 +258,28 @@ export class AuthService extends BaseApiService {
     if (token && userStr) {
       try {
         const user = JSON.parse(userStr);
+        // Normalizar rol al cargar desde storage
+        user.role = this.normalizeRole(user.role);
         this.currentUserSubject.next(user);
         this.isAuthenticatedSubject.next(true);
         
         // Cargar trial status si es necesario
-        if (user.role !== 'SuperAdmin') {
+        if (user.role !== 'SUPER_ADMIN') {
           this.trialService.loadTrialStatus();
         }
       } catch (error) {
         this.clearAuthData();
       }
     }
+  }
+
+  private normalizeRole(role: string): string {
+    const roleMap: { [key: string]: string } = {
+      'Client-Admin': 'CLIENT_ADMIN',
+      'Client-Staff': 'CLIENT_STAFF', 
+      'SuperAdmin': 'SUPER_ADMIN',
+      'Super-Admin': 'SUPER_ADMIN'
+    };
+    return roleMap[role] || role;
   }
 }

@@ -7,7 +7,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { FileUploadModule } from 'primeng/fileupload';
-import { MessageService } from 'primeng/api';
+import { DialogModule } from 'primeng/dialog';
+import { MessageModule } from 'primeng/message';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 
@@ -39,14 +42,16 @@ interface BarbershopSettings {
   standalone: true,
   imports: [
     CommonModule, FormsModule, ButtonModule, CardModule,
-    InputTextModule, SelectModule, ToastModule, FileUploadModule
+    InputTextModule, SelectModule, ToastModule, FileUploadModule,
+    DialogModule, MessageModule, ConfirmDialogModule
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './barbershop-settings.html'
 })
 export class BarbershopSettingsComponent implements OnInit {
   private http = inject(HttpClient);
   private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
 
   settings = signal<BarbershopSettings>({
     name: '',
@@ -76,6 +81,10 @@ export class BarbershopSettingsComponent implements OnInit {
   });
 
   loading = signal(false);
+  governanceInfo = signal<any>(null);
+  showCriticalDialog = signal(false);
+  criticalChanges = signal<any[]>([]);
+  pendingData = signal<any>(null);
 
   currencies = [
     { label: 'Peso Dominicano (DOP)', value: 'DOP', symbol: 'RD$' },
@@ -95,6 +104,7 @@ export class BarbershopSettingsComponent implements OnInit {
 
   ngOnInit() {
     this.loadSettings();
+    this.loadGovernanceInfo();
   }
 
   loadSettings() {
@@ -116,16 +126,86 @@ export class BarbershopSettingsComponent implements OnInit {
       });
   }
 
+  loadGovernanceInfo() {
+    this.http.get(`${environment.apiUrl}/settings/barbershop/governance_info/`)
+      .subscribe({
+        next: (data) => {
+          this.governanceInfo.set(data);
+        },
+        error: () => {
+          console.warn('No se pudo cargar información de gobierno');
+        }
+      });
+  }
+
   saveSettings() {
     this.loading.set(true);
     this.http.post(`${environment.apiUrl}/settings/barbershop/`, this.settings())
       .subscribe({
-        next: () => {
+        next: (response: any) => {
           this.loading.set(false);
+          
+          // Si requiere confirmación, mostrar diálogo
+          if (response.requires_confirmation) {
+            this.criticalChanges.set(response.critical_changes);
+            this.pendingData.set(this.settings());
+            this.showCriticalDialog.set(true);
+            return;
+          }
+          
           this.messageService.add({
             severity: 'success',
             summary: 'Guardado',
-            detail: 'Configuración actualizada correctamente'
+            detail: response.changes_logged ? 
+              'Configuración actualizada y cambios registrados' : 
+              'Configuración actualizada correctamente'
+          });
+        },
+        error: (error) => {
+          this.loading.set(false);
+          
+          if (error.error?.validation_errors) {
+            const errors = error.error.validation_errors
+              .map((e: any) => `${e.setting}: ${e.error}`)
+              .join(', ');
+            
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error de Validación',
+              detail: errors
+            });
+          } else {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo guardar la configuración'
+            });
+          }
+        }
+      });
+  }
+
+  confirmCriticalChanges() {
+    if (!this.pendingData()) return;
+    
+    this.loading.set(true);
+    const dataWithConfirmation = {
+      ...this.pendingData(),
+      confirmed_critical: true
+    };
+    
+    this.http.post(`${environment.apiUrl}/settings/barbershop/`, dataWithConfirmation)
+      .subscribe({
+        next: (response: any) => {
+          this.loading.set(false);
+          this.showCriticalDialog.set(false);
+          this.criticalChanges.set([]);
+          this.pendingData.set(null);
+          
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Guardado',
+            detail: 'Configuración crítica actualizada y registrada'
           });
         },
         error: () => {
@@ -137,6 +217,18 @@ export class BarbershopSettingsComponent implements OnInit {
           });
         }
       });
+  }
+
+  cancelCriticalChanges() {
+    this.showCriticalDialog.set(false);
+    this.criticalChanges.set([]);
+    this.pendingData.set(null);
+    
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Cancelado',
+      detail: 'Cambios críticos cancelados'
+    });
   }
 
   onCurrencyChange(currency: any) {
@@ -192,5 +284,32 @@ export class BarbershopSettingsComponent implements OnInit {
 
   getBusinessHour(day: string, field: 'open' | 'close' | 'closed'): any {
     return this.settings().business_hours[day]?.[field];
+  }
+
+  getSettingType(settingName: string): 'critical' | 'sensitive' | 'cosmetic' {
+    const governance = this.governanceInfo();
+    if (!governance) return 'cosmetic';
+    
+    if (governance.critical && governance.critical[settingName]) return 'critical';
+    if (governance.sensitive && governance.sensitive[settingName]) return 'sensitive';
+    return 'cosmetic';
+  }
+
+  getSettingIcon(settingName: string): string {
+    const type = this.getSettingType(settingName);
+    switch (type) {
+      case 'critical': return 'pi pi-exclamation-triangle';
+      case 'sensitive': return 'pi pi-info-circle';
+      default: return 'pi pi-cog';
+    }
+  }
+
+  getSettingColor(settingName: string): string {
+    const type = this.getSettingType(settingName);
+    switch (type) {
+      case 'critical': return 'text-red-600';
+      case 'sensitive': return 'text-orange-600';
+      default: return 'text-gray-600';
+    }
   }
 }

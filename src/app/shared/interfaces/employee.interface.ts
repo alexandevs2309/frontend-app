@@ -7,32 +7,6 @@ export interface BaseEmployee {
   is_active: boolean;
 }
 
-export interface EmployeeEarnings extends BaseEmployee {
-  payment_type: 'commission' | 'fixed' | 'mixed';
-  payment_frequency?: 'daily' | 'weekly' | 'biweekly' | 'monthly';
-  commission_rate?: number;
-  
-  // NUEVO: Salario contractual mensual (fuente de verdad)
-  contractual_monthly_salary?: number;
-  
-  // Monto calculado por período (calculado en frontend)
-  period_amount?: number;
-  
-  // DEPRECATED: Mantener para backward compatibility
-  fixed_salary?: number;
-  
-  total_earned: number;
-  total_sales?: number;
-  services_count: number;
-  payment_status: 'pending' | 'paid' | 'processing';
-}
-
-export interface Period {
-  titulo: string;
-  fechaInicio: Date;
-  fechaFin: Date;
-}
-
 export interface CashRegisterState {
   id: number;
   is_open: boolean;

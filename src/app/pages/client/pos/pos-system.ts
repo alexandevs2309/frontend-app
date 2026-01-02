@@ -48,6 +48,7 @@ export class PosSystem implements OnInit {
     carrito = signal<CartItem[]>([]);
     cajaAbierta = signal(false);
     estadisticasDia = signal({ ventas: 0, ingresos: 0, ticketPromedio: 0 });
+    pagosNoCash = signal<any[]>([]);
 
     // Computed signals para cálculos automáticos
     subtotal = computed(() => this.carrito().reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0));
@@ -133,6 +134,7 @@ export class PosSystem implements OnInit {
     modoScanner = false;
     clientesFrecuentes: any[] = [];
     Math = Math;
+    vistaCompacta = false; // Nueva propiedad para toggle de vista
 
     metodosPago = [
         { label: 'Efectivo', value: 'cash' },
@@ -464,7 +466,7 @@ export class PosSystem implements OnInit {
             });
 
             // Actualizar estadísticas ANTES de limpiar carrito
-            this.actualizarEstadisticasVenta();
+            await this.actualizarEstadisticasVenta();
 
             // Mostrar ticket automáticamente
             this.mostrarTicket(venta);
@@ -494,6 +496,12 @@ export class PosSystem implements OnInit {
         try {
             const registers = await this.posService.getCashRegisters({ is_open: true }).toPromise();
             this.cajaAbierta.set(registers?.results?.length > 0 || false);
+            
+            // Cargar pagos no cash al verificar estado de caja
+            if (this.cajaAbierta()) {
+                const dailySummary = await this.posService.getDailySummary().toPromise();
+                this.extraerPagosNoCash(dailySummary);
+            }
         } catch (error) {
             this.cajaAbierta.set(false);
         }
@@ -553,18 +561,33 @@ export class PosSystem implements OnInit {
             const registers = await this.posService.getCashRegisters({ is_open: true }).toPromise();
             const cajaActual = registers?.results?.[0];
 
+            if (!cajaActual) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No hay una caja abierta'
+                });
+                return;
+            }
+
             // Obtener monto inicial de cuando se abrió la caja
             const montoInicialSesion = this.obtenerMontoInicialCaja();
-            const ventasEfectivoSesion = this.ventasEfectivoSesionActual;
+            
+            // 🔧 FIX: Consultar ventas en efectivo reales desde backend
+            const dailySummary = await this.posService.getDailySummary().toPromise();
+            const ventasEfectivoReales = this.extraerVentasEfectivo(dailySummary);
+            
+            // 💡 NUEVA FUNCIONALIDAD: Extraer pagos no en efectivo
+            this.extraerPagosNoCash(dailySummary);
 
-            console.log('Debug cierre caja:', {
+            console.log('Debug cierre caja (FIXED):', {
                 montoInicialGuardado: montoInicialSesion,
-                ventasEfectivoSesion: ventasEfectivoSesion,
-                estadisticas: this.estadisticasDia()
+                ventasEfectivoBackend: ventasEfectivoReales,
+                dailySummary: dailySummary
             });
 
-            this.ventasEfectivoHoy = ventasEfectivoSesion;
-            this.montoEsperado = montoInicialSesion + ventasEfectivoSesion;
+            this.ventasEfectivoHoy = ventasEfectivoReales;
+            this.montoEsperado = montoInicialSesion + ventasEfectivoReales;
             this.montoFinalCaja = 0; // Reset
             this.diferenciaCaja = 0; // Reset
 
@@ -579,6 +602,7 @@ export class PosSystem implements OnInit {
 
             this.mostrarDialogoCerrarCaja = true;
         } catch (error) {
+            console.error('Error preparando cierre de caja:', error);
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -649,7 +673,7 @@ export class PosSystem implements OnInit {
         }
     }
 
-    actualizarEstadisticasVenta() {
+    async actualizarEstadisticasVenta() {
         const estadisticasActuales = this.estadisticasDia();
         const totalVenta = this.calcularTotal();
 
@@ -669,6 +693,14 @@ export class PosSystem implements OnInit {
 
         this.estadisticasDia.set(nuevasEstadisticas);
         this.guardarEstadisticas(nuevasEstadisticas);
+        
+        // Actualizar pagos no cash después de la venta
+        try {
+            const dailySummary = await this.posService.getDailySummary().toPromise();
+            this.extraerPagosNoCash(dailySummary);
+        } catch (error) {
+            console.error('Error actualizando pagos no cash:', error);
+        }
     }
 
 
@@ -852,7 +884,8 @@ export class PosSystem implements OnInit {
     calcularDiferenciaArqueo(): number {
         const totalContado = this.calcularTotalArqueo();
         const montoInicial = this.obtenerMontoInicialCaja();
-        const efectivoEsperado = montoInicial + this.ventasEfectivoSesionActual;
+        // 🔧 FIX: Usar ventas en efectivo reales del backend
+        const efectivoEsperado = montoInicial + this.ventasEfectivoHoy;
         return totalContado - efectivoEsperado;
     }
 
@@ -1280,6 +1313,36 @@ ${this.carrito().map(item =>
 
     // Variable para trackear ventas en efectivo de la sesión
     ventasEfectivoSesionActual = 0;
+
+    extraerVentasEfectivo(dailySummary: any): number {
+        try {
+            // Buscar en by_method el total de ventas en efectivo
+            const byMethod = dailySummary?.by_method || [];
+            const cashSales = byMethod.find((method: any) => method.payment_method === 'cash');
+            return Number(cashSales?.total || 0);
+        } catch (error) {
+            console.error('Error extrayendo ventas en efectivo:', error);
+            return 0;
+        }
+    }
+
+    extraerPagosNoCash(dailySummary: any): void {
+        try {
+            const byMethod = dailySummary?.by_method || [];
+            const pagosNoCash = byMethod
+                .filter((method: any) => method.payment_method !== 'cash')
+                .map((method: any) => ({
+                    metodo: this.getPaymentMethodName(method.payment_method),
+                    total: Number(method.total || 0)
+                }))
+                .filter((pago: any) => pago.total > 0);
+            
+            this.pagosNoCash.set(pagosNoCash);
+        } catch (error) {
+            console.error('Error extrayendo pagos no cash:', error);
+            this.pagosNoCash.set([]);
+        }
+    }
 
     calcularVentasEfectivoSesion(): number {
         return this.ventasEfectivoSesionActual;

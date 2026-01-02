@@ -40,10 +40,6 @@ export class ReportService extends BaseApiService {
     return this.get(API_CONFIG.ENDPOINTS.REPORTS.EMPLOYEES, params);
   }
 
-  getEmployeeEarningsReport(employeeId: number, params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.EMPLOYEES}${employeeId}/earnings/`, params);
-  }
-
   getEmployeePerformanceReport(employeeId: number, params: ReportParams): Observable<any> {
     return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.EMPLOYEES}${employeeId}/performance/`, params);
   }

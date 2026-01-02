@@ -3,6 +3,13 @@ import { Observable } from 'rxjs';
 import { BaseApiService } from '../base-api.service';
 import { API_CONFIG } from '../../config/api.config';
 
+export interface ServiceCategory {
+  id: number;
+  name: string;
+  description?: string;
+  is_active: boolean;
+}
+
 export interface Service {
   id: number;
   name: string;
@@ -10,6 +17,8 @@ export interface Service {
   price: number;
   duration: number;
   category?: string;
+  categories?: number[];
+  category_names?: string[];
   is_active: boolean;
   tenant?: number;
   created_at: string;
@@ -65,6 +74,10 @@ export class ServiceService extends BaseApiService {
 
   bulkUpdatePrices(updates: { id: number; price: number }[]): Observable<any> {
     return this.post(`${API_CONFIG.ENDPOINTS.SERVICES}bulk_update_prices/`, { updates });
+  }
+
+  getServiceCategories(): Observable<ServiceCategory[]> {
+    return this.get('/services/service-categories/');
   }
 
   getCategories(): Observable<string[]> {

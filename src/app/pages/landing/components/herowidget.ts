@@ -12,7 +12,7 @@ import { LandingService, SaasMetrics } from '../../../shared/services/landing.se
     imports: [ButtonModule, RippleModule, RouterModule, CommonModule],
     template: `
         <div id="hero" class="relative min-h-screen flex items-center overflow-hidden"
-             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-attachment: fixed;">
+             style="background: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-700) 100%); background-attachment: fixed;">
 
             <!-- Floating particles background -->
             <div class="absolute inset-0 overflow-hidden pointer-events-none">
@@ -33,26 +33,26 @@ import { LandingService, SaasMetrics } from '../../../shared/services/landing.se
                         <!-- Glass morphism card -->
                         <div class="glass-effect rounded-3xl p-8 mb-8 backdrop-blur-lg border border-white/20 shadow-2xl animate-on-scroll" data-direction="left">
                             <div class="animate-fade-in-up">
-                                <span class="inline-block px-4 py-2 bg-linear-to-r from-yellow-400 to-orange-500 text-black font-semibold rounded-full text-sm mb-6 animate-bounce">🚀 SaaS para Peluquerías</span>
+                                <span class="inline-block px-4 py-2 bg-linear-to-r from-brand-400 to-brand-500 text-white font-semibold rounded-full text-sm mb-6 animate-bounce">🚀 SaaS para Peluquerías</span>
 
                                 <h1 class="text-5xl lg:text-7xl font-bold text-white leading-tight mb-6">
-                                    <span class="block font-light text-yellow-300 animate-slide-in-left">Gestiona tu</span>
-                                    <span class="bg-linear-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent animate-slide-in-right">Barbería</span>
+                                    <span class="block font-light text-brand-200 animate-slide-in-left">Gestiona tu</span>
+                                    <span class="bg-linear-to-r from-brand-300 via-brand-400 to-brand-500 bg-clip-text text-transparent animate-slide-in-right">Barbería</span>
                                     <span class="block text-white animate-slide-in-left">como un Pro</span>
                                 </h1>
 
                                 <p class="text-xl lg:text-2xl text-gray-200 leading-relaxed mb-8 animate-fade-in-up" style="animation-delay: 0.3s;">
                                     Auron-Suite es la plataforma SaaS completa que revoluciona la gestión de peluquerías con
-                                    <span class="text-yellow-400 font-semibold">ganancias por quincena</span>,
-                                    <span class="text-orange-400 font-semibold">multitenancy</span> y
-                                    <span class="text-red-400 font-semibold">analytics en tiempo real</span>.
+                                    <span class="text-brand-300 font-semibold">ganancias por quincena</span>,
+                                    <span class="text-brand-400 font-semibold">multitenancy</span> y
+                                    <span class="text-brand-500 font-semibold">analytics en tiempo real</span>.
                                 </p>
 
                                 <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up" style="animation-delay: 0.6s;">
                                     <button pButton pRipple
                                             routerLink="/auth/register"
                                             label="Prueba Gratis 7 Días"
-                                            class="!bg-linear-to-r !from-yellow-400 !to-orange-500 !text-black !font-bold !text-lg !px-8 !py-4 !rounded-full hover:!scale-105 !transition-all !duration-300 !shadow-2xl hover:!shadow-yellow-500/50">
+                                            class="!bg-linear-to-r !from-brand-400 !to-brand-500 !text-white !font-bold !text-lg !px-8 !py-4 !rounded-full hover:!scale-105 !transition-all !duration-300 !shadow-2xl hover:!shadow-brand-500/50">
                                     </button>
                                     <button pButton pRipple
                                             (click)="scrollToDemo()"
@@ -65,15 +65,15 @@ import { LandingService, SaasMetrics } from '../../../shared/services/landing.se
                                 <!-- Stats -->
                                 <div class="grid grid-cols-3 gap-4 mt-12 animate-fade-in-up" style="animation-delay: 0.9s;">
                                     <div class="text-center">
-                                        <div class="text-3xl font-bold text-yellow-400">{{ metrics?.total_tenants || 0 }}+</div>
+                                        <div class="text-3xl font-bold text-brand-300">{{ metrics?.total_tenants || 0 }}+</div>
                                         <div class="text-sm text-gray-300">Peluquerías</div>
                                     </div>
                                     <div class="text-center">
-                                        <div class="text-3xl font-bold text-orange-400">{{ metrics?.active_tenants || 0 }}+</div>
+                                        <div class="text-3xl font-bold text-brand-400">{{ metrics?.active_tenants || 0 }}+</div>
                                         <div class="text-sm text-gray-300">Activas</div>
                                     </div>
                                     <div class="text-center">
-                                        <div class="text-3xl font-bold text-red-400">\${{ metrics?.mrr || 0 | number:'1.0-0' }}</div>
+                                        <div class="text-3xl font-bold text-brand-500">\${{ metrics?.mrr || 0 | number:'1.0-0' }}</div>
                                         <div class="text-sm text-gray-300">MRR</div>
                                     </div>
                                 </div>

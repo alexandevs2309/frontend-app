@@ -98,7 +98,11 @@ export class Login implements OnInit {
 
                 // Force menu update and redirect
                 setTimeout(() => {
-                    this.redirectUser(response.user?.role);
+                    // Get the normalized role from AuthService
+                    const currentUser = this.authService.getCurrentUser();
+                    const userRole = currentUser?.role || response.user?.role;
+                    console.log('Redirecting user with role:', userRole);
+                    this.redirectUser(userRole);
                 }, 500);
             },
             error: (error) => {
@@ -110,15 +114,17 @@ export class Login implements OnInit {
     }
 
     private redirectUser(role: string): void {
-        // Usar setTimeout para asegurar que el estado se actualice
-        setTimeout(() => {
-            if (role === 'super_admin') {
-                this.router.navigate(['/admin/dashboard']);
-            } else if (role === 'admin') {
-                this.router.navigate(['/client/dashboard']);
-            } else {
-                this.router.navigate(['/client/dashboard']);
-            }
-        }, 100);
+        console.log('redirectUser called with role:', role);
+        
+        if (role === 'SUPER_ADMIN') {
+            console.log('Redirecting to admin dashboard');
+            this.router.navigate(['/admin/dashboard']);
+        } else if (role === 'CLIENT_ADMIN' || role === 'CLIENT_STAFF') {
+            console.log('Redirecting to client dashboard');
+            this.router.navigate(['/client/dashboard']);
+        } else {
+            console.log('Default redirect to client dashboard');
+            this.router.navigate(['/client/dashboard']);
+        }
     }
 }

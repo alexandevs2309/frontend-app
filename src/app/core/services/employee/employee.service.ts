@@ -12,7 +12,6 @@ export interface Employee {
   phone?: string;
   hire_date?: string;
   is_active: boolean;
-  commission_rate?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -32,22 +31,7 @@ export interface UpdateEmployeeRequest {
   is_active: boolean;
 }
 
-export interface Earning {
-  id: number;
-  employee: number;
-  amount: number;
-  service_type: string;
-  date: string;
-  fortnight_period: string;
-}
 
-export interface FortnightSummary {
-  id: number;
-  employee: number;
-  period: string;
-  total_earnings: number;
-  total_services: number;
-}
 
 @Injectable({
   providedIn: 'root'
@@ -90,32 +74,6 @@ export class EmployeeService extends BaseApiService {
 
   updateSchedule(id: number, schedule: any): Observable<any> {
     return this.put(`${API_CONFIG.ENDPOINTS.EMPLOYEES.SCHEDULES}${id}/`, schedule);
-  }
-
-  // Earnings ⭐ Feature estrella
-  getEarnings(params?: any): Observable<any> {
-    return this.get(API_CONFIG.ENDPOINTS.EMPLOYEES.EARNINGS, params);
-  }
-
-  createEarning(earning: Partial<Earning>): Observable<Earning> {
-    return this.post(API_CONFIG.ENDPOINTS.EMPLOYEES.EARNINGS, earning);
-  }
-
-  getMyEarnings(): Observable<any> {
-    return this.get(API_CONFIG.ENDPOINTS.EMPLOYEES.MY_EARNINGS);
-  }
-
-  getCurrentFortnight(): Observable<any> {
-    return this.get(API_CONFIG.ENDPOINTS.EMPLOYEES.CURRENT_FORTNIGHT);
-  }
-
-  // Fortnight Summaries
-  getFortnightSummaries(params?: any): Observable<any> {
-    return this.get(API_CONFIG.ENDPOINTS.EMPLOYEES.FORTNIGHT_SUMMARIES, params);
-  }
-
-  getFortnightSummary(id: number): Observable<FortnightSummary> {
-    return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.FORTNIGHT_SUMMARIES}${id}/`);
   }
 
   // Employee specific actions

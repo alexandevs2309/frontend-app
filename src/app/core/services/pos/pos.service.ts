@@ -93,15 +93,6 @@ export class PosService extends BaseApiService {
     return this.get(API_CONFIG.ENDPOINTS.POS.CONFIG);
   }
 
-  // Earnings ⭐ Feature estrella (POS side)
-  getMyEarnings(): Observable<any> {
-    return this.get(API_CONFIG.ENDPOINTS.POS.MY_EARNINGS);
-  }
-
-  getCurrentFortnight(): Observable<any> {
-    return this.get(API_CONFIG.ENDPOINTS.POS.CURRENT_FORTNIGHT);
-  }
-
   // Nuevas funcionalidades
   searchSales(params: any): Observable<any> {
     return this.get(API_CONFIG.ENDPOINTS.POS.SEARCH_SALES, params);

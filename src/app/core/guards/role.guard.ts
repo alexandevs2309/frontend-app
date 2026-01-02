@@ -49,11 +49,11 @@ export class RoleGuard implements CanActivate {
     
     // Redirect based on user role
     switch (userRole) {
-      case 'SuperAdmin':
+      case 'SUPER_ADMIN':
         this.router.navigate(['/admin/dashboard']);
         break;
-      case 'Client-Admin':
-      case 'Client-Staff':
+      case 'CLIENT_ADMIN':
+      case 'CLIENT_STAFF':
         this.router.navigate(['/client/dashboard']);
         break;
       default:
