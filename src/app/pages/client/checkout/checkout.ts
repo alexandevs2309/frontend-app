@@ -179,15 +179,12 @@ export class CheckoutComponent implements OnInit {
 
     if (state?.['plan']) {
       this.selectedPlan = state['plan'];
-      console.log('Plan received:', this.selectedPlan);
     } else {
       // Try to get from history state
       const historyState = history.state;
       if (historyState?.plan) {
         this.selectedPlan = historyState.plan;
-        console.log('Plan from history:', this.selectedPlan);
       } else {
-        console.log('No plan found, redirecting to payment');
         setTimeout(() => {
           this.router.navigate(['/client/payment']);
         }, 100);

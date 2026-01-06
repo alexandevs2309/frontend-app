@@ -28,7 +28,7 @@ interface MenuChangeEvent {
 export class LayoutService {
     _config: layoutConfig = {
         preset: 'Aura',
-        primary: 'emerald',
+        primary: 'blue',
         surface: null,
         darkTheme: false,
         menuMode: 'static'
@@ -188,6 +188,28 @@ export class LayoutService {
     onConfigUpdate() {
         this._config = { ...this.layoutConfig() };
         this.configUpdate.next(this.layoutConfig());
+        this.updatePrimaryColor();
+    }
+
+    private updatePrimaryColor(): void {
+        const primary = this.layoutConfig().primary || 'blue';
+        const root = document.documentElement;
+        
+        // Mapeo de colores primarios
+        const primaryColors = {
+            'blue': '#2563EB',
+            'green': '#059669', 
+            'orange': '#EA580C',
+            'purple': '#9333EA',
+            'red': '#DC2626',
+            'indigo': '#4F46E5',
+            'teal': '#0D9488',
+            'pink': '#DB2777'
+        };
+        
+        const color = primaryColors[primary as keyof typeof primaryColors] || primaryColors.blue;
+        root.style.setProperty('--p-primary-color', color);
+        root.style.setProperty('--primary-color', color);
     }
 
     onMenuStateChange(event: MenuChangeEvent) {

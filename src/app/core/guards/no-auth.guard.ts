@@ -17,7 +17,7 @@ export class NoAuthGuard implements CanActivate {
     return this.authService.isAuthenticated$.pipe(
       map(isAuthenticated => {
         if (isAuthenticated) {
-          // Redirect authenticated users to their dashboard
+          // Redirecionar al dashboard correspondiente según el rol del usuario
           const userRole = this.authService.getCurrentUserRole();
           this.redirectToDashboard(userRole);
           return false;

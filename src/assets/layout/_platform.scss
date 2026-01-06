@@ -1,0 +1,366 @@
+/* PLATFORM STYLES - CAPA GLOBAL SAKAI */
+
+/* === BODY Y CONTENEDORES BASE === */
+body {
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+}
+
+.layout-wrapper,
+.layout-main,
+.layout-content {
+  background-color: var(--surface-ground);
+}
+
+/* === TEXTOS BASE === */
+p, span, label, div {
+  color: var(--text-color);
+}
+
+.text-secondary,
+.text-muted,
+small {
+  color: var(--text-color-secondary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-color);
+}
+
+/* === CARDS Y PANELS GENÉRICOS === */
+.card,
+.panel,
+.surface,
+.bg-white {
+  background-color: var(--surface-card) !important;
+  border-color: var(--surface-border) !important;
+}
+
+/* === TABLAS === */
+table {
+  background-color: var(--surface-card);
+  color: var(--text-color);
+}
+
+th {
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+  border-color: var(--surface-border);
+}
+
+td {
+  color: var(--text-color);
+  border-color: var(--surface-border);
+}
+
+tr:hover {
+  background-color: var(--surface-hover-background, var(--surface-ground));
+}
+
+/* === INPUTS Y FORMULARIOS === */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  background-color: var(--surface-card);
+  color: var(--text-color);
+  border-color: var(--surface-border);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary-color);
+}
+
+/* === CONTENEDORES COMUNES === */
+.container,
+.content,
+.main-content,
+.page-content {
+  background-color: var(--surface-ground);
+}
+
+.sidebar,
+.menu,
+.navigation {
+  background-color: var(--surface-card);
+}
+
+/* === BORDERS GENÉRICOS === */
+.border,
+.border-top,
+.border-bottom,
+.border-left,
+.border-right {
+  border-color: var(--surface-border) !important;
+}
+
+/* === LINKS === */
+a {
+  color: var(--primary-color);
+}
+
+a:hover {
+  color: var(--primary-color);
+  filter: brightness(0.9);
+}
+
+/* === BADGES Y TAGS GENÉRICOS === */
+.badge,
+.tag,
+.chip {
+  background-color: var(--surface-border);
+  color: var(--text-color);
+}
+
+/* === MODALES Y OVERLAYS === */
+.modal,
+.dialog,
+.overlay {
+  background-color: var(--surface-card);
+  color: var(--text-color);
+}
+
+/* === SEPARADORES === */
+hr,
+.divider,
+.separator {
+  border-color: var(--surface-border);
+}
+
+/* === DARK MODE COMPATIBILITY === */
+:root[class*='app-dark'] {
+  /* Los estilos heredarán automáticamente las variables dark de Sakai */
+}
+
+/* === OVERRIDE PARA ESTILOS INLINE === */
+[style*="background-color: #"] {
+  background-color: var(--surface-card) !important;
+}
+
+[style*="color: #"] {
+  color: var(--text-color) !important;
+}
+
+/* === ALINEACIÓN SEMÁNTICA TAILWIND → SAKAI === */
+
+/* SUCCESS (Verde) */
+.bg-green-50, .bg-green-100, .bg-green-200 {
+  background-color: color-mix(in srgb, var(--success-color) 10%, transparent) !important;
+}
+.bg-green-500, .bg-green-600 {
+  background-color: var(--success-color) !important;
+}
+.text-green-600, .text-green-700, .text-green-800 {
+  color: var(--success-color-text) !important;
+}
+.border-green-200, .border-green-300 {
+  border-color: color-mix(in srgb, var(--success-color) 30%, transparent) !important;
+}
+
+/* DANGER (Rojo) */
+.bg-red-50, .bg-red-100, .bg-red-200 {
+  background-color: color-mix(in srgb, var(--danger-color) 10%, transparent) !important;
+}
+.bg-red-500, .bg-red-600 {
+  background-color: var(--danger-color) !important;
+}
+.text-red-600, .text-red-700, .text-red-800 {
+  color: var(--danger-color-text) !important;
+}
+.border-red-200, .border-red-300 {
+  border-color: color-mix(in srgb, var(--danger-color) 30%, transparent) !important;
+}
+
+/* WARNING (Amarillo/Naranja) */
+.bg-yellow-50, .bg-yellow-100, .bg-yellow-200,
+.bg-orange-50, .bg-orange-100, .bg-orange-200,
+.bg-amber-50, .bg-amber-100, .bg-amber-200 {
+  background-color: color-mix(in srgb, var(--warning-color) 10%, transparent) !important;
+}
+.bg-yellow-500, .bg-yellow-600,
+.bg-orange-500, .bg-orange-600,
+.bg-amber-500, .bg-amber-600 {
+  background-color: var(--warning-color) !important;
+}
+.text-yellow-600, .text-yellow-700, .text-yellow-800,
+.text-orange-600, .text-orange-700, .text-orange-800,
+.text-amber-600, .text-amber-700, .text-amber-800 {
+  color: var(--warning-color-text) !important;
+}
+.border-yellow-200, .border-yellow-300,
+.border-orange-200, .border-orange-300,
+.border-amber-200, .border-amber-300 {
+  border-color: color-mix(in srgb, var(--warning-color) 30%, transparent) !important;
+}
+
+/* INFO/PRIMARY (Azul) */
+.bg-blue-50, .bg-blue-100, .bg-blue-200 {
+  background-color: color-mix(in srgb, var(--primary-color) 10%, transparent) !important;
+}
+.bg-blue-500, .bg-blue-600 {
+  background-color: var(--primary-color) !important;
+}
+.text-blue-600, .text-blue-700, .text-blue-800 {
+  color: var(--primary-color-text) !important;
+}
+.border-blue-200, .border-blue-300 {
+  border-color: color-mix(in srgb, var(--primary-color) 30%, transparent) !important;
+}
+
+/* NEUTRAL (Grises) */
+.bg-gray-50, .bg-gray-100 {
+  background-color: var(--surface-ground) !important;
+}
+.bg-gray-200, .bg-gray-300 {
+  background-color: var(--surface-border) !important;
+}
+.bg-white {
+  background-color: var(--surface-card) !important;
+}
+.text-gray-900, .text-black {
+  color: var(--text-color) !important;
+}
+.text-gray-600, .text-gray-500 {
+  color: var(--text-color-secondary) !important;
+}
+.border-gray-200, .border-gray-300 {
+  border-color: var(--surface-border) !important;
+}
+
+/* === ALINEACIÓN PRIMENG SEMÁNTICA === */
+.p-button-success,
+.p-tag-success,
+.p-badge-success {
+  background-color: var(--success-color) !important;
+  border-color: var(--success-color) !important;
+}
+
+.p-button-danger,
+.p-tag-danger,
+.p-badge-danger {
+  background-color: var(--danger-color) !important;
+  border-color: var(--danger-color) !important;
+}
+
+.p-button-warning,
+.p-tag-warning,
+.p-badge-warning {
+  background-color: var(--warning-color) !important;
+  border-color: var(--warning-color) !important;
+}
+
+.p-button-info,
+.p-tag-info,
+.p-badge-info {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* === PATRONES ESTRUCTURALES TAILWIND === */
+
+/* Borders laterales semánticos */
+.border-l-4.border-red-500,
+.border-l-4.border-red-600 {
+  border-left-color: var(--danger-color) !important;
+}
+
+.border-l-4.border-orange-500,
+.border-l-4.border-orange-600,
+.border-l-4.border-yellow-500,
+.border-l-4.border-amber-400 {
+  border-left-color: var(--warning-color) !important;
+}
+
+.border-l-4.border-blue-500,
+.border-l-4.border-blue-600 {
+  border-left-color: var(--primary-color) !important;
+}
+
+.border-l-4.border-green-500,
+.border-l-4.border-green-600 {
+  border-left-color: var(--success-color) !important;
+}
+
+/* Gradientes con tokens */
+.bg-gradient-to-r.from-blue-600.to-indigo-600 {
+  background: linear-gradient(to right, var(--primary-color), color-mix(in srgb, var(--primary-color) 80%, #4338ca)) !important;
+}
+
+.bg-gradient-to-r.from-primary-600.to-primary-700 {
+  background: linear-gradient(to right, var(--primary-color), color-mix(in srgb, var(--primary-color) 90%, black)) !important;
+}
+
+/* Dark mode manual override */
+.dark\:bg-gray-800 {
+  background-color: var(--surface-card) !important;
+}
+
+.dark\:bg-gray-900 {
+  background-color: var(--surface-ground) !important;
+}
+
+.dark\:text-gray-100,
+.dark\:text-gray-200 {
+  color: var(--text-color) !important;
+}
+
+.dark\:text-gray-300,
+.dark\:text-gray-400 {
+  color: var(--text-color-secondary) !important;
+}
+
+.dark\:border-gray-700,
+.dark\:border-gray-800 {
+  border-color: var(--surface-border) !important;
+}
+
+/* === TEMPLATES INLINE OVERRIDE === */
+
+/* Forzar tokens en templates inline */
+[class*="bg-gray-50"],
+[class*="bg-white"] {
+  background-color: var(--surface-ground) !important;
+}
+
+[class*="bg-white"][class*="border-b"] {
+  background-color: var(--surface-card) !important;
+  border-color: var(--surface-border) !important;
+}
+
+[class*="text-gray-900"] {
+  color: var(--text-color) !important;
+}
+
+[class*="text-gray-600"] {
+  color: var(--text-color-secondary) !important;
+}
+
+[class*="border-gray-200"] {
+  border-color: var(--surface-border) !important;
+}
+
+/* Componentes standalone específicos */
+app-payroll [class*="bg-gray-50"],
+app-periods-list [class*="bg-gray-50"] {
+  background-color: var(--surface-ground) !important;
+}
+
+app-payroll [class*="bg-white"],
+app-periods-list [class*="bg-white"] {
+  background-color: var(--surface-card) !important;
+}
+
+/* Success backgrounds en templates inline */
+[class*="bg-green-50"] {
+  background-color: color-mix(in srgb, var(--success-color) 10%, transparent) !important;
+}
+
+[class*="border-green-200"] {
+  border-color: color-mix(in srgb, var(--success-color) 30%, transparent) !important;
+}
+
+[class*="text-green-700"],
+[class*="text-green-600"] {
+  color: var(--success-color-text) !important;
+}

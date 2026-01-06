@@ -7,13 +7,13 @@ import { RouterModule } from '@angular/router';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-6">
+    <div class="min-h-screen surface-ground py-12 px-6">
       <div class="max-w-4xl mx-auto">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Política de Cookies</h1>
+        <div class="surface-card rounded-lg shadow-lg p-8">
+          <h1 class="text-3xl font-bold text-color mb-8">Política de Cookies</h1>
           
-          <div class="prose dark:prose-invert max-w-none">
-            <p class="text-gray-600 dark:text-gray-300 mb-6">Última actualización: {{ currentDate }}</p>
+          <div class="prose max-w-none">
+            <p class="text-color-secondary mb-6">Última actualización: {{ currentDate }}</p>
             
             <h2>1. ¿Qué son las Cookies?</h2>
             <p>Las cookies son pequeños archivos de texto que se almacenan en su dispositivo cuando visita nuestro sitio web.</p>
@@ -41,8 +41,8 @@ import { RouterModule } from '@angular/router';
             <p>Para preguntas sobre cookies, contáctenos en: info@barberpro.com</p>
           </div>
           
-          <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-            <a routerLink="/" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+          <div class="mt-8 pt-8 border-t surface-border">
+            <a routerLink="/" class="text-primary hover:text-primary-emphasis">
               ← Volver al inicio
             </a>
           </div>

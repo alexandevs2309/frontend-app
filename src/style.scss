@@ -1,7 +1,7 @@
-/* Paleta Lavanda Fintech - Estilos Globales */
+/* PALETA OBJETIVO - OVERRIDES SEGUROS */
 :root {
-  /* Tokens de color */
-  --brand: #7C6AF2;
+  /* Tokens de color - COMENTADOS para usar Sakai */
+  /* --brand: #7C6AF2;
   --brand-soft: #E9E6FF;
   --brand-hover: #6B5AE0;
   --surface: #FFFFFF;
@@ -13,69 +13,71 @@
   --accent: #F472B6;
   --success: #34D399;
   --warning: #FBBF24;
-  --error: #F87171;
+  --error: #F87171; */
 }
 
-/* Aplicación global de la paleta */
+/* Aplicación global de la paleta - USANDO VARIABLES SAKAI */
 body {
-  background-color: var(--surface-soft, #F8F9FF);
-  color: var(--text, #1F2937);
+  background-color: var(--surface-ground);
+  color: var(--text-color);
 }
 
-/* Cards y superficies */
+/* Cards y superficies - USANDO VARIABLES SAKAI */
 .p-card,
 .p-panel,
 .p-dialog {
-  background-color: var(--surface, #FFFFFF) !important;
-  border-color: var(--border, #E5E7EB) !important;
+  background-color: var(--surface-card) !important;
+  border-color: var(--surface-border) !important;
 }
 
-/* Botones primarios */
+/* Botones primarios - USANDO VARIABLES SAKAI */
 .p-button:not(.p-button-outlined):not(.p-button-text) {
-  background-color: var(--brand, #7C6AF2) !important;
-  border-color: var(--brand, #7C6AF2) !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
 }
 
 .p-button:not(.p-button-outlined):not(.p-button-text):hover {
-  background-color: var(--brand-hover, #6B5AE0) !important;
-  border-color: var(--brand-hover, #6B5AE0) !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  filter: brightness(0.9);
 }
 
-/* Botones outlined */
+/* Botones outlined - USANDO VARIABLES SAKAI */
 .p-button-outlined {
-  color: var(--brand, #7C6AF2) !important;
-  border-color: var(--brand, #7C6AF2) !important;
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
 }
 
 .p-button-outlined:hover {
-  background-color: var(--brand-soft, #E9E6FF) !important;
+  background-color: var(--primary-color) !important;
+  color: var(--primary-color-text) !important;
 }
 
-/* Tags y badges */
+/* Tags y badges - COLORES SEGUROS */
 .p-tag.p-tag-success {
-  background-color: var(--success, #34D399) !important;
+  background-color: #10B981 !important;
 }
 
 .p-tag.p-tag-warn {
-  background-color: var(--warning, #FBBF24) !important;
+  background-color: #F59E0B !important;
 }
 
 .p-tag.p-tag-danger {
-  background-color: var(--error, #F87171) !important;
+  background-color: #EF4444 !important;
 }
 
-/* Inputs y formularios */
+/* Inputs y formularios - USANDO VARIABLES SAKAI */
 .p-inputtext,
 .p-select,
 .p-textarea {
-  border-color: var(--border, #E5E7EB) !important;
+  border-color: var(--surface-border) !important;
 }
 
 .p-inputtext:focus,
 .p-select:focus,
 .p-textarea:focus {
-  border-color: var(--brand, #7C6AF2) !important;
-  box-shadow: 0 0 0 1px var(--brand-soft, #E9E6FF) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
 }
 
 /* Glass effect actualizado */
@@ -83,7 +85,7 @@ body {
   background-color: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px 0 rgba(124, 106, 242, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(37, 99, 235, 0.1);
 }
 
 /* Animaciones existentes conservadas */
@@ -295,3 +297,6 @@ body {
   transition: background-color .2s, color .2s;
   border: 1px solid var(--border, #E5E7EB);
 }
+
+/* PLATFORM STYLES - CAPA GLOBAL */
+@import './assets/layout/platform';

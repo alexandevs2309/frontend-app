@@ -5,6 +5,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { CardModule } from 'primeng/card';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { PayrollService } from '../../services/payroll.service';
 import { Period } from '../../interfaces/payroll.interface';
@@ -15,7 +16,7 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
   standalone: true,
   imports: [
     CommonModule, ButtonModule, TableModule, TagModule, CardModule, 
-    ToastModule, PaymentConfirmationComponent
+    ToastModule, TooltipModule, PaymentConfirmationComponent
   ],
   providers: [MessageService],
   template: `
@@ -23,8 +24,8 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">📋 Períodos de Nómina</h1>
-          <p class="text-gray-600">Gestión simple de períodos de pago</p>
+          <h1 class="text-2xl font-bold" style="color: var(--text-color);">📋 Períodos de Nómina</h1>
+          <p style="color: var(--text-color-secondary);">Gestión simple de períodos de pago</p>
         </div>
         <button pButton label="Actualizar" icon="pi pi-refresh" 
                 class="p-button-outlined" (click)="loadPeriods()" [loading]="loading()"></button>
@@ -61,13 +62,18 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
                         class="p-button-sm p-button-info"
                         (click)="closePeriod(period)" [loading]="processing()"></button>
                 
-                <button *ngIf="period.status === 'ready'" 
-                        pButton label="Registrar Pago" icon="pi pi-credit-card"
-                        class="p-button-sm p-button-success"
-                        (click)="openPaymentDialog(period)"></button>
+                <div *ngIf="period.status === 'ready'">
+                  <button pButton label="Registrar Pago" icon="pi pi-credit-card"
+                          class="p-button-sm p-button-success"
+                          [disabled]="!period.can_pay"
+                          [pTooltip]="period.pay_block_reason || 'Listo para pagar'"
+                          tooltipPosition="top"
+                          (click)="openPaymentDialog(period)"></button>
+                </div>
                 
                 <span *ngIf="period.status === 'paid'" 
-                      class="text-green-600 font-medium">
+                      class="font-medium"
+                      style="color: var(--success-color-text);">
                   <i class="pi pi-check-circle mr-1"></i>Pagado
                 </span>
               </td>
@@ -76,8 +82,8 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
           <ng-template pTemplate="emptymessage">
             <tr>
               <td colspan="7" class="text-center py-8">
-                <i class="pi pi-inbox text-4xl text-gray-400 mb-4"></i>
-                <p class="text-gray-600">No hay períodos disponibles</p>
+                <i class="pi pi-inbox text-4xl mb-4" style="color: var(--text-color-secondary);"></i>
+                <p style="color: var(--text-color-secondary);">No hay períodos disponibles</p>
               </td>
             </tr>
           </ng-template>
@@ -177,7 +183,12 @@ export class PeriodsListComponent implements OnInit {
       detail: `Pago de ${this.formatCurrency(response.amount_paid)} registrado exitosamente`
     });
     this.closePaymentDialog();
-    this.loadPeriods(); // Refrescar lista
+    this.loadPeriods();
+    
+    // Mostrar recibo automáticamente
+    setTimeout(() => {
+      this.verReciboDirecto(response.payment_id);
+    }, 500);
   }
 
   getStatusLabel(status: string): string {
@@ -200,5 +211,88 @@ export class PeriodsListComponent implements OnInit {
 
   formatCurrency(amount: number): string {
     return `$${amount?.toFixed(2) || '0.00'}`;
+  }
+
+  async verReciboDirecto(paymentId: string) {
+    try {
+      const response = await this.payrollService.getPaymentReceipt(paymentId).toPromise();
+      // Abrir recibo en nueva ventana para imprimir
+      this.abrirReciboEnVentana(response);
+    } catch (error) {
+      console.error('Error cargando recibo:', error);
+    }
+  }
+
+  abrirReciboEnVentana(recibo: any) {
+    const reciboHtml = this.generarHtmlRecibo(recibo);
+    const ventana = window.open('', '_blank', 'width=800,height=600');
+    if (ventana) {
+      ventana.document.write(reciboHtml);
+      ventana.document.close();
+      ventana.focus();
+    }
+  }
+
+  generarHtmlRecibo(recibo: any): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Recibo de Pago</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+          .section { margin: 20px 0; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+          .amount { font-size: 18px; font-weight: bold; color: #059669; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${recibo.company.name}</h1>
+          <p>${recibo.company.address}</p>
+          <h2>RECIBO DE PAGO</h2>
+        </div>
+        
+        <div class="section grid">
+          <div>
+            <h3>Empleado:</h3>
+            <p><strong>${recibo.employee.name}</strong></p>
+            <p>${recibo.employee.email}</p>
+          </div>
+          <div>
+            <h3>Período:</h3>
+            <p><strong>${recibo.period.display}</strong></p>
+            <p>${new Date(recibo.period.start_date).toLocaleDateString()} - ${new Date(recibo.period.end_date).toLocaleDateString()}</p>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h3>Detalle de Pago:</h3>
+          <p>Monto Bruto: $${recibo.amounts.gross_amount.toFixed(2)}</p>
+          <p>Total Descuentos: -$${recibo.amounts.deductions.total.toFixed(2)}</p>
+          <p class="amount">Monto Neto: $${recibo.amounts.net_amount.toFixed(2)}</p>
+        </div>
+        
+        <div class="section grid">
+          <div>
+            <h3>Información del Pago:</h3>
+            <p>Método: ${recibo.payment_info.method}</p>
+            <p>Referencia: ${recibo.payment_info.reference}</p>
+          </div>
+          <div>
+            <h3>Fecha:</h3>
+            <p>${new Date(recibo.payment_info.paid_at).toLocaleString()}</p>
+            <p>Pagado por: ${recibo.payment_info.paid_by}</p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; font-size: 12px; color: #666;">
+          <p>Recibo ID: ${recibo.payment_id}</p>
+        </div>
+      </body>
+      </html>
+    `;
   }
 }

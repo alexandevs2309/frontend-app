@@ -10,6 +10,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { ReportService } from '../../../core/services/report/report.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'app-client-reports',
@@ -205,7 +206,9 @@ export class ClientReports implements OnInit {
             }
 
         } catch (error) {
-            console.error('Error cargando reportes:', error);
+            if (!environment.production) {
+                console.error('Error cargando reportes:', error);
+            }
         }
     }
 
@@ -231,7 +234,6 @@ export class ClientReports implements OnInit {
 
     aplicarFiltros() {
         const filtros = this.filtrosForm.value;
-        console.log('Aplicando filtros:', filtros);
         this.cargarDatos();
     }
 

@@ -15,6 +15,8 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { ServiceService, Service, ServiceCategory } from '../../../core/services/service/service.service';
+import { environment } from '../../../../environments/environment';
+import { ServiceDto, ServiceCategoryDto, CreateServiceDto, UpdateServiceDto } from '../../../core/dto/service.dto';
 
 @Component({
     selector: 'app-services-management',
@@ -194,12 +196,43 @@ export class ServicesManagement implements OnInit {
     private confirmationService = inject(ConfirmationService);
     private fb = inject(FormBuilder);
 
-    servicios = signal<Service[]>([]);
+    servicios = signal<ServiceDto[]>([]);
     cargando = signal(false);
     guardando = signal(false);
     mostrarDialogo = false;
-    servicioSeleccionado: Service | null = null;
-    categoriasDisponibles: ServiceCategory[] = [];
+    servicioSeleccionado: ServiceDto | null = null;
+    categoriasDisponibles: ServiceCategoryDto[] = [];
+
+    // Utility function to normalize API responses
+    private normalizeArray<T>(response: any): T[] {
+        if (!response) return [];
+        if (Array.isArray(response)) return response;
+        if (response.results && Array.isArray(response.results)) return response.results;
+        return [];
+    }
+
+    // Adaptador Backend → Frontend DTO
+    private mapBackendToServiceDto(backendService: any, categorias: ServiceCategoryDto[]): ServiceDto {
+        const categoryNames = (backendService.categories && Array.isArray(backendService.categories)) 
+            ? backendService.categories.map((catId: number) => {
+                const categoria = categorias.find(c => c.id === catId);
+                return categoria?.name;
+            }).filter(Boolean) 
+            : [];
+
+        return {
+            id: backendService.id,
+            name: backendService.name,
+            description: backendService.description,
+            categories: backendService.categories || [], // ✅ Normalizado array IDs
+            category_names: categoryNames, // ✅ Campo derivado para UI
+            price: backendService.price,
+            duration: backendService.duration,
+            is_active: backendService.is_active,
+            created_at: backendService.created_at,
+            updated_at: backendService.updated_at
+        };
+    }
 
     categoriasOptions = [
         { label: 'Corte de Cabello', value: 'Corte de Cabello' },
@@ -214,38 +247,44 @@ export class ServicesManagement implements OnInit {
     formulario: FormGroup = this.fb.group({
         name: ['', [Validators.required, Validators.maxLength(100)]],
         description: [''],
-        category: [''],
-        categories: [[]],
+        categories: [[]], // ✅ Normalizado array IDs
         price: [0, [Validators.required, Validators.min(0)]],
         duration: [30, [Validators.required, Validators.min(5)]],
         is_active: [true]
     });
 
     ngOnInit() {
-        this.cargarServicios();
-        this.cargarCategorias();
+        this.cargarCategorias().then(() => {
+            this.cargarServicios();
+        });
     }
 
     async cargarCategorias() {
         try {
             const response: any = await this.serviceService.getServiceCategories().toPromise();
-            // El backend devuelve un objeto paginado con 'results'
-            this.categoriasDisponibles = response?.results || response || [];
-            console.log('Categorías cargadas:', this.categoriasDisponibles);
+            this.categoriasDisponibles = this.normalizeArray<ServiceCategoryDto>(response);
         } catch (error) {
-            console.error('Error cargando categorías:', error);
+            if (!environment.production) {
+                console.error('Error cargando categorías:', error);
+            }
             this.categoriasDisponibles = [];
         }
     }
 
     async cargarServicios() {
+        if (this.cargando()) return; // ✅ Prevenir llamadas concurrentes
         this.cargando.set(true);
         try {
             const response = await this.serviceService.getServices().toPromise();
-            const servicios = (response as any)?.results || response || [];
-            this.servicios.set(servicios);
+            const servicios = this.normalizeArray<any>(response);
+            const serviciosNormalizados = servicios.map((servicio: any) => 
+                this.mapBackendToServiceDto(servicio, this.categoriasDisponibles)
+            );
+            this.servicios.set(serviciosNormalizados);
         } catch (error) {
-            console.error('Error cargando servicios:', error);
+            if (!environment.production) {
+                console.error('Error cargando servicios:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -270,13 +309,12 @@ export class ServicesManagement implements OnInit {
         this.mostrarDialogo = true;
     }
 
-    editarServicio(servicio: Service) {
+    editarServicio(servicio: ServiceDto) {
         this.servicioSeleccionado = servicio;
         this.formulario.patchValue({
             name: servicio.name,
             description: servicio.description || '',
-            category: servicio.category || '',
-            categories: servicio.categories || [],
+            categories: servicio.categories || [], // ✅ Normalizado
             price: servicio.price,
             duration: servicio.duration,
             is_active: servicio.is_active
@@ -289,7 +327,7 @@ export class ServicesManagement implements OnInit {
 
         this.guardando.set(true);
         try {
-            const servicioData = this.formulario.value;
+            const servicioData: CreateServiceDto | UpdateServiceDto = this.formulario.value;
 
             if (this.servicioSeleccionado) {
                 await this.serviceService.updateService(this.servicioSeleccionado.id, servicioData).toPromise();
@@ -310,7 +348,9 @@ export class ServicesManagement implements OnInit {
             this.cerrarDialogo();
             this.cargarServicios();
         } catch (error: any) {
-            console.error('Error guardando servicio:', error);
+            if (!environment.production) {
+                console.error('Error guardando servicio:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -321,7 +361,7 @@ export class ServicesManagement implements OnInit {
         }
     }
 
-    confirmarEliminar(servicio: Service) {
+    confirmarEliminar(servicio: ServiceDto) {
         this.confirmationService.confirm({
             message: `¿Estás seguro de eliminar el servicio "${servicio.name}"?`,
             header: 'Confirmar Eliminación',
@@ -332,7 +372,7 @@ export class ServicesManagement implements OnInit {
         });
     }
 
-    async eliminarServicio(servicio: Service) {
+    async eliminarServicio(servicio: ServiceDto) {
         try {
             await this.serviceService.deleteService(servicio.id).toPromise();
             this.messageService.add({
@@ -342,7 +382,9 @@ export class ServicesManagement implements OnInit {
             });
             this.cargarServicios();
         } catch (error: any) {
-            console.error('Error eliminando servicio:', error);
+            if (!environment.production) {
+                console.error('Error eliminando servicio:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',

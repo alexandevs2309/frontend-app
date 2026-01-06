@@ -15,13 +15,13 @@ export class TrialGuard implements CanActivate {
 
   canActivate(): boolean {
     const user = this.authService.getCurrentUser();
-    
-    // SuperAdmin users bypass trial checks
+
+    // Usuarios SuperAdmin evitan el Bypass
     if (user?.role === 'SuperAdmin') {
       return true;
     }
 
-    // Check if trial is expired
+    // Comprobar si el periodo de prueba ha expirado
     if (this.trialService.isTrialExpired()) {
       this.router.navigate(['/client/payment']);
       return false;

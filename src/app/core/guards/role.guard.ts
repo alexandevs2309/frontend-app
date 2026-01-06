@@ -19,7 +19,7 @@ export class RoleGuard implements CanActivate {
     state: RouterStateSnapshot
   ): Observable<boolean> | boolean {
     const requiredRoles = route.data['roles'] as string[];
-    
+
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
@@ -46,8 +46,8 @@ export class RoleGuard implements CanActivate {
 
   private handleUnauthorizedAccess(userRole: string): void {
     this.messageService.add({ severity: 'error', summary: 'Acceso Denegado', detail: 'No tienes permiso para acceder a esta página.' });
-    
-    // Redirect based on user role
+
+    // Redirecionar al dashboard correspondiente según el rol del usuario
     switch (userRole) {
       case 'SUPER_ADMIN':
         this.router.navigate(['/admin/dashboard']);

@@ -104,7 +104,6 @@ export class BarbershopSettingsComponent implements OnInit {
 
   ngOnInit() {
     this.loadSettings();
-    this.loadGovernanceInfo();
   }
 
   loadSettings() {
@@ -127,15 +126,7 @@ export class BarbershopSettingsComponent implements OnInit {
   }
 
   loadGovernanceInfo() {
-    this.http.get(`${environment.apiUrl}/settings/barbershop/governance_info/`)
-      .subscribe({
-        next: (data) => {
-          this.governanceInfo.set(data);
-        },
-        error: () => {
-          console.warn('No se pudo cargar información de gobierno');
-        }
-      });
+    // Endpoint governance_info no disponible - usando configuración por defecto
   }
 
   saveSettings() {

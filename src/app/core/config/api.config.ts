@@ -41,7 +41,7 @@ export const API_CONFIG = {
     
     // Employees
     EMPLOYEES: {
-      BASE: '/employees/employees/',
+      BASE: '/employees/',
       SCHEDULES: '/employees/schedules/'
     },
     

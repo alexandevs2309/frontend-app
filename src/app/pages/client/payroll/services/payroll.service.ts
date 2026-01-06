@@ -28,4 +28,8 @@ export class PayrollService extends BaseApiService {
   registerPayment(payment: PaymentRequest): Observable<PaymentResponse> {
     return this.post('/payroll/client/payroll/register_payment/', payment);
   }
+
+  getPaymentReceipt(paymentId: string): Observable<any> {
+    return this.get(`/payroll/client/payroll/payments/${paymentId}/receipt/`);
+  }
 }

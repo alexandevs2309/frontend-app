@@ -1,28 +1,28 @@
 :root {
-    /* Paleta Lavanda Fintech - Variables PrimeNG */
-    --primary-color: #7C6AF2;
+    /* PALETA OBJETIVO - LIGHT MODE */
+    --primary-color: #2563EB;
     --primary-color-text: #FFFFFF;
-    --surface-ground: #F8F9FF;
+    --surface-ground: #F8FAFC;
     --surface-card: #FFFFFF;
-    --surface-border: #E5E7EB;
-    --text-color: #1F2937;
-    --text-color-secondary: #6B7280;
+    --surface-border: #E2E8F0;
+    --text-color: #0F172A;
+    --text-color-secondary: #475569;
     
     /* Variables PrimeNG específicas */
-    --p-primary-color: #7C6AF2;
+    --p-primary-color: #2563EB;
     --p-primary-contrast-color: #FFFFFF;
-    --p-text-color: #1F2937;
-    --p-text-muted-color: #6B7280;
-    --p-content-border-color: #E5E7EB;
+    --p-text-color: #0F172A;
+    --p-text-muted-color: #475569;
+    --p-content-border-color: #E2E8F0;
     --p-content-background: #FFFFFF;
-    --p-content-hover-background: #F8F9FF;
+    --p-content-hover-background: #F1F5F9;
     --p-overlay-popover-background: #FFFFFF;
-    --p-mask-background: rgba(0, 0, 0, 0.4);
+    --p-mask-background: rgba(15, 23, 42, 0.4);
     
     /* Variables específicas de Sakai */
-    --surface-100: #F8F9FF;
-    --surface-200: #E9E6FF;
-    --surface-900: #1F2937;
+    --surface-100: #F1F5F9;
+    --surface-200: #E2E8F0;
+    --surface-900: #0F172A;
     
     /* Código */
     --code-background: var(--surface-900);

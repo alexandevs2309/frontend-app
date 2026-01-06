@@ -17,6 +17,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { FileUploadModule } from 'primeng/fileupload';
 import { InventoryService, Product } from '../../../core/services/inventory/inventory.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'app-products-management',
@@ -395,7 +396,9 @@ export class ProductsManagement implements OnInit {
             }));
 
         } catch (error: any) {
-            console.error('Error cargando productos:', error);
+            if (!environment.production) {
+                console.error('Error cargando productos:', error);
+            }
 
             // Si es error 401/403, no mostrar mensaje ya que el interceptor maneja el logout
             if (error?.status !== 401 && error?.status !== 403) {
@@ -486,7 +489,9 @@ export class ProductsManagement implements OnInit {
             this.cerrarDialogo();
             this.cargarProductos();
         } catch (error: any) {
-            console.error('Error guardando producto:', error);
+            if (!environment.production) {
+                console.error('Error guardando producto:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -543,7 +548,9 @@ export class ProductsManagement implements OnInit {
             this.cerrarDialogoStock();
             this.cargarProductos();
         } catch (error: any) {
-            console.error('Error ajustando stock:', error);
+            if (!environment.production) {
+                console.error('Error ajustando stock:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -575,7 +582,9 @@ export class ProductsManagement implements OnInit {
             });
             this.cargarProductos();
         } catch (error: any) {
-            console.error('Error eliminando producto:', error);
+            if (!environment.production) {
+                console.error('Error eliminando producto:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',

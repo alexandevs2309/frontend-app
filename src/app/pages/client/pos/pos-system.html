@@ -1,7 +1,7 @@
 <div class="p-4 flex flex-col gap-4">
 
   <!-- HEADER -->
-  <div class="flex justify-between items-center bg-primary-600 text-white rounded-lg p-4 shadow-md">
+  <div class="flex justify-between items-center rounded-lg p-4 shadow-md" style="background-color: var(--primary-color); color: var(--primary-color-text);">
     <div>
       <h2 class="text-2xl font-bold">Sistema POS</h2>
       <p class="text-sm opacity-80">{{ getCurrentDateTime() }}</p>
@@ -10,10 +10,10 @@
       <button *ngIf="!cajaAbierta()" pButton label="Abrir Caja" icon="pi pi-unlock" class="p-button-success" (click)="mostrarDialogoAbrirCaja = true"></button>
       <button *ngIf="cajaAbierta()" pButton label="Cerrar Caja" icon="pi pi-lock" class="p-button-danger" (click)="prepararCierreCaja()"></button>
       <button *ngIf="cajaAbierta()" pButton label="Arqueo" icon="pi pi-calculator" class="p-button-warning" (click)="mostrarDialogoArqueo = true"></button>
-      <div *ngIf="cajaAbierta()" class="flex items-center gap-2 bg-green-100 text-green-800 font-semibold px-3 py-1 rounded">
+      <div *ngIf="cajaAbierta()" class="flex items-center gap-2 font-semibold px-3 py-1 rounded" style="background-color: color-mix(in srgb, var(--success-color) 15%, transparent); color: var(--success-color-text);">
         <i class="pi pi-check-circle"></i> Caja Abierta
       </div>
-      <div *ngIf="!cajaAbierta()" class="flex items-center gap-2 bg-red-100 text-red-800 font-semibold px-3 py-1 rounded">
+      <div *ngIf="!cajaAbierta()" class="flex items-center gap-2 font-semibold px-3 py-1 rounded" style="background-color: color-mix(in srgb, var(--danger-color) 15%, transparent); color: var(--danger-color-text);">
         <i class="pi pi-times-circle"></i> Caja Cerrada
       </div>
     </div>
@@ -31,118 +31,126 @@
                   placeholder="Todas las categorías"
                   (onChange)="filtrarItems()" class="flex-1" [disabled]="cargandoDatos"></p-select>
         <input pInputText [(ngModel)]="busqueda" placeholder="Buscar..." (input)="filtrarItems()" class="flex-1" [disabled]="cargandoDatos">
-        <button pButton [icon]="vistaCompacta ? 'pi pi-th-large' : 'pi pi-list'" 
-                [class]="vistaCompacta ? 'p-button-success' : 'p-button-outlined'" 
-                (click)="vistaCompacta = !vistaCompacta" 
-                [pTooltip]="vistaCompacta ? 'Vista normal' : 'Vista compacta'" 
+        <button pButton [icon]="vistaCompacta ? 'pi pi-th-large' : 'pi pi-list'"
+                [class]="vistaCompacta ? 'p-button-success' : 'p-button-outlined'"
+                (click)="vistaCompacta = !vistaCompacta"
+                [pTooltip]="vistaCompacta ? 'Vista normal' : 'Vista compacta'"
                 [disabled]="cargandoDatos"></button>
         <button pButton icon="pi pi-qrcode" [class]="modoScanner ? 'p-button-success' : 'p-button-outlined'" (click)="modoScanner = !modoScanner" pTooltip="Scanner (Ctrl+B)" [disabled]="cargandoDatos"></button>
         <button pButton icon="pi pi-refresh" (click)="cargarDatos()" [loading]="cargandoDatos" pTooltip="Recargar datos" class="p-button-outlined"></button>
       </div>
 
       <!-- Scanner de Código de Barras -->
-      <div *ngIf="modoScanner" class="flex gap-2 p-3 bg-blue-50 rounded">
+      <div *ngIf="modoScanner" class="flex gap-2 p-3 rounded" style="background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);">
         <input pInputText [(ngModel)]="codigoBarras" placeholder="Escanear código de barras..."
                (keyup.enter)="buscarPorCodigoBarras()" class="flex-1" autofocus>
         <button pButton label="Buscar" icon="pi pi-search" (click)="buscarPorCodigoBarras()" class="p-button-success"></button>
       </div>
 
       <!-- Tabs Servicios/Productos -->
-      <div class="flex border-b">
-        <button (click)="tipoActivo='services'; filtrarItems()"
-                [ngClass]="tipoActivo==='services' ? 'border-b-4 border-primary-500 text-primary-600 font-bold' : 'text-gray-600'"
-                class="px-4 py-2">Servicios</button>
-        <button (click)="tipoActivo='products'; filtrarItems()"
-                [ngClass]="tipoActivo==='products' ? 'border-b-4 border-primary-500 text-primary-600 font-bold' : 'text-gray-600'"
-                class="px-4 py-2">Productos</button>
+      <div class="flex" style="border-bottom: 1px solid var(--surface-border);">
+        <button pButton 
+                label="Servicios" 
+                (click)="tipoActivo='services'; filtrarItems()"
+                [severity]="tipoActivo==='services' ? 'info' : 'secondary'"
+                [outlined]="tipoActivo!=='services'"
+                [text]="true"
+                class="border-b-2"
+                [style]="tipoActivo==='services' ? 'border-bottom-color: var(--primary-color)' : 'border-bottom-color: transparent'"></button>
+        <button pButton 
+                label="Productos" 
+                (click)="tipoActivo='products'; filtrarItems()"
+                [severity]="tipoActivo==='products' ? 'info' : 'secondary'"
+                [outlined]="tipoActivo!=='products'"
+                [text]="true"
+                class="border-b-2"
+                [style]="tipoActivo==='products' ? 'border-bottom-color: var(--primary-color)' : 'border-bottom-color: transparent'"></button>
       </div>
 
       <!-- GRID DE ITEMS -->
       <div *ngIf="!cargandoDatos; else loadingTemplate">
-        
+
         <!-- Vista Normal (Tarjetas) -->
         <div *ngIf="!vistaCompacta" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div *ngFor="let item of itemsFiltrados"
-               class="p-4 rounded-lg shadow transition bg-white dark:bg-gray-800 border-2 border-transparent"
+               class="p-4 rounded-lg shadow transition border-2"
+               style="background-color: var(--surface-card); border-color: transparent;"
                [class.hover:shadow-lg]="puedeAgregarMas(item)"
                [class.cursor-pointer]="puedeAgregarMas(item)"
                [class.opacity-50]="!puedeAgregarMas(item)"
                [class.cursor-not-allowed]="!puedeAgregarMas(item)"
-               [class.border-green-200]="puedeAgregarMas(item)"
-               [class.hover:border-green-400]="puedeAgregarMas(item)"
+               [style.border-color]="puedeAgregarMas(item) ? 'color-mix(in srgb, var(--success-color) 30%, transparent)' : 'transparent'"
                (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
             <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="w-full h-32 object-cover rounded mb-2">
             <div class="flex justify-between items-start mb-2">
               <h6 class="font-semibold">{{ item.name }}</h6>
-              <span class="text-lg font-bold text-primary-600">{{ formatearMoneda(item.price) }}</span>
+              <span class="text-lg font-bold" style="color: var(--primary-color);">{{ formatearMoneda(item.price) }}</span>
             </div>
-            <p class="text-sm text-gray-600 dark:text-gray-300 mb-2" *ngIf="item.description">{{ item.description }}</p>
+            <p class="text-sm mb-2" style="color: var(--text-color-secondary);" *ngIf="item.description">{{ item.description }}</p>
             <div class="flex justify-between items-center">
-              <span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ item.category || 'General' }}</span>
+              <span class="text-xs px-2 py-1 rounded" style="background-color: var(--surface-100); color: var(--text-color-secondary);">{{ item.category || 'General' }}</span>
               <div *ngIf="tipoActivo==='products'" class="text-xs">
-                <span [class]="obtenerStockDisponible(item) > 5 ? 'text-green-600' : obtenerStockDisponible(item) > 0 ? 'text-yellow-600' : 'text-red-600'">
+                <span [style.color]="obtenerStockDisponible(item) > 5 ? 'var(--success-color-text)' : obtenerStockDisponible(item) > 0 ? 'var(--warning-color-text)' : 'var(--danger-color-text)'">
                   Stock: {{ obtenerStockDisponible(item) }}
                 </span>
-                <span *ngIf="obtenerStockDisponible(item) === 0" class="ml-1 text-red-600 font-semibold">AGOTADO</span>
+                <span *ngIf="obtenerStockDisponible(item) === 0" class="ml-1 font-semibold" style="color: var(--danger-color-text);">AGOTADO</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Vista Compacta (Lista) -->
-        <div *ngIf="vistaCompacta" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          <div class="divide-y divide-gray-200 dark:divide-gray-700">
-            <div *ngFor="let item of itemsFiltrados" 
+        <div *ngIf="vistaCompacta" class="rounded-lg shadow overflow-hidden" style="background-color: var(--surface-card);">
+          <div class="divide-y" style="border-color: var(--surface-border);">
+            <div *ngFor="let item of itemsFiltrados"
                  class="flex items-center p-3 transition-colors"
-                 [class.hover:bg-gray-50]="puedeAgregarMas(item)"
                  [class.cursor-pointer]="puedeAgregarMas(item)"
                  [class.opacity-50]="!puedeAgregarMas(item)"
                  [class.cursor-not-allowed]="!puedeAgregarMas(item)"
-                 [class.hover:bg-green-50]="puedeAgregarMas(item) && tipoActivo === 'services'"
-                 [class.hover:bg-blue-50]="puedeAgregarMas(item) && tipoActivo === 'products'"
+                 [style.background-color]="puedeAgregarMas(item) ? 'var(--surface-hover)' : 'transparent'"
                  (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
-              
+
               <!-- Icono de tipo -->
-              <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3"
-                   [class.bg-green-100]="tipoActivo === 'services'"
-                   [class.text-green-600]="tipoActivo === 'services'"
-                   [class.bg-blue-100]="tipoActivo === 'products'"
-                   [class.text-blue-600]="tipoActivo === 'products'">
+              <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                   [style.background-color]="tipoActivo === 'services' ? 'color-mix(in srgb, var(--success-color) 15%, transparent)' : 'color-mix(in srgb, var(--primary-color) 15%, transparent)'"
+                   [style.color]="tipoActivo === 'services' ? 'var(--success-color-text)' : 'var(--primary-color-text)'">
                 <i [class]="tipoActivo === 'services' ? 'pi pi-cut' : 'pi pi-box'" class="text-sm"></i>
               </div>
-              
+
               <!-- Información principal -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
                   <h6 class="font-semibold text-sm truncate">{{ item.name }}</h6>
                   <!-- Indicador de empleado requerido para servicios -->
-                  <span *ngIf="tipoActivo === 'services'" 
-                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                  <span *ngIf="tipoActivo === 'services'"
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                        style="background-color: color-mix(in srgb, var(--warning-color) 15%, transparent); color: var(--warning-color-text);">
                     <i class="pi pi-user text-xs mr-1"></i>Empleado
                   </span>
                 </div>
-                <div class="flex items-center gap-3 text-xs text-gray-500">
-                  <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ item.category || 'General' }}</span>
-                  <span *ngIf="tipoActivo === 'products'" 
-                        [class]="obtenerStockDisponible(item) > 5 ? 'text-green-600' : obtenerStockDisponible(item) > 0 ? 'text-yellow-600' : 'text-red-600'">
+                <div class="flex items-center gap-3 text-xs" style="color: var(--text-color-secondary);">
+                  <span class="px-2 py-1 rounded" style="background-color: var(--surface-100);">{{ item.category || 'General' }}</span>
+                  <span *ngIf="tipoActivo === 'products'"
+                        [style.color]="obtenerStockDisponible(item) > 5 ? 'var(--success-color-text)' : obtenerStockDisponible(item) > 0 ? 'var(--warning-color-text)' : 'var(--danger-color-text)'">
                     Stock: {{ obtenerStockDisponible(item) }}
                   </span>
                 </div>
               </div>
-              
+
               <!-- Precio -->
-              <div class="flex-shrink-0 text-right">
-                <span class="text-lg font-bold text-primary-600">{{ formatearMoneda(item.price) }}</span>
-                <div *ngIf="tipoActivo === 'products' && obtenerStockDisponible(item) === 0" 
-                     class="text-xs text-red-600 font-semibold">AGOTADO</div>
+              <div class="shrink-0 text-right">
+                <span class="text-lg font-bold" style="color: var(--primary-color);">{{ formatearMoneda(item.price) }}</span>
+                <div *ngIf="tipoActivo === 'products' && obtenerStockDisponible(item) === 0"
+                     class="text-xs font-semibold" style="color: var(--danger-color-text);">AGOTADO</div>
               </div>
-              
+
               <!-- Botón de agregar -->
-              <div class="flex-shrink-0 ml-3">
-                <button *ngIf="puedeAgregarMas(item)" 
-                        pButton icon="pi pi-plus" 
-                        size="small" 
-                        class="p-button-rounded p-button-success"
+              <div class="shrink-0 ml-3">
+                <button *ngIf="puedeAgregarMas(item)"
+                        pButton icon="pi pi-plus"
+                        size="small"
+                        severity="info"
+                        [rounded]="true"
                         (click)="$event.stopPropagation(); agregarAlCarrito(item)"
                         [pTooltip]="'Agregar ' + item.name"></button>
               </div>
@@ -152,30 +160,30 @@
 
         <!-- Mensaje cuando no hay items -->
         <div *ngIf="itemsFiltrados.length === 0" class="text-center py-8">
-          <i class="pi pi-search text-4xl text-gray-400 mb-4"></i>
-          <p class="text-gray-500">No se encontraron {{ tipoActivo === 'services' ? 'servicios' : 'productos' }}</p>
+          <i class="pi pi-search text-4xl mb-4" style="color: var(--text-color-secondary);"></i>
+          <p style="color: var(--text-color-secondary);">No se encontraron {{ tipoActivo === 'services' ? 'servicios' : 'productos' }}</p>
           <button pButton label="Limpiar filtros" (click)="categoriaSeleccionada=''; busqueda=''; filtrarItems()" class="p-button-text mt-2"></button>
         </div>
       </div>
 
       <ng-template #loadingTemplate>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div *ngFor="let i of [1,2,3,4,5,6]" class="p-4 rounded-lg shadow bg-white dark:bg-gray-800 animate-pulse">
-            <div class="h-4 bg-gray-200 rounded mb-2"></div>
-            <div class="h-3 bg-gray-200 rounded mb-2 w-3/4"></div>
-            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+          <div *ngFor="let i of [1,2,3,4,5,6]" class="p-4 rounded-lg shadow animate-pulse" style="background-color: var(--surface-card);">
+            <div class="h-4 rounded mb-2" style="background-color: var(--surface-200);"></div>
+            <div class="h-3 rounded mb-2 w-3/4" style="background-color: var(--surface-200);"></div>
+            <div class="h-3 rounded w-1/2" style="background-color: var(--surface-200);"></div>
           </div>
         </div>
       </ng-template>
 
       <!-- CARRITO -->
-      <div *ngIf="carrito().length>0" class="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg shadow-inner">
+      <div *ngIf="carrito().length>0" class="mt-4 p-4 rounded-lg shadow-inner" style="background-color: var(--surface-ground);">
         <h5 class="font-bold mb-3 text-lg">Carrito</h5>
         <div class="flex flex-col gap-2">
-          <div *ngFor="let item of carrito(); let i=index" class="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div *ngFor="let item of carrito(); let i=index" class="flex justify-between items-center p-2 rounded-lg shadow" style="background-color: var(--surface-card);">
             <div class="flex-1">
               <h6 class="font-medium">{{ item.item.name }}</h6>
-              <p class="text-sm text-gray-600 dark:text-gray-300 m-0">{{ item.type==='service'?'Servicio':'Producto' }}</p>
+              <p class="text-sm m-0" style="color: var(--text-color-secondary);">{{ item.type==='service'?'Servicio':'Producto' }}</p>
             </div>
             <div class="flex items-center gap-3">
               <div class="flex items-center gap-1">
@@ -183,7 +191,7 @@
                 <span class="font-medium">{{ item.quantity }}</span>
                 <button pButton icon="pi pi-plus" size="small" (click)="cambiarCantidad(i,1)" [text]="true"></button>
               </div>
-              <span class="font-bold text-primary-600">\${{ item.subtotal.toFixed(2) }}</span>
+              <span class="font-bold" style="color: var(--primary-color);">\${{ item.subtotal.toFixed(2) }}</span>
               <button pButton icon="pi pi-trash" severity="danger" size="small" (click)="removerDelCarrito(i)" [text]="true"></button>
             </div>
           </div>
@@ -225,7 +233,7 @@
             <ng-template pTemplate="item" let-empleado>
               <div class="flex items-center gap-2">
                 <i class="pi pi-user text-primary-500"></i>
-                <span>{{ empleado.displayName }}</span>
+                <span>{{ empleado?.displayName || empleado?.name || 'Sin nombre' }}</span>
               </div>
             </ng-template>
           </p-select>
@@ -251,7 +259,7 @@
           <p-select [options]="metodosPago" [ngModel]="metodoPagoSeleccionado()" (ngModelChange)="metodoPagoSeleccionado.set($event)" optionLabel="label" optionValue="value" placeholder="Seleccionar método" class="w-full"></p-select>
         </div>
 
-        
+
         <!-- Botones -->
         <div class="flex flex-col gap-2">
           <button pButton
@@ -281,7 +289,7 @@
             Ingresos por Otros Métodos
           </h6>
           <div *ngFor="let pago of pagosNoCash()" class="flex justify-between text-sm mb-1">
-            <span>{{ pago.metodo }}:</span>
+            <span>{{ pago.payment_method }}:</span>
             <span class="font-semibold text-amber-700">{{ formatearMoneda(pago.total) }}</span>
           </div>
           <div class="text-xs text-amber-700 mt-2 p-2 bg-amber-100 rounded border-l-4 border-amber-400">
@@ -332,7 +340,7 @@
           📊 Ingresos por Otros Métodos
         </h5>
         <div *ngFor="let pago of pagosNoCash()" class="flex justify-between text-sm mb-1">
-          <span>{{ pago.metodo }}:</span>
+          <span>{{ pago.payment_method }}:</span>
           <span class="font-mono text-blue-700">${{ pago.total.toFixed(2) }}</span>
         </div>
         <div class="text-xs text-blue-700 mt-2 p-2 bg-blue-100 rounded border-l-4 border-blue-400">
@@ -413,13 +421,13 @@
           <span class="label">HORA</span>
           <span class="value">{{ getCurrentDateTime().split(',')[1] }}</span>
         </div>
-        <div class="info-row" *ngIf="ventaActual.cliente">
+        <div class="info-row" *ngIf="ventaActual.client">
           <span class="label">CLIENTE</span>
-          <span class="value">{{ ventaActual.cliente.full_name }}</span>
+          <span class="value"> ID {{ ventaActual.client }}</span>
         </div>
-        <div class="info-row" *ngIf="ventaActual.empleado">
+        <div class="info-row" *ngIf="ventaActual.employee_name">
           <span class="label">BARBERO</span>
-          <span class="value">{{ ventaActual.empleado.displayName || ventaActual.empleado.user?.full_name || ventaActual.empleado.user?.email }}</span>
+          <span class="value">{{ ventaActual.employee_name }}</span>
         </div>
       </div>
       <div class="separator"></div>
@@ -433,9 +441,9 @@
           <span class="col-total">TOTAL</span>
         </div>
         <div class="separator-thin"></div>
-        <div *ngFor="let item of ventaActual.items" class="item-row">
+        <div *ngFor="let item of ventaActual.details" class="item-row">
           <div class="item-desc">
-            <span class="item-name">{{ item.item.name }}</span>
+            <span class="item-name">{{ item.item?.name || item.name }}</span>
             <span class="item-type">{{ item.type === 'service' ? '🔧 Servicio' : '📦 Producto' }}</span>
           </div>
           <span class="item-qty">{{ item.quantity }}</span>
@@ -445,25 +453,37 @@
       </div>
       <div class="separator"></div>
 
-      <!-- Totales -->
-      <div class="totals-section">
-        <div class="total-row">
-          <span class="total-label">SUBTOTAL</span>
-          <span class="total-value">{{ formatearMoneda(ventaActual.subtotal) }}</span>
-        </div>
-        <div class="total-row" *ngIf="ventaActual.descuento > 0">
-          <span class="total-label">DESCUENTO</span>
-          <span class="total-value discount">-{{ formatearMoneda(ventaActual.descuento) }}</span>
-        </div>
-        <div class="separator-thin"></div>
-        <div class="total-row final">
-          <span class="total-label">TOTAL PAGADO</span>
-          <span class="total-value">{{ formatearMoneda(ventaActual.total) }}</span>
-        </div>
-        <div class="payment-info">
-          <span class="payment-method">💳 {{ getPaymentMethodName(ventaActual.metodoPago) }}</span>
-        </div>
-      </div>
+    <!-- Totales -->
+<div class="totals-section">
+  <div class="total-row">
+    <span class="total-label">SUBTOTAL</span>
+    <span class="total-value">
+      {{ formatearMoneda(getSubtotal(ventaActual)) }}
+    </span>
+  </div>
+
+  <div class="total-row" *ngIf="ventaActual.discount > 0">
+    <span class="total-label">DESCUENTO</span>
+    <span class="total-value discount">
+      -{{ formatearMoneda(ventaActual.discount) }}
+    </span>
+  </div>
+
+  <div class="separator-thin"></div>
+
+  <div class="total-row final">
+    <span class="total-label">TOTAL PAGADO</span>
+    <span class="total-value">
+      {{ formatearMoneda(ventaActual.total) }}
+    </span>
+  </div>
+
+  <div class="payment-info">
+    <span class="payment-method">
+      💳 {{ getPaymentMethodName(ventaActual.payment_method) }}
+    </span>
+  </div>
+</div>
 
       <!-- Firma del cliente -->
       <div *ngIf="firmaCliente" class="signature-section">
@@ -548,13 +568,13 @@
   <p-dialog header="Arqueo de Caja (Solo Consulta)" [(visible)]="mostrarDialogoArqueo" [modal]="true" [style]="{width:'500px'}">
     <div class="flex flex-col gap-4">
       <p class="text-sm text-gray-600 mb-3">💡 Este arqueo es solo para consulta. El cuadre oficial se hace al cerrar caja.</p>
-      
+
       <div *ngFor="let denom of denominaciones; trackBy: trackByDenominacion" class="flex items-center gap-3">
         <span class="w-16 font-mono">${{ denom.valor }}</span>
         <input type="number" pInputText [(ngModel)]="denom.cantidad" min="0" class="w-20" (input)="denom.total = denom.valor * denom.cantidad">
         <span class="w-24 text-right font-mono">${{ denom.total.toFixed(2) }}</span>
       </div>
-      
+
       <div class="border-t pt-3">
         <div class="flex justify-between font-bold text-lg">
           <span>Total contado:</span>
@@ -569,7 +589,7 @@
           <span class="font-mono">{{ calcularDiferenciaArqueo() >= 0 ? '+' : '' }}${{ calcularDiferenciaArqueo().toFixed(2) }}</span>
         </div>
       </div>
-      
+
       <div class="flex justify-end gap-2">
         <button pButton label="Limpiar" (click)="limpiarArqueo()" class="p-button-outlined"></button>
         <button pButton label="Cerrar" (click)="mostrarDialogoArqueo=false" class="p-button-success"></button>
@@ -596,17 +616,17 @@
                 <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{{ getPaymentMethodName(venta.payment_method) }}</span>
               </div>
               <p class="text-sm text-gray-600">{{ venta.date_time | date:'dd/MM/yyyy HH:mm' }}</p>
-              <p class="text-sm text-gray-600" *ngIf="venta.client">Cliente: {{ venta.client.full_name }}</p>
+              <p class="text-sm text-gray-600" *ngIf="venta.client">Cliente: {{ venta.client }}</p>
             </div>
-            
+
             <div class="text-right">
               <div class="font-bold text-lg">${{ venta.total }}</div>
             </div>
-            
+
             <div class="flex gap-1 ml-4">
-              <button pButton icon="pi pi-eye" size="small" 
+              <button pButton icon="pi pi-eye" size="small"
                       (click)="visualizarVenta(venta)" pTooltip="Ver detalles"></button>
-              <button pButton icon="pi pi-print" size="small" 
+              <button pButton icon="pi pi-print" size="small"
                       (click)="reimprimirTicket(venta)" pTooltip="Reimprimir"></button>
             </div>
           </div>

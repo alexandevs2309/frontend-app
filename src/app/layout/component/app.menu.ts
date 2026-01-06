@@ -33,7 +33,7 @@ export class AppMenu implements OnInit, OnDestroy {
         if (currentUser) {
             this.updateMenuForUser(currentUser.role);
         }
-        
+
         // Subscribe to user changes
         this.subscription.add(
             this.authService.currentUser$.subscribe(user => {
@@ -45,9 +45,9 @@ export class AppMenu implements OnInit, OnDestroy {
             })
         );
     }
-    
 
-    
+
+
     private updateMenuForUser(role: string) {
         if (role === 'SUPER_ADMIN') {
             this.model = this.getAdminMenu();
@@ -101,7 +101,6 @@ export class AppMenu implements OnInit, OnDestroy {
                 { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: 'Punto de Venta', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
                 { label: 'Nómina', icon: 'pi pi-fw pi-wallet', routerLink: ['/client/payroll'] },
-                { label: 'Pagos', icon: 'pi pi-fw pi-credit-card', routerLink: ['/client/pagos'] },
                 { label: 'Reportes', icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] },
                 { label: 'Configuración', icon: 'pi pi-fw pi-cog', routerLink: ['/client/settings'] }
             );

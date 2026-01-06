@@ -17,6 +17,10 @@ import { ServiceService } from '../../../core/services/service/service.service';
 import { InventoryService } from '../../../core/services/inventory/inventory.service';
 import { ClientService } from '../../../core/services/client/client.service';
 import { EmployeeService } from '../../../core/services/employee/employee.service';
+import { environment } from '../../../../environments/environment';
+import { SaleDto, SaleWithDetailsDto, CreateSaleDto } from '../../../core/dto/sale.dto';
+import { SaleDetailDto, CartItemDto } from '../../../core/dto/sale-detail.dto';
+import { PaymentDto, PaymentMethodDto } from '../../../core/dto/payment.dto';
 
 
 interface CartItem {
@@ -28,6 +32,7 @@ interface CartItem {
     price: number;
     subtotal: number;
 }
+type PaymentMethod = 'cash' | 'card' | 'transfer' | 'mixed';
 
 @Component({
     selector: 'app-pos-system',
@@ -48,7 +53,7 @@ export class PosSystem implements OnInit {
     carrito = signal<CartItem[]>([]);
     cajaAbierta = signal(false);
     estadisticasDia = signal({ ventas: 0, ingresos: 0, ticketPromedio: 0 });
-    pagosNoCash = signal<any[]>([]);
+    pagosNoCash = signal<PaymentMethodDto[]>([]);
 
     // Computed signals para cálculos automáticos
     subtotal = computed(() => this.carrito().reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0));
@@ -85,7 +90,7 @@ export class PosSystem implements OnInit {
     busqueda = '';
     clienteSeleccionado: any = null;
     empleadoSeleccionado = signal<any>(null);
-    metodoPagoSeleccionado = signal<string>('');
+    metodoPagoSeleccionado = signal<'cash' | 'card' | 'transfer' | 'mixed' | ''>('');
     descuento = 0;
     tipoDescuento: '$' | '%' = '$';
 
@@ -100,7 +105,7 @@ export class PosSystem implements OnInit {
     mostrarDialogoPromociones = false;
     mostrarDialogoTicket = false;
     mostrarDialogoFirma = false;
-    ventaActual: any = null;
+    ventaActual: SaleWithDetailsDto | null = null;
     firmaCliente = '';
     montoInicialCaja = 0;
     montoFinalCaja = 0;
@@ -114,8 +119,52 @@ export class PosSystem implements OnInit {
     pagosMixtos: any[] = [];
     promociones: any[] = [];
     promocionAplicada: any = null;
-    historialVentas: any[] = [];
+    historialVentas: SaleWithDetailsDto[] = [];
     configuracionPos: any = {};
+
+    // Método público para template
+    private mapCartItemToSaleDetail(item: CartItem): SaleDetailDto {
+        return {
+            content_type: item.type === 'service' ? 'service' : 'product',
+            object_id: item.item.id,
+            name: item.item.name,
+            quantity: item.quantity,
+            price: item.price
+        };
+    }
+
+    private mapBackendSaleToDto(backendSale: any): SaleWithDetailsDto {
+        return {
+            id: backendSale.id,
+            client: backendSale.client,
+            employee_id: backendSale.employee_id,
+            payment_method: backendSale.payment_method,
+            discount: backendSale.discount || 0,
+            total: backendSale.total,
+            paid: backendSale.paid,
+            date_time: backendSale.date_time,
+            details: backendSale.details || [],
+            payments: backendSale.payments || [],
+            client_name: backendSale.client_name,
+            employee_name: backendSale.employee_name
+        };
+    }
+
+    getPaymentMethodName(method: PaymentMethod): string {
+        const methods: Record<PaymentMethod , string> = {
+            cash: 'Efectivo',
+            card: 'Tarjeta',
+            transfer: 'Transferencia',
+            mixed: 'Mixto'
+        };
+        return methods[method];
+    }
+getSubtotal(venta: SaleWithDetailsDto): number {
+  return venta.details.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0
+  );
+}
 
 
     denominaciones = [
@@ -151,7 +200,7 @@ export class PosSystem implements OnInit {
         });
     }
 
-    ngOnInit() {
+    ngOnInit(): void {
         this.cargarDatos();
         this.verificarEstadoCaja();
         this.cargarEstadisticasGuardadas();
@@ -160,88 +209,82 @@ export class PosSystem implements OnInit {
         this.setupKeyboardShortcuts();
     }
 
+    // Utility function to normalize API responses
+    private normalizeArray<T>(response: any): T[] {
+        if (!response) return [];
+        if (Array.isArray(response)) return response;
+        if (response.results && Array.isArray(response.results)) return response.results;
+        return [];
+    }
+
     async cargarDatos() {
         if (this.cargandoDatos) return;
         this.cargandoDatos = true;
+
         try {
+            console.log('🔍 Iniciando carga de datos...');
+            
             const servicesResponse = await this.servicesService.getServices().toPromise();
-            this.servicios = (servicesResponse?.results || servicesResponse || [])
-                .filter((s: any) => s.is_active !== false);
+            console.log('📋 Services response:', servicesResponse);
+            const services = this.normalizeArray<any>(servicesResponse);
+            console.log('📋 Services normalized:', services.length, 'items');
+            this.servicios = services.filter((s: any) => s.is_active !== false);
 
             const productsResponse = await this.inventoryService.getProducts().toPromise();
-            this.productos = (productsResponse?.results || productsResponse || [])
-                .filter((p: any) => p.is_active && (p.stock > 0 || p.stock === undefined));
+            console.log('📦 Products response:', productsResponse);
+            const products = this.normalizeArray<any>(productsResponse);
+            console.log('📦 Products normalized:', products.length, 'items');
+            this.productos = products.filter(
+                (p: any) => p.is_active && (p.stock > 0 || p.stock === undefined)
+            );
 
             const clientsResponse = await this.clientsService.getClients().toPromise();
-            this.clientes = (clientsResponse?.results || clientsResponse || [])
-                .filter((c: any) => c.is_active !== false);
+            console.log('👥 Clients response:', clientsResponse);
+            const clients = this.normalizeArray<any>(clientsResponse);
+            console.log('👥 Clients normalized:', clients.length, 'items');
+            this.clientes = clients.filter((c: any) => c.is_active !== false);
 
-            // Identificar clientes frecuentes (más de 5 compras)
-            this.clientesFrecuentes = this.clientes.filter(c => (c.total_purchases || 0) > 5);
-
-            console.log('🔑 Token en localStorage:', localStorage.getItem('access_token') ? 'Presente' : 'Ausente');
+            // Clientes frecuentes
+            this.clientesFrecuentes = this.clientes.filter(
+                (c: any) => (c.total_purchases || 0) > 5
+            );
 
             const employeesResponse = await this.employeesService.getEmployees().toPromise();
-            console.log('🔍 Empleados response completo:', employeesResponse);
-            console.log('🔍 URL llamada:', `${this.employeesService['baseUrl']}/employees/employees/`);
-
-            const allEmployees = employeesResponse?.results || employeesResponse || [];
-            console.log('📋 Total empleados recibidos:', allEmployees.length);
-
-            // Mostrar cada empleado para debug
-            allEmployees.forEach((emp: any, index: number) => {
-                console.log(`👤 Empleado ${index + 1}:`, {
-                    id: emp.id,
-                    is_active: emp.is_active,
-                    user: emp.user,
-                    specialty: emp.specialty
-                });
-            });
-
-            // Filtrar solo por is_active inicialmente
-            this.empleados = allEmployees.filter((emp: any) => emp.is_active);
-            console.log('✅ Empleados activos:', this.empleados.length);
-
-            // Agregar displayName a cada empleado
-            this.empleados = this.empleados.map(emp => {
-                const userName = emp.user?.full_name || emp.user?.email || 'Sin nombre';
-                const userRole = emp.user?.role || 'Sin rol';
-                return {
+            console.log('👨‍💼 Employees response:', employeesResponse);
+            const employees = this.normalizeArray<any>(employeesResponse);
+            console.log('👨‍💼 Employees normalized:', employees.length, 'items');
+            this.empleados = employees
+                .filter((emp: any) => emp.is_active)
+                .map((emp: any) => ({
                     ...emp,
-                    displayName: `${userName} (${userRole})`
-                };
-            });
+                    displayName: emp.displayName || emp.display_name || emp.user?.full_name || emp.name || `Empleado ${emp.id}`
+                }));
 
-            console.log('🎯 Empleados finales con displayName:', this.empleados);
-
-            if (this.empleados.length === 0) {
-                console.warn('No hay empleados activos disponibles');
-            } else {
-                console.log(`✅ ${this.empleados.length} empleados cargados correctamente`);
-            }
-
-            try {
-                const categoriesResponse = await this.posService.getCategories().toPromise();
-                this.categorias = [
-                    { name: 'Todas las categorías', value: '' },
-                    ...(categoriesResponse?.results || [])
-                ];
-            } catch (error) {
-                this.categorias = [{ name: 'Todas las categorías', value: '' }];
-            }
-
+            console.log('✅ Datos cargados - Servicios:', this.servicios.length, 'Productos:', this.productos.length, 'Clientes:', this.clientes.length, 'Empleados:', this.empleados.length);
+            
+            this.extraerCategorias();
             this.filtrarItems();
-        } catch (error: any) {
-            console.error('❌ Error completo cargando datos:', error);
+
+        } catch (error) {
+            console.error('Error cargando datos:', error);
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
-                detail: `Error al cargar datos: ${error.message || 'Error desconocido'}`
+                detail: 'Error al cargar los datos del sistema'
             });
         } finally {
             this.cargandoDatos = false;
         }
     }
+
+    private extraerCategorias() {
+        // Implementación básica para extraer categorías
+    }
+
+
+
+
+
 
     filtrarItems() {
         let items = this.tipoActivo === 'services' ? this.servicios : this.productos;
@@ -397,14 +440,7 @@ export class PosSystem implements OnInit {
     }
 
     async procesarVenta() {
-        console.log('=== PROCESANDO VENTA ===');
-        console.log('1. puedeVender():', this.puedeVender());
-        console.log('2. carrito:', this.carrito());
-        console.log('3. metodoPago:', this.metodoPagoSeleccionado);
-        console.log('4. total:', this.calcularTotal());
-
         if (!this.puedeVender()) {
-            console.log('❌ NO PUEDE VENDER:', this.obtenerMensajeValidacion());
             this.messageService.add({
                 severity: 'error',
                 summary: 'Venta no válida',
@@ -413,21 +449,16 @@ export class PosSystem implements OnInit {
             return;
         }
 
-        console.log('✅ PUEDE VENDER - Continuando...');
-
         if (this.metodoPagoSeleccionado() === 'cash' || this.metodoPagoSeleccionado() === 'mixed') {
-            console.log('💰 Método efectivo/mixto - Abriendo diálogo pago');
             this.mostrarDialogoPago = true;
             return;
         }
 
         if (this.calcularTotal() > 500) {
-            console.log('✍️ Total > $500 - Solicitando firma');
             this.mostrarDialogoFirma = true;
             return;
         }
 
-        console.log('🚀 Llamando confirmarVenta() directamente');
         await this.confirmarVenta();
     }
 
@@ -435,22 +466,16 @@ export class PosSystem implements OnInit {
         if (this.procesandoVenta) return;
         this.procesandoVenta = true;
         try {
-            const ventaData = {
-                client: this.clienteSeleccionado?.id || null,
-                employee_id: this.empleadoSeleccionado()?.id ?? null,
-                payment_method: this.metodoPagoSeleccionado(),
+            const ventaData: CreateSaleDto = {
+                client: this.clienteSeleccionado?.id || undefined,
+                employee_id: this.empleadoSeleccionado()?.id ?? undefined,
+                payment_method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
                 discount: Number(this.descuento) || 0,
                 total: this.calcularTotal(),
                 paid: this.calcularTotal(),
-                details: this.carrito().map(item => ({
-                    content_type: item.type === 'service' ? 'service' : 'product',
-                    object_id: item.item.id,
-                    name: item.item.name,
-                    quantity: item.quantity,
-                    price: item.price
-                })),
+                details: this.carrito().map(item => this.mapCartItemToSaleDetail(item)),
                 payments: [{
-                    method: this.metodoPagoSeleccionado,
+                    method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
                     amount: this.calcularTotal()
                 }]
             };
@@ -496,7 +521,7 @@ export class PosSystem implements OnInit {
         try {
             const registers = await this.posService.getCashRegisters({ is_open: true }).toPromise();
             this.cajaAbierta.set(registers?.results?.length > 0 || false);
-            
+
             // Cargar pagos no cash al verificar estado de caja
             if (this.cajaAbierta()) {
                 const dailySummary = await this.posService.getDailySummary().toPromise();
@@ -572,11 +597,11 @@ export class PosSystem implements OnInit {
 
             // Obtener monto inicial de cuando se abrió la caja
             const montoInicialSesion = this.obtenerMontoInicialCaja();
-            
+
             // 🔧 FIX: Consultar ventas en efectivo reales desde backend
             const dailySummary = await this.posService.getDailySummary().toPromise();
             const ventasEfectivoReales = this.extraerVentasEfectivo(dailySummary);
-            
+
             // 💡 NUEVA FUNCIONALIDAD: Extraer pagos no en efectivo
             this.extraerPagosNoCash(dailySummary);
 
@@ -693,7 +718,7 @@ export class PosSystem implements OnInit {
 
         this.estadisticasDia.set(nuevasEstadisticas);
         this.guardarEstadisticas(nuevasEstadisticas);
-        
+
         // Actualizar pagos no cash después de la venta
         try {
             const dailySummary = await this.posService.getDailySummary().toPromise();
@@ -776,9 +801,10 @@ export class PosSystem implements OnInit {
                 };
             }
             this.promociones = response?.results || [];
-            console.log('Promociones cargadas:', this.promociones);
         } catch (error) {
-            console.error('Error cargando promociones:', error);
+            if (!environment.production) {
+                console.error('Error cargando promociones:', error);
+            }
         }
     }
 
@@ -791,48 +817,43 @@ export class PosSystem implements OnInit {
     async cargarHistorialVentas() {
         this.cargandoHistorial = true;
         try {
-            console.log('Cargando historial de ventas...');
             const response = await this.posService.getSales().toPromise();
-            console.log('Response del historial:', response);
 
-            const ventas = response?.results || response || [];
+            const ventas = this.normalizeArray<any>(response);
             this.historialVentas = ventas
-                .sort((a: any, b: any) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
-                .slice(0, 20); // Mostrar últimas 20 ventas
-
-            console.log('Historial procesado:', this.historialVentas.length, 'ventas');
-            console.log('Primera venta:', this.historialVentas[0]);
+                .map((venta: any) => this.mapBackendSaleToDto(venta))
+                .sort((a: SaleWithDetailsDto, b: SaleWithDetailsDto) =>
+                    new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
+                .slice(0, 20);
         } catch (error) {
-            console.error('Error cargando historial:', error);
+            if (!environment.production) {
+                console.error('Error cargando historial:', error);
+            }
             this.historialVentas = [];
         } finally {
             this.cargandoHistorial = false;
         }
     }
 
-    visualizarVenta(venta: any) {
-        // Recrear estructura de venta para mostrar en ticket
+    visualizarVenta(venta: SaleWithDetailsDto) {
+        // Recrear estructura de venta para mostrar en ticket usando DTO
         this.ventaActual = {
             ...venta,
-            items: venta.details?.map((detail: any) => ({
-                item: { name: detail.name },
-                type: detail.content_type,
+            details: venta.details?.map((detail: SaleDetailDto) => ({
+                id: detail.id,
+                content_type: detail.content_type,
+                object_id: detail.object_id,
+                name: detail.name,
                 quantity: detail.quantity,
                 price: detail.price,
                 subtotal: detail.quantity * detail.price
-            })) || [],
-            cliente: venta.client,
-            empleado: venta.employee,
-            subtotal: venta.total + (venta.discount || 0),
-            descuento: venta.discount || 0,
-            total: venta.total,
-            metodoPago: venta.payment_method
+            })) || []
         };
         this.mostrarDialogoTicket = true;
         setTimeout(() => this.generarQR(), 100);
     }
 
-    reimprimirTicket(venta: any) {
+    reimprimirTicket(venta: SaleWithDetailsDto) {
         this.visualizarVenta(venta);
         // Auto-imprimir después de mostrar
         setTimeout(() => this.imprimirTicket(), 500);
@@ -969,7 +990,9 @@ export class PosSystem implements OnInit {
             const config = await this.posService.getPosConfiguration().toPromise();
             this.configuracionPos = config?.results?.[0] || {};
         } catch (error) {
-            console.error('Error cargando configuración:', error);
+            if (!environment.production) {
+                console.error('Error cargando configuración:', error);
+            }
         }
     }
 
@@ -1037,14 +1060,21 @@ export class PosSystem implements OnInit {
     mostrarTicket(venta: any) {
         // Guardar datos de la venta actual antes de limpiar el carrito
         this.ventaActual = {
-            ...venta,
-            items: [...this.carrito()],
-            cliente: this.clienteSeleccionado,
-            empleado: this.empleadoSeleccionado,
-            subtotal: this.calcularSubtotal(),
-            descuento: this.descuento,
+            id: venta.id,
+            client: this.clienteSeleccionado?.id,
+            employee_id: this.empleadoSeleccionado()?.id,
+            payment_method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
+            discount: this.descuento,
             total: this.calcularTotal(),
-            metodoPago: this.metodoPagoSeleccionado
+            paid: this.calcularTotal(),
+            date_time: new Date().toISOString(),
+            details: this.carrito().map(item => this.mapCartItemToSaleDetail(item)),
+            payments: [{
+                method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
+                amount: this.calcularTotal()
+            }],
+            client_name: this.clienteSeleccionado?.full_name,
+            employee_name: this.empleadoSeleccionado()?.display_name
         };
         this.mostrarDialogoTicket = true;
         setTimeout(() => this.generarQR(), 100);
@@ -1084,8 +1114,10 @@ export class PosSystem implements OnInit {
                 // Fallback a impresión normal
                 window.print();
             }
-        } catch (error) {
-            console.log('Usando impresión estándar');
+        } catch {
+            if (!environment.production) {
+                console.log('Usando impresión estándar');
+            }
             window.print();
         }
     }
@@ -1152,7 +1184,9 @@ ${this.carrito().map(item =>
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.3);
         } catch (error) {
-            console.log('Audio no disponible');
+            if (!environment.production) {
+                console.log('Audio no disponible');
+            }
         }
     }
 
@@ -1321,7 +1355,9 @@ ${this.carrito().map(item =>
             const cashSales = byMethod.find((method: any) => method.payment_method === 'cash');
             return Number(cashSales?.total || 0);
         } catch (error) {
-            console.error('Error extrayendo ventas en efectivo:', error);
+            if (!environment.production) {
+                console.error('Error extrayendo ventas en efectivo:', error);
+            }
             return 0;
         }
     }
@@ -1331,15 +1367,17 @@ ${this.carrito().map(item =>
             const byMethod = dailySummary?.by_method || [];
             const pagosNoCash = byMethod
                 .filter((method: any) => method.payment_method !== 'cash')
-                .map((method: any) => ({
-                    metodo: this.getPaymentMethodName(method.payment_method),
+                .map((method: any): PaymentMethodDto => ({
+                    payment_method: method.payment_method,
                     total: Number(method.total || 0)
                 }))
-                .filter((pago: any) => pago.total > 0);
-            
+                .filter((pago: PaymentMethodDto) => pago.total > 0);
+
             this.pagosNoCash.set(pagosNoCash);
         } catch (error) {
-            console.error('Error extrayendo pagos no cash:', error);
+            if (!environment.production) {
+                console.error('Error extrayendo pagos no cash:', error);
+            }
             this.pagosNoCash.set([]);
         }
     }
@@ -1359,7 +1397,9 @@ ${this.carrito().map(item =>
                 this.estadisticasDia.set({ ventas: 0, ingresos: 0, ticketPromedio: 0 });
             }
         } catch (error) {
-            console.error('Error cargando estadísticas:', error);
+            if (!environment.production) {
+                console.error('Error cargando estadísticas:', error);
+            }
             this.estadisticasDia.set({ ventas: 0, ingresos: 0, ticketPromedio: 0 });
         }
     }
@@ -1368,7 +1408,9 @@ ${this.carrito().map(item =>
         try {
             localStorage.setItem('estadisticas_pos', JSON.stringify(estadisticas));
         } catch (error) {
-            console.error('Error guardando estadísticas:', error);
+            if (!environment.production) {
+                console.error('Error guardando estadísticas:', error);
+            }
         }
     }
 
@@ -1379,8 +1421,10 @@ ${this.carrito().map(item =>
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 return payload.full_name || payload.email || payload.username || 'Usuario';
             }
-        } catch (error) {
-            console.log('Error obteniendo usuario del token');
+        } catch {
+            if (!environment.production) {
+                console.log('Error obteniendo usuario del token');
+            }
         }
         return 'Usuario del Sistema';
     }
@@ -1401,17 +1445,6 @@ ${this.carrito().map(item =>
         }
     }
 
-    getPaymentMethodName(method: string): string {
-        const methods: any = {
-            'cash': 'Efectivo',
-            'card': 'Tarjeta',
-            'transfer': 'Transferencia',
-            'mixed': 'Mixto'
-        };
-        return methods[method] || method;
-    }
-
-
 
     obtenerResumenVenta() {
         return {
@@ -1420,8 +1453,8 @@ ${this.carrito().map(item =>
             descuento: this.descuento,
             total: this.calcularTotal(),
             cliente: this.clienteSeleccionado?.full_name || 'Cliente General',
-            empleado: this.empleadoSeleccionado()?.displayName || this.empleadoSeleccionado()?.user?.full_name || 'N/A',
-            metodoPago: this.metodoPagoSeleccionado
+            empleado: this.empleadoSeleccionado()?.display_name || this.empleadoSeleccionado()?.user?.full_name || 'N/A',
+            payment_method: this.metodoPagoSeleccionado()
         };
     }
 }

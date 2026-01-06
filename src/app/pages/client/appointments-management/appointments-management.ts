@@ -18,6 +18,7 @@ import { AppointmentService, AppointmentWithDetails } from '../../../core/servic
 import { ServiceService, Service } from '../../../core/services/service/service.service';
 import { AuthService } from '../../../core/services/auth/auth.service';
 import { ClientService } from '../../../core/services/client/client.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'app-appointments-management',
@@ -212,6 +213,14 @@ export class AppointmentsManagement implements OnInit {
         { label: 'Cancelada', value: 'cancelled' }
     ];
 
+    // Utility function to normalize API responses
+    private normalizeArray<T>(response: any): T[] {
+        if (!response) return [];
+        if (Array.isArray(response)) return response;
+        if (response.results && Array.isArray(response.results)) return response.results;
+        return [];
+    }
+
     // Validador personalizado para fecha futura
     fechaFuturaValidator = (control: any) => {
         if (!control.value) return null;
@@ -235,6 +244,7 @@ export class AppointmentsManagement implements OnInit {
     }
 
     async cargarDatos() {
+        if (this.cargando()) return; // ✅ Prevenir llamadas concurrentes
         this.cargando.set(true);
         try {
             const [citasRes, serviciosRes, usuariosRes, clientesRes] = await Promise.all([
@@ -245,10 +255,10 @@ export class AppointmentsManagement implements OnInit {
             ]);
 
             // Procesar citas
-            const citas = (citasRes as any)?.results || citasRes || [];
-            const servicios = (serviciosRes as any)?.results || serviciosRes || [];
-            const usuarios = (usuariosRes as any)?.results || usuariosRes || [];
-            const clientes = (clientesRes as any)?.results || clientesRes || [];
+            const citas = this.normalizeArray<any>(citasRes);
+            const servicios = this.normalizeArray<any>(serviciosRes);
+            const usuarios = this.normalizeArray<any>(usuariosRes);
+            const clientes = this.normalizeArray<any>(clientesRes);
 
             // Enriquecer citas con información adicional
             const citasEnriquecidas: AppointmentWithDetails[] = citas.map((cita: any) => {
@@ -287,7 +297,9 @@ export class AppointmentsManagement implements OnInit {
                 value: s.id
             }));
         } catch (error) {
-            console.error('Error cargando datos:', error);
+            if (!environment.production) {
+                console.error('Error cargando datos:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -366,7 +378,9 @@ export class AppointmentsManagement implements OnInit {
             this.cerrarDialogo();
             this.cargarDatos();
         } catch (error: any) {
-            console.error('Error guardando cita:', error);
+            if (!environment.production) {
+                console.error('Error guardando cita:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',

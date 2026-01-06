@@ -8,6 +8,8 @@ export interface Period {
   deductions_total: number;
   period_start: string;
   period_end: string;
+  can_pay: boolean;
+  pay_block_reason?: string;
 }
 
 export interface PaymentRequest {

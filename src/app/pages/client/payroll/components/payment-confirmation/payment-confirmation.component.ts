@@ -21,24 +21,24 @@ import { Period, PaymentRequest } from '../../interfaces/payroll.interface';
       
       <div *ngIf="period" class="space-y-4">
         <!-- Información del período -->
-        <div class="bg-gray-50 p-4 rounded">
-          <h4 class="font-medium text-gray-900">{{ period.employee_name }}</h4>
-          <p class="text-sm text-gray-600">{{ period.period_display }}</p>
+        <div class="p-4 rounded" style="background-color: var(--surface-100);">
+          <h4 class="font-medium" style="color: var(--text-color);">{{ period.employee_name }}</h4>
+          <p class="text-sm" style="color: var(--text-color-secondary);">{{ period.period_display }}</p>
         </div>
 
         <!-- Desglose de montos -->
-        <div class="bg-blue-50 border border-blue-200 p-4 rounded">
+        <div class="p-4 rounded border" style="background-color: color-mix(in srgb, var(--primary-color) 10%, transparent); border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);">
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
-              <span class="text-gray-700">Total bruto:</span>
+              <span style="color: var(--text-color-secondary);">Total bruto:</span>
               <span class="font-medium">{{ formatCurrency(period.gross_amount) }}</span>
             </div>
-            <div class="flex justify-between text-red-600">
+            <div class="flex justify-between" style="color: var(--danger-color-text);">
               <span>Descuentos:</span>
               <span>-{{ formatCurrency(period.deductions_total) }}</span>
             </div>
-            <hr class="border-blue-300">
-            <div class="flex justify-between text-lg font-bold text-blue-800">
+            <hr style="border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);">
+            <div class="flex justify-between text-lg font-bold" style="color: var(--primary-color-text);">
               <span>Total neto:</span>
               <span>{{ formatCurrency(period.net_amount) }}</span>
             </div>

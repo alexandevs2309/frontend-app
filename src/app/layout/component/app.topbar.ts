@@ -72,7 +72,7 @@ import { SettingsService } from '../../core/services/settings.service';
                         <span>Calendar</span>
                     </button>
                     <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-inbox"></i>
+                        <i class="pi pi-envelope"></i>
                         <span>Messages</span>
                     </button>
                     <button type="button" class="layout-topbar-action" (click)="userMenu.toggle($event)">
@@ -88,7 +88,7 @@ import { SettingsService } from '../../core/services/settings.service';
 export class AppTopbar implements OnInit {
     items!: MenuItem[];
     userMenuItems: MenuItem[] = [];
-    platformName = signal('SAKAI');
+    platformName = signal('Auron-Suite');
 
     constructor(
         public layoutService: LayoutService,

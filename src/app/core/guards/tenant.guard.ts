@@ -25,12 +25,12 @@ export class TenantGuard implements CanActivate {
           return false;
         }
 
-        // SuperAdmin can access everything
+        // SuperAdmin siempre puede acceder
         if (this.authService.isSuperAdmin()) {
           return true;
         }
 
-        // Other users must have a tenant
+        // Otros usuarios deben tener un tenant
         const storedTenant = localStorage.getItem('tenant');
         if (!storedTenant) {
             this.messageService.add({ severity: 'error', summary: 'Acceso Denegado', detail: 'Usuario sin tenant asignado. Contacta al administrador.' });

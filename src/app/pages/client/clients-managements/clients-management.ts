@@ -15,6 +15,8 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { ClientService, Client } from '../../../core/services/client/client.service';
+import { environment } from '../../../../environments/environment';
+import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/client.dto';
 
 @Component({
     selector: 'app-clients-management',
@@ -166,7 +168,7 @@ import { ClientService, Client } from '../../../core/services/client/client.serv
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block font-medium mb-1">Fecha de Nacimiento</label>
-                            <p-datepicker formControlName="date_of_birth" dateFormat="dd/mm/yy"
+                            <p-datepicker formControlName="birthday" dateFormat="dd/mm/yy"
                                         class="w-full" [showClear]="true">
                             </p-datepicker>
                         </div>
@@ -211,11 +213,36 @@ export class ClientsManagement implements OnInit {
     private confirmationService = inject(ConfirmationService);
     private fb = inject(FormBuilder);
 
-    clientes = signal<Client[]>([]);
+    clientes = signal<ClientDto[]>([]);
     cargando = signal(false);
     guardando = signal(false);
     mostrarDialogo = false;
-    clienteSeleccionado: Client | null = null;
+    clienteSeleccionado: ClientDto | null = null;
+
+    // Utility function to normalize API responses
+    private normalizeArray<T>(response: any): T[] {
+        if (!response) return [];
+        if (Array.isArray(response)) return response;
+        if (response.results && Array.isArray(response.results)) return response.results;
+        return [];
+    }
+
+    // Adaptador Backend → Frontend DTO
+    private mapBackendToClientDto(backendClient: any): ClientDto {
+        return {
+            id: backendClient.id,
+            full_name: backendClient.full_name, // ✅ Normalizado
+            email: backendClient.email,
+            phone: backendClient.phone,
+            address: backendClient.address,
+            birthday: backendClient.birthday, // ✅ Normalizado desde backend
+            gender: backendClient.gender,
+            notes: backendClient.notes,
+            is_active: backendClient.is_active,
+            created_at: backendClient.created_at,
+            updated_at: backendClient.updated_at
+        };
+    }
 
     generoOptions = [
         { label: 'Masculino', value: 'M' },
@@ -224,11 +251,11 @@ export class ClientsManagement implements OnInit {
     ];
 
     formulario: FormGroup = this.fb.group({
-        full_name: ['', [Validators.required, Validators.maxLength(100)]],
+        full_name: ['', [Validators.required, Validators.maxLength(100)]], // ✅ Normalizado
         email: ['', [Validators.required, Validators.email]],
         phone: [''],
         address: [''],
-        date_of_birth: [null],
+        birthday: [null], // ✅ Normalizado desde backend
         gender: [''],
         notes: [''],
         is_active: [true]
@@ -236,31 +263,23 @@ export class ClientsManagement implements OnInit {
 
     ngOnInit() {
         this.cargarClientes();
-        console.log(this.clientes)
     }
 
     async cargarClientes() {
+        if (this.cargando()) return; // ✅ Prevenir llamadas concurrentes
         this.cargando.set(true);
         try {
             const response = await this.clientService.getClients().toPromise();
-            console.log('🔍 RESPUESTA COMPLETA DEL BACKEND:', response);
-            console.log('🔍 TIPO DE RESPUESTA:', typeof response);
-            console.log('🔍 ES ARRAY:', Array.isArray(response));
-            console.log('🔍 KEYS:', Object.keys(response || {}));
             
-            const clientes = (response as any)?.results || response || [];
-            console.log('🔍 CLIENTES PROCESADOS:', clientes);
-            console.log('🔍 CANTIDAD DE CLIENTES:', clientes.length);
+            const clientes = this.normalizeArray<any>(response);
+            const clientesNormalizados = clientes.map((cliente: any) => this.mapBackendToClientDto(cliente));
             
-            if (clientes.length > 0) {
-                console.log('🔍 PRIMER CLIENTE (ESTRUCTURA):', clientes[0]);
-                console.log('🔍 PROPIEDADES DEL PRIMER CLIENTE:', Object.keys(clientes[0]));
-            }
-            
-            this.clientes.set(clientes);
+            this.clientes.set(clientesNormalizados);
 
         } catch (error) {
-            console.error('Error cargando clientes:', error);
+            if (!environment.production) {
+                console.error('Error cargando clientes:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -278,7 +297,7 @@ export class ClientsManagement implements OnInit {
             email: '',
             phone: '',
             address: '',
-            date_of_birth: null,
+            birthday: null,
             gender: '',
             notes: '',
             is_active: true
@@ -286,14 +305,14 @@ export class ClientsManagement implements OnInit {
         this.mostrarDialogo = true;
     }
 
-    editarCliente(cliente: Client) {
+    editarCliente(cliente: ClientDto) {
         this.clienteSeleccionado = cliente;
         this.formulario.patchValue({
-            full_name: cliente.full_name,
+            full_name: cliente.full_name, // ✅ Normalizado
             email: cliente.email,
             phone: cliente.phone || '',
             address: cliente.address || '',
-            date_of_birth: (() => {
+            birthday: (() => { // ✅ Normalizado
                 const fecha = cliente.birthday;
                 return fecha ? new Date(fecha) : null;
             })(),
@@ -309,12 +328,11 @@ export class ClientsManagement implements OnInit {
 
         this.guardando.set(true);
         try {
-            const clienteData = { ...this.formulario.value };
+            const clienteData: CreateClientDto | UpdateClientDto = { ...this.formulario.value };
 
             // Formatear fecha de nacimiento - el backend espera 'birthday'
-            if (clienteData.date_of_birth) {
-                clienteData.birthday = new Date(clienteData.date_of_birth).toISOString().split('T')[0];
-                delete clienteData.date_of_birth; // Remover el campo incorrecto
+            if (clienteData.birthday) {
+                clienteData.birthday = new Date(clienteData.birthday).toISOString().split('T')[0];
             }
 
             if (this.clienteSeleccionado) {
@@ -336,7 +354,9 @@ export class ClientsManagement implements OnInit {
             this.cerrarDialogo();
             this.cargarClientes();
         } catch (error: any) {
-            console.error('Error guardando cliente:', error);
+            if (!environment.production) {
+                console.error('Error guardando cliente:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -347,9 +367,9 @@ export class ClientsManagement implements OnInit {
         }
     }
 
-    confirmarEliminar(cliente: Client) {
+    confirmarEliminar(cliente: ClientDto) {
         this.confirmationService.confirm({
-            message: `¿Estás seguro de eliminar al cliente "${cliente.full_name}"?`,
+            message: `¿Estás seguro de eliminar al cliente "${cliente.full_name}"?`, // ✅ Normalizado
             header: 'Confirmar Eliminación',
             icon: 'pi pi-exclamation-triangle',
             acceptLabel: 'Sí, eliminar',
@@ -358,7 +378,7 @@ export class ClientsManagement implements OnInit {
         });
     }
 
-    async eliminarCliente(cliente: Client) {
+    async eliminarCliente(cliente: ClientDto) {
         try {
             await this.clientService.deleteClient(cliente.id).toPromise();
             this.messageService.add({
@@ -368,7 +388,9 @@ export class ClientsManagement implements OnInit {
             });
             this.cargarClientes();
         } catch (error: any) {
-            console.error('Error eliminando cliente:', error);
+            if (!environment.production) {
+                console.error('Error eliminando cliente:', error);
+            }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',

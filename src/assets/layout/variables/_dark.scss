@@ -1,27 +1,27 @@
 :root[class*='app-dark'] {
-    /* Paleta Lavanda Fintech - Modo Oscuro */
-    --primary-color: #8B7CF6;
+    /* PALETA OBJETIVO - DARK MODE */
+    --primary-color: #2563EB;
     --primary-color-text: #FFFFFF;
-    --surface-ground: #111827;
-    --surface-card: #1F2937;
-    --surface-border: #374151;
-    --text-color: #F9FAFB;
-    --text-color-secondary: #D1D5DB;
+    --surface-ground: #020617;
+    --surface-card: #0F172A;
+    --surface-border: #1E293B;
+    --text-color: #F8FAFC;
+    --text-color-secondary: #94A3B8;
     
     /* Variables PrimeNG modo oscuro */
-    --p-primary-color: #8B7CF6;
+    --p-primary-color: #2563EB;
     --p-primary-contrast-color: #FFFFFF;
-    --p-text-color: #F9FAFB;
-    --p-text-muted-color: #D1D5DB;
-    --p-content-border-color: #374151;
-    --p-content-background: #1F2937;
-    --p-content-hover-background: #374151;
-    --p-overlay-popover-background: #1F2937;
+    --p-text-color: #F8FAFC;
+    --p-text-muted-color: #94A3B8;
+    --p-content-border-color: #1E293B;
+    --p-content-background: #0F172A;
+    --p-content-hover-background: #1E293B;
+    --p-overlay-popover-background: #0F172A;
     
     /* Variables específicas de Sakai modo oscuro */
-    --surface-950: #111827;
-    --surface-800: #1F2937;
-    --surface-100: #F3F4F6;
+    --surface-950: #020617;
+    --surface-800: #0F172A;
+    --surface-100: #F8FAFC;
     
     /* Código */
     --code-background: var(--surface-800);

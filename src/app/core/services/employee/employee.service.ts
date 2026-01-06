@@ -100,4 +100,38 @@ export class EmployeeService extends BaseApiService {
   getEmployeeStats(employeeId: number): Observable<any> {
     return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/stats/`);
   }
+
+  // Payroll methods
+  getPayrollConfig(employeeId: number): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/payroll-config/`);
+  }
+
+  updatePayrollConfig(employeeId: number, config: any): Observable<any> {
+    return this.put(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/payroll-config/`, config);
+  }
+
+  getPaymentHistory(employeeId: number): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/payment_history/`);
+  }
+
+  getPaymentStats(employeeId: number): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/payment_stats/`);
+  }
+
+  getPaymentReceipt(paymentId: string): Observable<any> {
+    return this.get(`/payroll/client/payroll/payments/${paymentId}/receipt/`);
+  }
+
+  // Loans methods
+  getLoans(employeeId: number): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/loans/`);
+  }
+
+  getLoansSummary(employeeId: number): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/loans_summary/`);
+  }
+
+  createLoan(employeeId: number, loanData: any): Observable<any> {
+    return this.post(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/loans/`, loanData);
+  }
 }
