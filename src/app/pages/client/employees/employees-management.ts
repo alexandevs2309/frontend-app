@@ -110,8 +110,8 @@ interface PaymentDto {
               <p-tag [value]="getRoleDisplayName(emp.user.role)"
                      [severity]="getRoleSeverity(getRoleDisplayName(emp.user.role))"></p-tag>
             </td>
-            <td>{{emp.specialty || 'N/A'}}</td>
-            <td>{{emp.phone || 'N/A'}}</td>
+            <td>{{emp.specialty || '-'}}</td>
+            <td>{{emp.phone || '-'}}</td>
             <td>{{emp.hire_date | date:'dd/MM/yyyy'}}</td>
             <td>
               <p-tag [value]="emp.is_active ? 'Activo' : 'Inactivo'"
@@ -788,41 +788,31 @@ export class EmployeesManagement implements OnInit {
   async cargarDatos() {
     this.cargando.set(true);
     try {
-      const [empleadosRes, usuariosRes] = await Promise.all([
-        this.employeeService.getEmployees().toPromise(),
-        this.authService.getUsers().toPromise()
-      ]);
-
+      // Usar solo el endpoint de empleados que ya incluye datos del usuario
+      const empleadosRes = await this.employeeService.getEmployees().toPromise();
       const empleados = (empleadosRes as any)?.results || [];
-      const usuarios = (usuariosRes as any)?.results || usuariosRes || [];
 
-      // Filtrar solo usuarios que son empleados (excluir Client-Admin)
-      const usuariosEmpleados = usuarios.filter((u: any) =>
-        u.role && ['Estilista', 'Cajera', 'Manager', 'Utility'].includes(u.role)
-      );
-
-      // Crear lista basada en usuarios empleados
-      const empleadosFusionados: EmployeeWithUserDto[] = usuariosEmpleados.map((usuario: any) => {
-        const emp = empleados.find((e: Employee) => e.user_id_read === usuario.id);
+      // Mapear directamente desde la respuesta de empleados
+      const empleadosFusionados: EmployeeWithUserDto[] = empleados.map((emp: any) => {
         return {
-          id: emp?.id || 0,
-          user_id: usuario.id,
+          id: emp.id,
+          user_id: emp.user.id,
           user: {
-            id: usuario.id,
-            email: usuario.email || 'N/A',
-            full_name: usuario.full_name || 'N/A',
-            role: usuario.role || 'N/A',
-            is_active: usuario.is_active ?? true,
-            tenant: usuario.tenant || 0,
-            created_at: usuario.created_at || '',
-            updated_at: usuario.updated_at || ''
+            id: emp.user.id,
+            email: emp.user.email,
+            full_name: emp.user.full_name,
+            role: emp.user.role,
+            is_active: emp.is_active,
+            tenant: 0,
+            created_at: emp.created_at,
+            updated_at: emp.updated_at
           },
-          specialty: emp?.specialty || '',
-          phone: emp?.phone || '',
-          hire_date: emp?.hire_date || '',
-          is_active: emp?.is_active ?? true,
-          created_at: emp?.created_at || '',
-          display_name: `${usuario.full_name || usuario.email || 'Sin nombre'} (${usuario.role || 'Sin rol'})`
+          specialty: emp.specialty || '',
+          phone: emp.phone || '',
+          hire_date: emp.hire_date || '',
+          is_active: emp.is_active,
+          created_at: emp.created_at,
+          display_name: `${emp.user.full_name || emp.user.email || 'Sin nombre'} (${emp.user.role || 'Sin rol'})`
         };
       });
 
@@ -892,7 +882,7 @@ export class EmployeesManagement implements OnInit {
           is_active: formData.is_active
         } as any).toPromise();
 
-        // Si tiene registro Employee (id > 0), actualizar; si no, crear
+        // Si tiene registro Employee (id > 0), actualizar; si no, omitir creación
         if (this.empleadoSeleccionado.id > 0) {
           const updateData = {
             specialty: formData.specialty || undefined,
@@ -904,21 +894,9 @@ export class EmployeesManagement implements OnInit {
           console.log('Updating employee with data:', updateData);
           // Usar PATCH en lugar de PUT para evitar problemas con campos no permitidos
           await this.employeeService.patchEmployee(this.empleadoSeleccionado.id, updateData).toPromise();
-        } else {
-          // Crear registro Employee para usuario existente
-          const createData: any = {
-            user_id: this.empleadoSeleccionado.user_id,
-            specialty: formData.specialty || '',
-            phone: formData.phone || '',
-            is_active: formData.is_active
-          };
-
-          if (formData.hire_date) {
-            createData.hire_date = new Date(formData.hire_date).toISOString().split('T')[0];
-          }
-
-          await this.employeeService.createEmployee(createData).toPromise();
         }
+        // NOTA: No se puede crear registro Employee vía POST /api/employees/ (endpoint deshabilitado)
+        // Los datos de empleado se manejan solo a través del usuario
 
         this.messageService.add({
           severity: 'success',
@@ -926,50 +904,18 @@ export class EmployeesManagement implements OnInit {
           detail: 'Empleado actualizado correctamente'
         });
       } else {
-        try {
-          // Crear usuario
-          const nuevoUsuario = await this.authService.createUser({
-            email: formData.email,
-            full_name: formData.full_name,
-            password: formData.password,
-            role: formData.role,
-            tenant: this.authService.getTenantId()
-          } as any).toPromise();
-
-          // Crear empleado
-          await this.employeeService.createEmployee({
-            user_id: (nuevoUsuario as any).id,
-            specialty: formData.specialty,
-            phone: formData.phone,
-            hire_date: formData.hire_date ?
-              new Date(formData.hire_date).toISOString().split('T')[0] : undefined,
-            is_active: formData.is_active
-          } as any).toPromise();
-        } catch (userError: any) {
-          // Si el usuario se creó pero devolvió 403, intentar crear empleado
-          if (userError.status === 403) {
-            // Recargar usuarios para obtener el recién creado
-            const usuariosRes = await this.authService.getUsers().toPromise();
-            const usuarios = (usuariosRes as any)?.results || usuariosRes || [];
-            const usuarioCreado = usuarios.find((u: any) => u.email === formData.email);
-
-            if (usuarioCreado) {
-              // Crear empleado con el usuario encontrado
-              await this.employeeService.createEmployee({
-                user_id: usuarioCreado.id,
-                specialty: formData.specialty,
-                phone: formData.phone,
-                hire_date: formData.hire_date ?
-                  new Date(formData.hire_date).toISOString().split('T')[0] : undefined,
-                is_active: formData.is_active
-              } as any).toPromise();
-            } else {
-              throw userError;
-            }
-          } else {
-            throw userError;
-          }
-        }
+        // Crear solo usuario - los datos de empleado se manejan automáticamente
+        await this.authService.createUser({
+          email: formData.email,
+          full_name: formData.full_name,
+          password: formData.password,
+          role: formData.role,
+          tenant: this.authService.getTenantId()
+        } as any).toPromise();
+        
+        // NOTA: No se crea registro Employee explícitamente
+        // POST /api/employees/ está deshabilitado en el backend
+        // El backend crea automáticamente el Employee via signals
 
         this.messageService.add({
           severity: 'success',
@@ -1023,13 +969,12 @@ export class EmployeesManagement implements OnInit {
 
   async eliminarEmpleado(emp: EmployeeWithUserDto) {
     try {
-      // Solo eliminar registro Employee si existe (id > 0)
-      if (emp.id > 0) {
-        await this.employeeService.deleteEmployee(emp.id).toPromise();
-      }
-
-      // Eliminar usuario
+      // Eliminar usuario (esto maneja automáticamente la relación con Employee)
       await this.authService.deleteUser(emp.user_id).toPromise();
+      
+      // NOTA: No se llama DELETE /api/employees/ porque:
+      // 1. El endpoint puede no existir o estar deshabilitado
+      // 2. La eliminación del usuario maneja la cascada automáticamente
 
       this.empleados.update(lista => lista.filter(e => e.user_id !== emp.user_id));
       this.messageService.add({

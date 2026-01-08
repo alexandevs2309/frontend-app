@@ -16,13 +16,6 @@ export class PayrollService extends BaseApiService {
   }
 
   /**
-   * Cerrar período y calcular totales
-   */
-  closePeriod(periodId: number): Observable<Period> {
-    return this.post(`/payroll/client/payroll/${periodId}/close_period/`, {});
-  }
-
-  /**
    * Registrar pago de período
    */
   registerPayment(payment: PaymentRequest): Observable<PaymentResponse> {

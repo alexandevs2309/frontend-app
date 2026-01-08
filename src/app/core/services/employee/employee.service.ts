@@ -103,11 +103,11 @@ export class EmployeeService extends BaseApiService {
 
   // Payroll methods
   getPayrollConfig(employeeId: number): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/payroll-config/`);
+    return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/payroll_config/`);
   }
 
   updatePayrollConfig(employeeId: number, config: any): Observable<any> {
-    return this.put(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/payroll-config/`, config);
+    return this.put(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/payroll_config/`, config);
   }
 
   getPaymentHistory(employeeId: number): Observable<any> {

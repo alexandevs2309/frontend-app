@@ -57,10 +57,10 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
               <td>{{ formatCurrency(period.deductions_total) }}</td>
               <td class="font-bold">{{ formatCurrency(period.net_amount) }}</td>
               <td>
-                <button *ngIf="period.status === 'open'" 
-                        pButton label="Calcular" icon="pi pi-calculator"
-                        class="p-button-sm p-button-info"
-                        (click)="closePeriod(period)" [loading]="processing()"></button>
+                <span *ngIf="period.status === 'open'" 
+                      class="font-medium" style="color: var(--text-color-secondary);">
+                  <i class="pi pi-clock mr-1"></i>Pendiente
+                </span>
                 
                 <div *ngIf="period.status === 'ready'">
                   <button pButton label="Registrar Pago" icon="pi pi-credit-card"
@@ -107,7 +107,6 @@ export class PeriodsListComponent implements OnInit {
   private messageService = inject(MessageService);
 
   loading = signal(false);
-  processing = signal(false);
   periods = signal<Period[]>([]);
   selectedPeriod = signal<Period | null>(null);
   showPaymentDialog = false;
@@ -135,36 +134,7 @@ export class PeriodsListComponent implements OnInit {
     });
   }
 
-  closePeriod(period: Period) {
-    this.processing.set(true);
-    this.payrollService.closePeriod(period.id).subscribe({
-      next: (updatedPeriod) => {
-        // Actualizar período en la lista
-        const periods = this.periods();
-        const index = periods.findIndex(p => p.id === period.id);
-        if (index !== -1) {
-          periods[index] = { ...period, ...updatedPeriod };
-          this.periods.set([...periods]);
-        }
-        
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Período Calculado',
-          detail: `Total neto: ${this.formatCurrency(updatedPeriod.net_amount)}`
-        });
-        this.processing.set(false);
-      },
-      error: (error) => {
-        console.error('Error closing period:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: error.error?.error || 'Error al calcular período'
-        });
-        this.processing.set(false);
-      }
-    });
-  }
+
 
   openPaymentDialog(period: Period) {
     this.selectedPeriod.set(period);
