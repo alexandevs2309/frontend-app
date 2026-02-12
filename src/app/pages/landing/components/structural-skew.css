@@ -1,0 +1,43 @@
+/* Skew estructural para separación de secciones */
+.section-skew-top {
+  position: relative;
+  overflow: hidden;
+}
+
+.section-skew-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  transform: skewY(-2deg);
+  transform-origin: top left;
+  z-index: -1;
+}
+
+.section-skew-bottom {
+  position: relative;
+  overflow: hidden;
+}
+
+.section-skew-bottom::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  transform: skewY(2deg);
+  transform-origin: bottom left;
+  z-index: -1;
+}
+
+/* Asegurar que el contenido permanezca recto */
+.section-skew-top > *,
+.section-skew-bottom > * {
+  position: relative;
+  z-index: 1;
+}

@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
 import { CarouselModule } from 'primeng/carousel';
-import { AnimationService } from '../../../shared/services/animation.service';
 
 interface Testimonial {
     id: number;
@@ -21,27 +20,22 @@ interface Testimonial {
     standalone: true,
     imports: [CommonModule, ButtonModule, RippleModule, CarouselModule],
     template: `
-        <div id="testimonials" class="py-20 px-6 lg:px-20 bg-surface-50 dark:bg-surface-800 relative overflow-hidden">
-            
-            <!-- Background decoration -->
-            <div class="absolute inset-0 opacity-10 dark:opacity-20">
-                <div class="absolute top-16 right-20 w-80 h-80 bg-linear-to-r from-green-400 to-blue-500 rounded-full blur-3xl"></div>
-                <div class="absolute bottom-16 left-20 w-96 h-96 bg-linear-to-r from-purple-400 to-pink-500 rounded-full blur-3xl"></div>
-            </div>
-
-            <div class="relative z-10">
-                <div class="text-center mb-16 animate-on-scroll" data-direction="top">
-                    <span class="inline-block px-4 py-2 bg-linear-to-r from-green-500 to-blue-600 text-white font-semibold rounded-full text-sm mb-4">⭐ Testimonios</span>
-                    <h2 class="text-5xl lg:text-6xl font-bold text-surface-900 dark:text-white mb-6">
-                        Lo que dicen nuestros <span class="bg-linear-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Clientes</span>
+        <section id="testimonials">
+            <div class="container mx-auto px-6 lg:px-8">
+                <div class="text-center mb-20">
+                    <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 mb-4">
+                        ⭐ Testimonios
+                    </div>
+                    <h2 class="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-6">
+                        Lo que dicen nuestros <span class="text-indigo-600">Clientes</span>
                     </h2>
-                    <p class="text-xl text-surface-600 dark:text-surface-300 max-w-3xl mx-auto">
-                        Miles de peluquerías confían en Auron-Suite para gestionar su negocio de manera profesional.
+                    <p class="text-lg text-slate-600 dark:text-slate-300 max-w-4xl mx-auto">
+                        Más de 340 peluquerías confían en Auron Suite para gestionar su negocio.
                     </p>
                 </div>
 
                 <!-- Testimonials Carousel -->
-                <div class="mb-16 animate-on-scroll" data-direction="bottom">
+                <div class="mb-16">
                     <p-carousel 
                         [value]="testimonials" 
                         [numVisible]="1" 
@@ -54,30 +48,30 @@ interface Testimonial {
                         
                         <ng-template pTemplate="item" let-testimonial>
                             <div class="px-4">
-                                <div class="glass-effect rounded-3xl p-12 border border-white/20 shadow-xl max-w-4xl mx-auto">
+                                <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-12 border border-slate-200 dark:border-slate-700 max-w-4xl mx-auto">
                                     <!-- Stars -->
                                     <div class="flex justify-center mb-8">
                                         <div class="flex space-x-1">
                                             <i *ngFor="let star of getStars(testimonial.rating)" 
-                                               class="pi pi-star-fill text-yellow-400 text-2xl"></i>
+                                               class="pi pi-star-fill text-yellow-500 text-2xl"></i>
                                         </div>
                                     </div>
                                     
                                     <!-- Quote -->
-                                    <blockquote class="text-2xl lg:text-3xl font-medium text-surface-900 dark:text-white mb-8 leading-relaxed text-center">
+                                    <blockquote class="text-2xl lg:text-3xl font-medium text-slate-900 dark:text-white mb-8 leading-relaxed text-center">
                                         "{{ testimonial.text }}"
                                     </blockquote>
                                     
                                     <!-- Author -->
                                     <div class="flex items-center justify-center space-x-6">
-                                        <div class="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-2xl"
-                                             [ngStyle]="{'background': testimonial.color}">
+                                        <div class="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-2xl bg-indigo-600">
                                             {{ testimonial.avatar }}
                                         </div>
                                         <div class="text-center">
-                                            <div class="text-2xl font-bold text-surface-900 dark:text-white">{{ testimonial.name }}</div>
-                                            <div class="text-lg text-surface-600 dark:text-surface-300">{{ testimonial.position }}</div>
-                                            <div class="text-base text-surface-500 dark:text-surface-400">{{ testimonial.company }}</div>
+                                            <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ testimonial.name }}</div>
+                                            <div class="text-lg text-slate-600 dark:text-slate-400">{{ testimonial.position }}</div>
+                                            <div class="text-base text-slate-500 dark:text-slate-500">{{ testimonial.company }}</div>
+                                            <div class="text-xs text-slate-400 mt-1">Cliente desde 2023</div>
                                         </div>
                                     </div>
                                 </div>
@@ -87,33 +81,33 @@ interface Testimonial {
                 </div>
 
                 <!-- Stats Section -->
-                <div class="glass-effect rounded-3xl p-12 border border-white/20 shadow-2xl">
+                <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-12 border border-slate-200 dark:border-slate-700">
                     <div class="text-center mb-12">
-                        <h3 class="text-4xl font-bold text-surface-900 dark:text-white mb-4">Números que Hablan</h3>
-                        <p class="text-xl text-surface-600 dark:text-surface-300">La confianza de miles de profesionales</p>
+                        <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-4">Números que Hablan</h3>
+                        <p class="text-lg text-slate-600 dark:text-slate-300">La confianza de miles de profesionales</p>
                     </div>
                     
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
-                        <div class="text-center animate-on-scroll" data-direction="left">
-                            <div class="text-5xl font-bold text-green-500 mb-2 counter" data-target="500">0</div>
-                            <div class="text-surface-600 dark:text-surface-300 font-semibold">Peluquerías Activas</div>
+                        <div class="text-center">
+                            <div class="text-4xl font-bold text-green-600 mb-2 counter" data-target="500">342</div>
+                            <div class="text-slate-600 dark:text-slate-400 font-medium">Peluquerías Activas</div>
                         </div>
-                        <div class="text-center animate-on-scroll" data-direction="top">
-                            <div class="text-5xl font-bold text-blue-500 mb-2 counter" data-target="15000">0</div>
-                            <div class="text-surface-600 dark:text-surface-300 font-semibold">Empleados Registrados</div>
+                        <div class="text-center">
+                            <div class="text-4xl font-bold text-blue-600 mb-2 counter" data-target="15000">2,847</div>
+                            <div class="text-slate-600 dark:text-slate-400 font-medium">Empleados Registrados</div>
                         </div>
-                        <div class="text-center animate-on-scroll" data-direction="bottom">
-                            <div class="text-5xl font-bold text-purple-500 mb-2">4.9</div>
-                            <div class="text-surface-600 dark:text-surface-300 font-semibold">Rating Promedio</div>
+                        <div class="text-center">
+                            <div class="text-4xl font-bold text-purple-600 mb-2">4.9</div>
+                            <div class="text-slate-600 dark:text-slate-400 font-medium">Rating Promedio</div>
                         </div>
-                        <div class="text-center animate-on-scroll" data-direction="right">
-                            <div class="text-5xl font-bold text-orange-500 mb-2">99.9%</div>
-                            <div class="text-surface-600 dark:text-surface-300 font-semibold">Satisfacción</div>
+                        <div class="text-center">
+                            <div class="text-4xl font-bold text-orange-600 mb-2">99.9%</div>
+                            <div class="text-slate-600 dark:text-slate-400 font-medium">Satisfacción</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     `,
     styles: [`
         ::ng-deep .testimonial-carousel .p-carousel-indicators {
@@ -125,12 +119,12 @@ interface Testimonial {
             height: 12px;
             border-radius: 50%;
             margin: 0 0.5rem;
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(148, 163, 184, 0.4);
             transition: all 0.3s ease;
         }
         
         ::ng-deep .testimonial-carousel .p-carousel-indicator.p-highlight {
-            background: linear-gradient(45deg, #10b981, #3b82f6);
+            background-color: rgb(79, 70, 229);
             transform: scale(1.2);
         }
         
@@ -139,17 +133,28 @@ interface Testimonial {
             width: 3rem;
             height: 3rem;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            background-color: rgb(248, 250, 252);
+            border: 1px solid rgb(226, 232, 240);
+            color: rgb(71, 85, 105);
             transition: all 0.3s ease;
+        }
+        
+        ::ng-deep .p-dark .testimonial-carousel .p-carousel-prev,
+        ::ng-deep .p-dark .testimonial-carousel .p-carousel-next {
+            background-color: rgb(30, 41, 59);
+            border-color: rgb(71, 85, 105);
+            color: rgb(203, 213, 225);
         }
         
         ::ng-deep .testimonial-carousel .p-carousel-prev:hover,
         ::ng-deep .testimonial-carousel .p-carousel-next:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background-color: rgb(226, 232, 240);
             transform: scale(1.1);
+        }
+        
+        ::ng-deep .p-dark .testimonial-carousel .p-carousel-prev:hover,
+        ::ng-deep .p-dark .testimonial-carousel .p-carousel-next:hover {
+            background-color: rgb(51, 65, 85);
         }
     `]
 })
@@ -162,7 +167,7 @@ export class TestimonialsWidget implements OnInit, OnDestroy {
             company: 'Barbería Elite',
             avatar: 'CM',
             rating: 5,
-            text: 'Auron-Suite transformó completamente la gestión de mi barbería. El sistema de ganancias por quincena mantiene a mis empleados motivados y el multitenancy nos da la seguridad que necesitamos.',
+            text: 'Auron Suite transformó completamente la gestión de mi barbería. El sistema de ganancias por quincena mantiene a mis empleados motivados y el multitenancy nos da la seguridad que necesitamos.',
             color: 'linear-gradient(45deg, #3b82f6, #8b5cf6)'
         },
         {
@@ -197,49 +202,11 @@ export class TestimonialsWidget implements OnInit, OnDestroy {
         }
     ];
 
-    constructor(private animationService: AnimationService) {}
+    ngOnInit() {}
 
-    ngOnInit() {
-        this.animationService.initScrollAnimations();
-        
-        // Intersection Observer para contadores
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const counters = entry.target.querySelectorAll('.counter');
-                    counters.forEach(counter => this.animateCounter(counter as HTMLElement));
-                }
-            });
-        });
-
-        setTimeout(() => {
-            const statsSection = document.querySelector('#testimonials .glass-effect:last-child');
-            if (statsSection) observer.observe(statsSection);
-        }, 100);
-    }
-
-    ngOnDestroy() {
-        this.animationService.destroy();
-    }
+    ngOnDestroy() {}
 
     getStars(rating: number): number[] {
         return Array(rating).fill(0);
-    }
-
-    private animateCounter(element: HTMLElement) {
-        const target = parseInt(element.getAttribute('data-target') || '0');
-        const duration = 2000;
-        const step = target / (duration / 16);
-        let current = 0;
-
-        const timer = setInterval(() => {
-            current += step;
-            if (current >= target) {
-                element.textContent = target.toLocaleString();
-                clearInterval(timer);
-            } else {
-                element.textContent = Math.floor(current).toLocaleString();
-            }
-        }, 16);
     }
 }

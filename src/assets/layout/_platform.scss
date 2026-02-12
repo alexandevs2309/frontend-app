@@ -283,11 +283,11 @@ hr,
 }
 
 /* Gradientes con tokens */
-.bg-gradient-to-r.from-blue-600.to-indigo-600 {
+.bg-linear-to-r.from-blue-600.to-indigo-600 {
   background: linear-gradient(to right, var(--primary-color), color-mix(in srgb, var(--primary-color) 80%, #4338ca)) !important;
 }
 
-.bg-gradient-to-r.from-primary-600.to-primary-700 {
+.bg-linear-to-r.from-primary-600.to-primary-700 {
   background: linear-gradient(to right, var(--primary-color), color-mix(in srgb, var(--primary-color) 90%, black)) !important;
 }
 

@@ -1,0 +1,33 @@
+/* Micro-animaciones sutiles para títulos y headers */
+.fade-in-up {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+
+.fade-in-up.animate {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Variante para badges/labels más rápida */
+.fade-in-up-fast {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+
+.fade-in-up-fast.animate {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Respeta prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-up,
+  .fade-in-up-fast {
+    transition: none;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
