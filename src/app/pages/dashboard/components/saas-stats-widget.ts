@@ -8,63 +8,84 @@ import { SaasMetricsService, SaasMetrics } from '../../../core/services/saas-met
     imports: [CommonModule],
     template: `
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
-                <div class="flex justify-between mb-4">
-                    <div>
-                        <span class="block text-muted-color font-medium mb-4">MRR</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{(metrics()?.mrr || 0) | currency:'USD':'symbol':'1.0-0'}}</div>
+            <div class="card mb-0 relative overflow-hidden group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div class="absolute inset-0 bg-gradient-to-br from-green-400/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative">
+                    <div class="flex justify-between mb-4">
+                        <div>
+                            <span class="block text-muted-color font-medium mb-4">MRR</span>
+                            <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{(metrics()?.mrr || 0) | currency:'USD':'symbol':'1.0-0'}}</div>
+                        </div>
+                        <div class="flex items-center justify-center bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
+                            <i class="pi pi-dollar text-white text-2xl"></i>
+                        </div>
                     </div>
-                    <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                        <i class="pi pi-dollar text-green-500 text-xl!"></i>
+                    <div class="flex items-center gap-2">
+                        <span class="text-green-500 font-bold text-lg">+{{metrics()?.growth_rate || 0}}%</span>
+                        <i class="pi pi-arrow-up text-green-500"></i>
+                        <span class="text-muted-color text-sm">crecimiento</span>
                     </div>
                 </div>
-                <span class="text-primary font-medium">+{{metrics()?.growth_rate || 0}}% </span>
-                <span class="text-muted-color">crecimiento</span>
             </div>
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
-                <div class="flex justify-between mb-4">
-                    <div>
-                        <span class="block text-muted-color font-medium mb-4">Tenants Activos</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{metrics()?.active_tenants || 0}}</div>
+            <div class="card mb-0 relative overflow-hidden group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative">
+                    <div class="flex justify-between mb-4">
+                        <div>
+                            <span class="block text-muted-color font-medium mb-4">Tenants Activos</span>
+                            <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{metrics()?.active_tenants || 0}}</div>
+                        </div>
+                        <div class="flex items-center justify-center bg-gradient-to-br from-blue-400 to-indigo-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
+                            <i class="pi pi-users text-white text-2xl"></i>
+                        </div>
                     </div>
-                    <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                        <i class="pi pi-users text-blue-500 text-xl!"></i>
+                    <div class="flex items-center gap-2">
+                        <span class="text-blue-500 font-bold text-lg">{{metrics()?.total_tenants || 0}}</span>
+                        <span class="text-muted-color text-sm">total</span>
                     </div>
                 </div>
-                <span class="text-primary font-medium">{{metrics()?.total_tenants || 0}} </span>
-                <span class="text-muted-color">total</span>
             </div>
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
-                <div class="flex justify-between mb-4">
-                    <div>
-                        <span class="block text-muted-color font-medium mb-4">Churn Rate</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{(metrics()?.churn_rate || 0).toFixed(1)}}%</div>
+            <div class="card mb-0 relative overflow-hidden group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div class="absolute inset-0 bg-gradient-to-br from-orange-400/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative">
+                    <div class="flex justify-between mb-4">
+                        <div>
+                            <span class="block text-muted-color font-medium mb-4">Churn Rate</span>
+                            <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{(metrics()?.churn_rate || 0).toFixed(1)}}%</div>
+                        </div>
+                        <div class="flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
+                            <i class="pi pi-chart-line text-white text-2xl"></i>
+                        </div>
                     </div>
-                    <div class="flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                        <i class="pi pi-chart-line text-orange-500 text-xl!"></i>
+                    <div class="flex items-center gap-2">
+                        <span class="text-orange-500 font-bold text-lg">Mensual</span>
+                        <span class="text-muted-color text-sm">cancelaciones</span>
                     </div>
                 </div>
-                <span class="text-primary font-medium">Mensual </span>
-                <span class="text-muted-color">cancelaciones</span>
             </div>
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
-                <div class="flex justify-between mb-4">
-                    <div>
-                        <span class="block text-muted-color font-medium mb-4">Revenue por Plan</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{getTopPlan()}}</div>
+            <div class="card mb-0 relative overflow-hidden group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div class="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative">
+                    <div class="flex justify-between mb-4">
+                        <div>
+                            <span class="block text-muted-color font-medium mb-4">Revenue por Plan</span>
+                            <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{getTopPlan()}}</div>
+                        </div>
+                        <div class="flex items-center justify-center bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
+                            <i class="pi pi-star text-white text-2xl"></i>
+                        </div>
                     </div>
-                    <div class="flex items-center justify-center bg-purple-100 dark:bg-purple-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                        <i class="pi pi-star text-purple-500 text-xl!"></i>
+                    <div class="flex items-center gap-2">
+                        <span class="text-purple-500 font-bold text-lg">{{getTopPlanRevenue() | currency:'USD':'symbol':'1.0-0'}}</span>
+                        <span class="text-muted-color text-sm">top plan</span>
                     </div>
                 </div>
-                <span class="text-primary font-medium">{{getTopPlanRevenue() | currency:'USD':'symbol':'1.0-0'}} </span>
-                <span class="text-muted-color">top plan</span>
             </div>
         </div>
     `

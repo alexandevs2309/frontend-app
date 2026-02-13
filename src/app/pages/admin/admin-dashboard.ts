@@ -15,15 +15,36 @@ import { Subscription } from 'rxjs';
     imports: [CommonModule, StatsWidget, SaasStatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget],
     template: `
         @if (currentUser(); as user) {
-            <div class="mb-6">
-                <div class="bg-surface-0 dark:bg-surface-900 p-6 rounded-lg border">
-                    <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0 mb-2">
-                        ¡Bienvenido, {{user.full_name}}! 🚀
-                    </h1>
-                    <p class="text-surface-600 dark:text-surface-300">
-                        Rol: <span class="font-semibold">{{getRoleDisplayName(user.role)}}</span>
-                        <span class="ml-4">Panel de Control Global SaaS</span>
-                    </p>
+            <!-- Hero Header con Gradiente -->
+            <div class="mb-8 relative overflow-hidden rounded-3xl">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-90"></div>
+                <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 40px 40px;"></div>
+                <div class="relative p-8">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center animate-pulse">
+                            <i class="pi pi-crown text-white text-3xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl font-bold text-white mb-1">
+                                ¡Bienvenido, {{user.full_name}}! 🚀
+                            </h1>
+                            <p class="text-white/90 text-lg">
+                                <span class="font-semibold">{{getRoleDisplayName(user.role)}}</span>
+                                <span class="mx-2">•</span>
+                                <span>Panel de Control Global SaaS</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 text-white/80 text-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-calendar"></i>
+                            <span>{{getCurrentDate()}}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-clock"></i>
+                            <span>{{getCurrentTime()}}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -67,9 +88,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
     }
 
     private readonly roleNames = {
-        'SuperAdmin': 'Super Administrador',
-        'ClientAdmin': 'Administrador de Peluquería', 
-        'ClientStaff': 'Empleado'
+        'SUPER_ADMIN': 'Super Administrador',
+        'CLIENT_ADMIN': 'Administrador de Peluquería', 
+        'CLIENT_STAFF': 'Empleado'
     } as const;
 
     getRoleDisplayName(role: string): string {
@@ -78,5 +99,13 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
     isSuperAdmin(user: any): boolean {
         return user?.role === 'SUPER_ADMIN';
+    }
+
+    getCurrentDate(): string {
+        return new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    getCurrentTime(): string {
+        return new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     }
 }

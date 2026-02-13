@@ -10,7 +10,7 @@ import { AppFloatingConfigurator } from '../../../layout/component/app.floatingc
     imports: [RouterModule, StyleClassModule, ButtonModule, RippleModule, AppFloatingConfigurator],
     template: `
         <nav class="fixed top-0 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg z-50 border-b border-slate-200/50 dark:border-slate-700/50">
-            <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="container mx-auto px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <!-- Logo con gradiente -->
                     <a class="flex items-center" href="#" routerLink="/landing">
@@ -36,6 +36,10 @@ import { AppFloatingConfigurator } from '../../../layout/component/app.floatingc
                             <a (click)="scrollToSection('pricing')" 
                                class="text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium cursor-pointer transition-colors">
                                 Precios
+                            </a>
+                            <a href="#" target="_blank"
+                               class="text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium cursor-pointer transition-colors">
+                                📚 Tutoriales
                             </a>
                         </nav>
                         
@@ -75,6 +79,10 @@ import { AppFloatingConfigurator } from '../../../layout/component/app.floatingc
                         <a (click)="scrollToSection('pricing')" 
                            class="block text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium cursor-pointer py-2">
                             Precios
+                        </a>
+                        <a href="#" target="_blank"
+                           class="block text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium cursor-pointer py-2">
+                            📚 Tutoriales
                         </a>
                         <div class="pt-3 border-t border-slate-200 dark:border-slate-700">
                             <button pButton 

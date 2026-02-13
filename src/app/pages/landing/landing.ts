@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { RippleModule } from 'primeng/ripple';
 import { StyleClassModule } from 'primeng/styleclass';
@@ -43,7 +43,7 @@ import { HttpClientModule } from '@angular/common/http';
                 <topbar-widget />
                 
                 <!-- Hero moderno -->
-                <hero-widget (openVideoModal)="showVideoModal = true" />
+                <hero-widget />
                 
                 <!-- Features con fondo blanco -->
                 <div class="bg-fixed bg-cover bg-center bg-[url('/assets/images/landing/7.png')] py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="features">
@@ -94,6 +94,12 @@ import { HttpClientModule } from '@angular/common/http';
         </p-scrollTop>
     `
 })
-export class Landing {
+export class Landing implements OnInit {
     showVideoModal = false;
+
+    ngOnInit() {
+        window.addEventListener('openVideoModal', () => {
+            this.showVideoModal = true;
+        });
+    }
 }

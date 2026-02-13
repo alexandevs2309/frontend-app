@@ -16,6 +16,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { TenantService } from '../../core/services/tenant/tenant.service';
+import { RoleService } from '../../core/services/role/role.service';
 import { UIHelpers } from '../../shared/utils/ui-helpers';
 import { DatePipe } from '@angular/common';
 
@@ -38,14 +39,36 @@ interface User {
     standalone: true,
     imports: [CommonModule, TableModule, FormsModule, ButtonModule, RippleModule, ToastModule, ToolbarModule, InputTextModule, SelectModule, DialogModule, TagModule, InputIconModule, IconFieldModule, ConfirmDialogModule, DatePipe],
     template: `
-        <p-toolbar class="mb-6">
+        <p-toolbar styleClass="mb-6 rounded-2xl shadow-lg border-0">
             <ng-template #start>
-                <p-button label="New User" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
-                <p-button severity="secondary" label="Delete" icon="pi pi-trash" outlined (onClick)="deleteSelectedUsers()" [disabled]="!selectedUsers || !selectedUsers.length" />
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                        <i class="pi pi-users text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 m-0">Usuarios</h2>
+                        <p class="text-sm text-muted-color m-0">Gestiona todos los usuarios del sistema</p>
+                    </div>
+                </div>
             </ng-template>
-
             <ng-template #end>
-                <p-select [(ngModel)]="selectedTenantFilter" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Filter by Tenant" (onChange)="filterByTenant()" />
+                <div class="flex gap-2">
+                    <p-select [(ngModel)]="selectedTenantFilter" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Filtrar por Tenant" (onChange)="filterByTenant()" styleClass="w-48" />
+                    <p-button 
+                        label="Nuevo Usuario" 
+                        icon="pi pi-plus" 
+                        styleClass="bg-gradient-to-r from-indigo-500 to-purple-500 border-0 shadow-lg hover:shadow-xl transition-all"
+                        (onClick)="openNew()" 
+                    />
+                    <p-button 
+                        severity="danger" 
+                        label="Eliminar" 
+                        icon="pi pi-trash" 
+                        outlined 
+                        (onClick)="deleteSelectedUsers()" 
+                        [disabled]="!selectedUsers || !selectedUsers.length" 
+                    />
+                </div>
             </ng-template>
         </p-toolbar>
 
@@ -63,13 +86,19 @@ interface User {
             [showCurrentPageReport]="true"
             [rowsPerPageOptions]="[10, 20, 30]"
             [loading]="loading()"
-        >
+            styleClass="rounded-2xl overflow-hidden shadow-lg">
             <ng-template #caption>
-                <div class="flex items-center justify-between">
-                    <h5 class="m-0">Manage Users</h5>
+                <div class="flex items-center justify-between p-4 bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+                    <h5 class="m-0 font-bold text-lg">Gestionar Usuarios</h5>
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
-                        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Search..." />
+                        <input 
+                            pInputText 
+                            type="text" 
+                            (input)="onGlobalFilter(dt, $event)" 
+                            placeholder="Buscar..." 
+                            class="rounded-xl border-2 focus:border-indigo-500"
+                        />
                     </p-iconfield>
                 </div>
             </ng-template>
@@ -120,8 +149,24 @@ interface User {
                     <td>{{ user.date_joined | date: 'dd/MM/yyyy' }}</td>
                     <td>{{ user.last_login | date: 'dd/MM/yyyy' }}</td>
                     <td>
-                        <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editUser(user)" />
-                        <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true" (click)="deleteUser(user)" />
+                        <div class="flex gap-2">
+                            <p-button 
+                                icon="pi pi-pencil" 
+                                [rounded]="true" 
+                                [outlined]="true" 
+                                severity="info"
+                                styleClass="hover:scale-110 transition-transform"
+                                (click)="editUser(user)" 
+                            />
+                            <p-button 
+                                icon="pi pi-trash" 
+                                severity="danger" 
+                                [rounded]="true" 
+                                [outlined]="true" 
+                                styleClass="hover:scale-110 transition-transform"
+                                (click)="deleteUser(user)" 
+                            />
+                        </div>
                     </td>
                 </tr>
             </ng-template>
@@ -144,7 +189,7 @@ interface User {
 
                     <div>
                         <label for="role" class="block font-bold mb-3">Role</label>
-                        <p-select [(ngModel)]="user.role" inputId="role" [options]="roleOptions" optionLabel="label" optionValue="value" placeholder="Select Role" fluid />
+                        <p-select [(ngModel)]="user.role" inputId="role" [options]="roleOptions()" optionLabel="label" optionValue="value" placeholder="Select Role" fluid />
                     </div>
 
                     <div *ngIf="user.role === 'Client-Admin' || user.role === 'Client-Staff'">
@@ -181,6 +226,7 @@ export class UsersManagement implements OnInit {
     userDialog: boolean = false;
     users = signal<User[]>([]);
     tenantOptions = signal<any[]>([]);
+    roleOptions = signal<any[]>([]);
     user!: User;
     selectedUsers!: User[] | null;
     selectedTenantFilter: number | null = null;
@@ -188,17 +234,10 @@ export class UsersManagement implements OnInit {
     loading = signal(false);
     saving = signal(false);
 
-    roleOptions = [
-        { label: 'Administrador', value: 'Client-Admin' },
-        { label: 'Estilista', value: 'Estilista' },
-        { label: 'Cajera', value: 'Cajera' },
-        { label: 'Manager', value: 'Manager' },
-        { label: 'Utility', value: 'Utility' }
-    ];
-
     constructor(
         private authService: AuthService,
         private tenantService: TenantService,
+        private roleService: RoleService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService
     ) {}
@@ -206,6 +245,7 @@ export class UsersManagement implements OnInit {
     ngOnInit() {
         this.loadUsers();
         this.loadTenants();
+        this.loadRoles();
     }
 
     loadUsers() {
@@ -259,6 +299,22 @@ export class UsersManagement implements OnInit {
         }
     }
 
+    loadRoles() {
+        this.roleService.getRoles().subscribe({
+            next: (roles: any) => {
+                const rolesArray = Array.isArray(roles) ? roles : roles.results || [];
+                const options = rolesArray
+                    .filter((r: any) => r.scope === 'TENANT')
+                    .map((r: any) => ({ label: r.description || r.name, value: r.name }));
+                this.roleOptions.set(options);
+            },
+            error: (error) => {
+                console.error('Error loading roles:', error);
+                this.roleOptions.set([]);
+            }
+        });
+    }
+
     filterByTenant() {
         const currentUser = this.authService.getCurrentUser();
         
@@ -307,9 +363,15 @@ export class UsersManagement implements OnInit {
     }
 
     private performBulkDelete(): void {
-        this.users.set(this.users().filter((val) => !this.selectedUsers?.includes(val)));
-        this.selectedUsers = null;
-        this.showSuccessMessage('Users Deleted');
+        const userIds = this.selectedUsers!.map(u => u.id!).filter(id => id);
+        this.authService.bulkDeleteUsers(userIds).subscribe({
+            next: () => {
+                this.loadUsers();
+                this.selectedUsers = null;
+                this.showSuccessMessage('Users Deleted');
+            },
+            error: (error) => this.showErrorMessage('Failed to delete users', error)
+        });
     }
 
     deleteUser(user: User) {

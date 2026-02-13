@@ -173,18 +173,22 @@ export class CheckoutComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    console.log('💳 [CHECKOUT] Iniciando checkout');
     // Get plan from route state
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras.state;
 
     if (state?.['plan']) {
       this.selectedPlan = state['plan'];
+      console.log('✅ [CHECKOUT] Plan recibido desde navegación:', this.selectedPlan);
     } else {
       // Try to get from history state
       const historyState = history.state;
       if (historyState?.plan) {
         this.selectedPlan = historyState.plan;
+        console.log('✅ [CHECKOUT] Plan recibido desde history:', this.selectedPlan);
       } else {
+        console.log('❌ [CHECKOUT] No se encontró plan, redirigiendo a payment');
         setTimeout(() => {
           this.router.navigate(['/client/payment']);
         }, 100);
@@ -210,8 +214,12 @@ export class CheckoutComponent implements OnInit {
   }
 
   processPayment() {
-    if (!this.selectedPlan) return;
+    if (!this.selectedPlan) {
+      console.log('❌ [CHECKOUT] No hay plan seleccionado');
+      return;
+    }
 
+    console.log('💳 [CHECKOUT] Iniciando proceso de pago para plan:', this.selectedPlan);
     this.processing = true;
 
     this.messageService.add({
@@ -222,8 +230,10 @@ export class CheckoutComponent implements OnInit {
 
     // Simulate payment processing
     setTimeout(() => {
+      console.log('💳 [CHECKOUT] Llamando a renewSubscription con plan_id:', this.selectedPlan.id);
       this.subscriptionService.renewSubscription(this.selectedPlan.id).subscribe({
         next: (response) => {
+          console.log('✅ [CHECKOUT] Renovación exitosa:', response);
           this.messageService.add({
             severity: 'success',
             summary: 'Pago exitoso',
@@ -231,10 +241,12 @@ export class CheckoutComponent implements OnInit {
           });
 
           setTimeout(() => {
+            console.log('🔄 [CHECKOUT] Redirigiendo a dashboard');
             this.router.navigate(['/client/dashboard']);
           }, 2000);
         },
         error: (error) => {
+          console.error('❌ [CHECKOUT] Error en renovación:', error);
           this.messageService.add({
             severity: 'error',
             summary: 'Error en el pago',

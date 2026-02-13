@@ -57,20 +57,26 @@ interface SubscriptionPlan {
     ],
 
     template: `
-        <p-toolbar styleClass="mb-6">
+        <p-toolbar styleClass="mb-6 rounded-2xl shadow-lg border-0">
             <ng-template #start>
-                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div class="flex items-center gap-3">
-                        <i class="pi pi-info-circle text-blue-600 dark:text-blue-400"></i>
-                        <div>
-                            <p class="font-semibold text-blue-900 dark:text-blue-100 mb-1">Planes del Sistema</p>
-                            <p class="text-sm text-blue-700 dark:text-blue-300">Los planes se crean automáticamente. Puedes editar todo excepto las características.</p>
-                        </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                        <i class="pi pi-credit-card text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 m-0">Planes de Suscripción</h2>
+                        <p class="text-sm text-muted-color m-0">Gestiona los planes del sistema</p>
                     </div>
                 </div>
             </ng-template>
-
-
+            <ng-template #end>
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-sm"></i>
+                        <p class="text-xs text-blue-700 dark:text-blue-300 m-0">Los planes se crean automáticamente. Puedes editar precios y límites.</p>
+                    </div>
+                </div>
+            </ng-template>
         </p-toolbar>
 
         <p-table #dt
@@ -86,13 +92,20 @@ interface SubscriptionPlan {
             [showCurrentPageReport]="true"
             [rowsPerPageOptions]="[10, 20, 30]"
             [loading]="loading()"
+            styleClass="rounded-2xl overflow-hidden shadow-lg"
         >
             <ng-template #caption>
-                <div class="flex items-center justify-between">
-                    <h5 class="m-0">Manage Subscription Plans</h5>
+                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20">
+                    <h5 class="m-0 font-bold text-lg">Gestionar Planes de Suscripción</h5>
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
-                        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Search..." />
+                        <input 
+                            pInputText 
+                            type="text" 
+                            (input)="onGlobalFilter(dt, $event)" 
+                            placeholder="Buscar..." 
+                            class="rounded-xl border-2 focus:border-emerald-500"
+                        />
                     </p-iconfield>
                 </div>
             </ng-template>
@@ -138,7 +151,14 @@ interface SubscriptionPlan {
                         <p-tag [value]="plan.is_active ? 'Activo' : 'Inactivo'" [severity]="plan.is_active ? 'success' : 'danger'" />
                     </td>
                     <td>
-                        <p-button icon="pi pi-pencil" [rounded]="true" [outlined]="true" (click)="editPlan(plan)" />
+                        <p-button 
+                            icon="pi pi-pencil" 
+                            [rounded]="true" 
+                            [outlined]="true" 
+                            severity="info"
+                            styleClass="hover:scale-110 transition-transform"
+                            (click)="editPlan(plan)" 
+                        />
                     </td>
                 </tr>
             </ng-template>
@@ -302,25 +322,29 @@ export class SubscriptionPlans implements OnInit {
             return features;
         }
         if (typeof features === 'object' && features !== null) {
-            const featureNames: { [key: string]: string } = {
-                'appointments': 'Gestión de Citas',
-                'basic_reports': 'Reportes Básicos',
-                'inventory': 'Gestión de Inventario',
-                'advanced_reports': 'Reportes Avanzados',
-                'multi_location': 'Múltiples Ubicaciones',
-                'api_access': 'Acceso a API',
-                'custom_branding': 'Marca Personalizada',
-                'priority_support': 'Soporte Prioritario'
-            };
             try {
                 return Object.entries(features)
                     .filter(([key, value]) => value === true)
-                    .map(([key]) => featureNames[key] || key);
+                    .map(([key]) => this.translateFeature(key));
             } catch (error) {
                 return [];
             }
         }
         return [];
+    }
+
+    private translateFeature(key: string): string {
+        const translations: { [key: string]: string } = {
+            'appointments': 'Gestión de Citas',
+            'basic_reports': 'Reportes Básicos',
+            'inventory': 'Gestión de Inventario',
+            'advanced_reports': 'Reportes Avanzados',
+            'multi_location': 'Múltiples Ubicaciones',
+            'api_access': 'Acceso a API',
+            'custom_branding': 'Marca Personalizada',
+            'priority_support': 'Soporte Prioritario'
+        };
+        return translations[key] || key;
     }
 
     getMultiBranchText(plan: SubscriptionPlan): string {

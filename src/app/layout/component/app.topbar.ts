@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -8,7 +8,7 @@ import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { MessageService } from 'primeng/api';
-import { SettingsService } from '../../core/services/settings.service';
+import { AppConfigService } from '../../core/services/app-config.service';
 @Component({
     selector: 'app-topbar',
     standalone: true,
@@ -36,7 +36,7 @@ import { SettingsService } from '../../core/services/settings.service';
                         />
                     </g>
                 </svg>
-                <span>{{ platformName() }}</span>
+                <span>{{ appConfig.platformName() }}</span>
             </a>
         </div>
 
@@ -85,41 +85,18 @@ import { SettingsService } from '../../core/services/settings.service';
         </div>
     </div>`
 })
-export class AppTopbar implements OnInit {
+export class AppTopbar {
     items!: MenuItem[];
     userMenuItems: MenuItem[] = [];
-    platformName = signal('Auron-Suite');
 
     constructor(
         public layoutService: LayoutService,
+        public appConfig: AppConfigService,
         private authService: AuthService,
         private router: Router,
-        private messageService: MessageService,
-        private settingsService: SettingsService
+        private messageService: MessageService
     ) {
         this.initUserMenu();
-    }
-
-    ngOnInit() {
-        this.loadPlatformName();
-    }
-
-    private loadPlatformName() {
-        const user = this.authService.getCurrentUser();
-        // Only SuperAdmin can access system settings
-        if (user?.role === 'SuperAdmin') {
-            this.settingsService.getSettings().subscribe({
-                next: (settings) => {
-                    if (settings?.platform_name) {
-                        this.platformName.set(settings.platform_name);
-                    }
-                },
-                error: () => {
-                    // Keep default value on error
-                }
-            });
-        }
-        // For Client users, keep default platform name
     }
 
     getDashboardRoute(): string {

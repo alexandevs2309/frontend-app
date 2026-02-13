@@ -13,21 +13,20 @@ export const appRoutes: Routes = [
         pathMatch: 'full'
     },
 
-    // Auth routes (login, etc.)
+    // Auth routes FIRST (login, register, forgot-password, reset-password)
     {
         path: 'auth',
-        canActivate: [NoAuthGuard],
         loadChildren: () => import('./app/pages/auth/auth.routes')
     },
-
-    // Public routes (landing, legal, register)
-    ...publicRoutes,
 
     // Admin routes (SuperAdmin)
     ...adminRoutes,
 
     // Client routes (Barbershop owners)
     ...clientRoutes,
+
+    // Public routes (landing, legal, register)
+    ...publicRoutes,
 
     // Legacy pages routes
     {

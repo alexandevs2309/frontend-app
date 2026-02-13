@@ -1,32 +1,12 @@
-import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
-import { TrialService } from '../services/trial.service';
+import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { catchError, map, of } from 'rxjs';
+import { MessageService } from 'primeng/api';
 import { AuthService } from '../services/auth/auth.service';
+import { environment } from '../../../environments/environment';
 
-@Injectable({
-  providedIn: 'root'
-})
-export class TrialGuard implements CanActivate {
-  constructor(
-    private trialService: TrialService,
-    private authService: AuthService,
-    private router: Router
-  ) {}
-
-  canActivate(): boolean {
-    const user = this.authService.getCurrentUser();
-
-    // Usuarios SuperAdmin evitan el Bypass
-    if (user?.role === 'SuperAdmin') {
-      return true;
-    }
-
-    // Comprobar si el periodo de prueba ha expirado
-    if (this.trialService.isTrialExpired()) {
-      this.router.navigate(['/client/payment']);
-      return false;
-    }
-
-    return true;
-  }
-}
+export const TrialGuard: CanActivateFn = (route, state) => {
+  // Deshabilitar guard temporalmente - la validación se hace en el middleware del backend
+  return true;
+};

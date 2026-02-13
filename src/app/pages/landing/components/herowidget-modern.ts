@@ -77,7 +77,7 @@ declare var Gradient: any;
                                     class="bg-white! text-indigo-600! px-8! py-5! text-lg! font-black! rounded-full! hover:bg-gray-100! shadow-2xl! hover:shadow-3xl! transform! hover:-translate-y-1! transition-all! uppercase! tracking-wide!">
                             </button>
                             <button pButton pRipple
-                                    (click)="scrollToDemo()"
+                                    (click)="openVideoModal()"
                                     label="🎥 Ver el sistema en acción (2 min)"
                                     [outlined]="true"
                                     class="border-2! border-white/40! text-white! px-8! py-5! text-lg! font-bold! rounded-full! hover:bg-white/10! backdrop-blur-sm! transform! hover:-translate-y-1! transition-all!">
@@ -113,6 +113,9 @@ declare var Gradient: any;
                     </div>
 
                     <div class="fade-in-up">
+                        <div *ngIf="!metrics" class="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg text-yellow-200 text-sm text-center">
+                            ⚠️ Modo Demo - Backend desconectado
+                        </div>
                         <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-500">
                             <div class="grid grid-cols-2 gap-6 lg:gap-8 mb-6">
                                 <div class="bg-white/15 backdrop-blur-sm rounded-xl p-6 lg:p-8">
@@ -281,10 +284,16 @@ export class HeroWidget implements OnInit, OnDestroy, AfterViewInit {
     }
 
     scrollToDemo() {
-        const element = document.getElementById('demo');
+        const element = document.getElementById('features');
         if (element) {
             element.scrollIntoView({ behavior: 'smooth' });
         }
+    }
+
+    openVideoModal() {
+        // Emitir evento para abrir el modal de video
+        const event = new CustomEvent('openVideoModal');
+        window.dispatchEvent(event);
     }
 
     private loadMetrics() {

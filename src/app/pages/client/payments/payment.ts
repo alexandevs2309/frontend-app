@@ -189,9 +189,11 @@ export class PaymentComponent implements OnInit {
   }
 
   loadPlans() {
+    console.log('💰 [PAYMENT] Cargando planes disponibles');
     this.loading = true;
     this.subscriptionService.getPlans().subscribe({
       next: (data: any) => {
+        console.log('✅ [PAYMENT] Planes recibidos:', data);
         const allPlans = Array.isArray(data) ? data : (data.results || []);
         // Filter out free plan and add recommended flag
         this.plans = allPlans
@@ -201,9 +203,11 @@ export class PaymentComponent implements OnInit {
             recommended: plan.name === 'standard',
             features: this.getFeaturesList(plan.features)
           }));
+        console.log('📊 [PAYMENT] Planes procesados:', this.plans);
         this.loading = false;
       },
       error: (error: any) => {
+        console.error('❌ [PAYMENT] Error al cargar planes:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -234,6 +238,7 @@ export class PaymentComponent implements OnInit {
   }
 
   selectPlan(plan: any) {
+    console.log('🎯 [PAYMENT] Plan seleccionado:', plan);
     // Navigate to checkout with selected plan
     this.router.navigate(['/client/checkout'], {
       state: { plan: plan }

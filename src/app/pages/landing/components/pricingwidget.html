@@ -1,6 +1,9 @@
 <div id="pricing">
     <div class="container mx-auto px-6 lg:px-8">
         <div class="text-center mb-20">
+            <div *ngIf="!isRealData" class="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg text-yellow-600 dark:text-yellow-400 text-sm inline-block">
+                ⚠️ Modo Demo - Mostrando precios de ejemplo
+            </div>
             <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 mb-4">
                 💎 Planes y Precios
             </div>

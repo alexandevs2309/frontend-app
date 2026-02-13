@@ -18,7 +18,7 @@
       <!-- Glassmorphism Container -->
       <div class="relative w-full backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/20 dark:border-slate-700/50 rounded-3xl shadow-2xl">
         <!-- Gradient Border -->
-        <div class="absolute inset-0 rounded-3xl bg-linear-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 p-[1px]">
+        <div class="absolute inset-0 rounded-3xl bg-linear-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 p-1px">
           <div class="w-full h-full bg-white/90 dark:bg-slate-900/90 rounded-3xl"></div>
         </div>
 
@@ -32,7 +32,7 @@
               </div>
             </div>
 
-            <h1 class="bg-linear-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent font-bold text-4xl mb-3">💈 {{platformName()}}</h1>
+            <h1 class="bg-linear-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent font-bold text-4xl mb-3">💈 {{appConfig.platformName()}}</h1>
             <span class="text-slate-600 dark:text-slate-300 text-lg">Inicia sesión para continuar</span>
           </div>
 
@@ -94,20 +94,22 @@
                 <p-checkbox formControlName="rememberMe" id="rememberme1" [binary]="true"></p-checkbox>
                 <label for="rememberme1" class="text-sm text-surface-700 dark:text-surface-300">Recordarme</label>
               </div>
-              <a href="#" class="text-sm text-blue-500 hover:underline font-medium">¿Olvidaste tu contraseña?</a>
+              <a routerLink="/auth/forgot-password" class="text-sm text-blue-500 hover:underline font-medium">¿Olvidaste tu contraseña?</a>
             </div>
 
             <!-- Login Button -->
-            <p-button
+            <button
+              pButton
+              pRipple
               label="Iniciar Sesión"
               icon="pi pi-sign-in"
               iconPos="right"
               [loading]="isLoading"
               type="submit"
               [disabled]="loginForm.invalid"
-              class="w-full bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500 border-0 text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-              size="large">
-            </p-button>
+              class="w-full h-14 text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
+              style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%); border: none;">
+            </button>
           </form>
 
           <!-- Divider -->
@@ -127,7 +129,7 @@
           <div class="mt-8 p-4 bg-green-50/80 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg backdrop-blur-sm">
             <div class="flex items-center gap-2 text-center justify-center">
               <i class="pi pi-shield text-green-600"></i>
-              <span class="text-xs text-green-700 dark:text-green-300 font-medium">Conexión segura SSL</span>
+              <span class="text-xs text-green-700 dark:text-green-300 font-medium">Conexión segura TSL</span>
             </div>
           </div>
         </div>

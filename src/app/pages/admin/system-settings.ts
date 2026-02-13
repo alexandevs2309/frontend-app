@@ -663,6 +663,10 @@ export class SystemSettings implements OnInit {
                         detail: 'Configuración general actualizada correctamente.',
                         life: 3000
                     });
+                    // Refresh platform name in app
+                    if (this.generalForm.value.platform_name) {
+                        window.location.reload();
+                    }
                 },
                 error: (error) => this.handleSaveError('configuración general', error)
             });

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -11,6 +11,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
 import { AuthService, LoginResponse } from '../../core/services/auth/auth.service';
+import { AppConfigService } from '../../core/services/app-config.service';
 
 @Component({
     selector: 'app-login',
@@ -34,18 +35,16 @@ import { AuthService, LoginResponse } from '../../core/services/auth/auth.servic
 export class Login implements OnInit {
     loginForm!: FormGroup;
     isLoading = false;
-    platformName = signal('Auron-Suite');
 
     constructor(
         private fb: FormBuilder,
         private authService: AuthService,
+        public appConfig: AppConfigService,
         private router: Router,
         private messageService: MessageService
     ) {}
 
     ngOnInit(): void {
-        this.platformName.set('BarberSaaS');
-        
         // Inicializa el formulario reactivo
         this.loginForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]],
@@ -76,6 +75,11 @@ export class Login implements OnInit {
     onLogin(): void {
         if (this.loginForm.invalid) {
             this.loginForm.markAllAsTouched();
+            this.messageService.add({ 
+                severity: 'warn', 
+                summary: 'Formulario incompleto', 
+                detail: 'Por favor completa todos los campos requeridos' 
+            });
             return;
         }
 
@@ -85,9 +89,8 @@ export class Login implements OnInit {
         this.authService.loginSecure({ email, password }).subscribe({
             next: (response: LoginResponse | any) => {
                 this.isLoading = false;
-                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: '¡Bienvenido!' });
-
-                // ✅ Guarda email si RememberMe está activo
+                
+                // Guardar email si RememberMe está activo
                 if (rememberMe) {
                     localStorage.setItem('rememberedEmail', email);
                     localStorage.setItem('rememberMe', 'true');
@@ -96,34 +99,28 @@ export class Login implements OnInit {
                     localStorage.removeItem('rememberMe');
                 }
 
-                // Force menu update and redirect
-                setTimeout(() => {
-                    // Get the normalized role from AuthService
-                    const currentUser = this.authService.getCurrentUser();
-                    const userRole = currentUser?.role || response.user?.role;
-                    console.log('Redirecting user with role:', userRole);
-                    this.redirectUser(userRole);
-                }, 500);
+                // Redirigir inmediatamente sin mensaje (mejor UX)
+                const currentUser = this.authService.getCurrentUser();
+                const userRole = currentUser?.role || response.user?.role;
+                this.redirectUser(userRole);
             },
             error: (error) => {
                 this.isLoading = false;
-                const message = error.error?.message || 'Credenciales inválidas';
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: message });
+                const message = error.error?.detail || error.error?.message || 'Credenciales inválidas';
+                this.messageService.add({ 
+                    severity: 'error', 
+                    summary: 'Error de autenticación', 
+                    detail: message,
+                    life: 4000
+                });
             }
         });
     }
 
     private redirectUser(role: string): void {
-        console.log('redirectUser called with role:', role);
-        
         if (role === 'SUPER_ADMIN') {
-            console.log('Redirecting to admin dashboard');
             this.router.navigate(['/admin/dashboard']);
-        } else if (role === 'CLIENT_ADMIN' || role === 'CLIENT_STAFF') {
-            console.log('Redirecting to client dashboard');
-            this.router.navigate(['/client/dashboard']);
         } else {
-            console.log('Default redirect to client dashboard');
             this.router.navigate(['/client/dashboard']);
         }
     }

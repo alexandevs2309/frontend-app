@@ -65,13 +65,36 @@ interface Tenant {
         DatePipe,
     ],
     template: `
-        <p-toolbar styleClass="mb-6">
+        <p-toolbar styleClass="mb-6 rounded-2xl shadow-lg border-0">
             <ng-template #start>
-                <p-button label="New Tenant" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
-                <p-button severity="secondary" label="Delete" icon="pi pi-trash" outlined (onClick)="deleteSelectedTenants()" [disabled]="!selectedTenants || !selectedTenants.length" />
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                        <i class="pi pi-building text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 m-0">Tenants</h2>
+                        <p class="text-sm text-muted-color m-0">Gestiona todas las barberías</p>
+                    </div>
+                </div>
             </ng-template>
-
-
+            <ng-template #end>
+                <div class="flex gap-2">
+                    <p-button 
+                        label="Nuevo Tenant" 
+                        icon="pi pi-plus" 
+                        styleClass="bg-gradient-to-r from-blue-500 to-purple-500 border-0 shadow-lg hover:shadow-xl transition-all"
+                        (onClick)="openNew()" 
+                    />
+                    <p-button 
+                        severity="danger" 
+                        label="Eliminar" 
+                        icon="pi pi-trash" 
+                        outlined 
+                        (onClick)="deleteSelectedTenants()" 
+                        [disabled]="!selectedTenants || !selectedTenants.length" 
+                    />
+                </div>
+            </ng-template>
         </p-toolbar>
 
         <p-table
@@ -84,16 +107,23 @@ interface Tenant {
             [(selection)]="selectedTenants"
             [rowHover]="true"
             dataKey="id"
-            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} tenants"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} tenants"
             [showCurrentPageReport]="true"
             [rowsPerPageOptions]="[10, 20, 30]"
-            [loading]="loading()">
+            [loading]="loading()"
+            styleClass="rounded-2xl overflow-hidden shadow-lg">
             <ng-template #caption>
-                <div class="flex items-center justify-between">
-                    <h5 class="m-0">Manage Tenants</h5>
+                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                    <h5 class="m-0 font-bold text-lg">Gestionar Tenants</h5>
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
-                        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Search..." />
+                        <input 
+                            pInputText 
+                            type="text" 
+                            (input)="onGlobalFilter(dt, $event)" 
+                            placeholder="Buscar..." 
+                            class="rounded-xl border-2 focus:border-blue-500"
+                        />
                     </p-iconfield>
                 </div>
             </ng-template>
@@ -156,8 +186,24 @@ interface Tenant {
                     </td>
                     <td>{{ tenant.created_at | date:'dd/MM/yyyy' }}</td>
                     <td>
-                        <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editTenant(tenant)" />
-                        <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true" (click)="deleteTenant(tenant)" />
+                        <div class="flex gap-2">
+                            <p-button 
+                                icon="pi pi-pencil" 
+                                [rounded]="true" 
+                                [outlined]="true" 
+                                severity="info"
+                                styleClass="hover:scale-110 transition-transform"
+                                (click)="editTenant(tenant)" 
+                            />
+                            <p-button 
+                                icon="pi pi-trash" 
+                                severity="danger" 
+                                [rounded]="true" 
+                                [outlined]="true" 
+                                styleClass="hover:scale-110 transition-transform"
+                                (click)="deleteTenant(tenant)" 
+                            />
+                        </div>
                     </td>
                 </tr>
             </ng-template>
@@ -278,19 +324,26 @@ export class TenantsManagement implements OnInit {
     }
 
     deleteSelectedTenants() {
+        if (!this.selectedTenants?.length) return;
+
         this.confirmationService.confirm({
             message: 'Are you sure you want to delete the selected tenants?',
             header: 'Confirm',
             icon: 'pi pi-exclamation-triangle',
             accept: () => {
-                // TODO: Implement bulk delete API call
-                this.tenants.set(this.tenants().filter((val) => !this.selectedTenants?.includes(val)));
-                this.selectedTenants = null;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Tenants Deleted',
-                    life: 3000
+                const tenantIds = this.selectedTenants!.map(t => t.id!).filter(id => id);
+                this.tenantService.bulkDelete(tenantIds).subscribe({
+                    next: () => {
+                        this.loadTenants();
+                        this.selectedTenants = null;
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Successful',
+                            detail: 'Tenants Deleted',
+                            life: 3000
+                        });
+                    },
+                    error: (error) => this.showErrorMessage('Failed to delete tenants', error)
                 });
             }
         });
@@ -410,8 +463,8 @@ export class TenantsManagement implements OnInit {
 
     validateTenantLimits() {
         const activeTenants = this.tenants().filter(t => t.is_active).length;
-        // This would come from system settings in a real implementation
-        const maxTenants = 100; // Default limit
+        // TODO: Get max tenants from system settings
+        const maxTenants = 100;
 
         if (activeTenants >= maxTenants) {
             this.messageService.add({
@@ -430,38 +483,25 @@ export class TenantsManagement implements OnInit {
 
     private handleLoadError(error: any): void {
         this.logError('Failed to load tenants', error);
-        this.tenants.set(this.getFallbackTenants());
+        this.tenants.set([]);
         this.loading.set(false);
+        this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron cargar los tenants. Por favor, intenta de nuevo.',
+            life: 5000
+        });
     }
 
     private handlePlansLoadError(error: any): void {
         this.logError('Failed to load subscription plans', error);
         this.subscriptionPlans.set([]);
-    }
-
-    private getFallbackTenants(): Tenant[] {
-        return [
-            {
-                id: 1,
-                name: 'Barbería El Corte',
-                subdomain: 'elcorte',
-                contact_email: 'admin@elcorte.com',
-                plan_type: 'Professional',
-                is_active: true,
-                created_at: new Date().toISOString(),
-                users_count: 5
-            },
-            {
-                id: 2,
-                name: 'Salón Moderno',
-                subdomain: 'moderno',
-                contact_email: 'owner@moderno.com',
-                plan_type: 'Basic',
-                is_active: true,
-                created_at: new Date(Date.now() - 86400000).toISOString(),
-                users_count: 3
-            }
-        ];
+        this.messageService.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: 'No se pudieron cargar los planes de suscripción',
+            life: 3000
+        });
     }
 
     private showErrorMessage(message: string, error?: any): void {

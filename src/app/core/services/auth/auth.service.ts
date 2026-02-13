@@ -123,12 +123,25 @@ export class AuthService extends BaseApiService {
     );
   }
 
+  // Check if email is already registered
+  checkEmailAvailability(email: string): Observable<{ available: boolean }> {
+    return this.get<{ available: boolean }>('/subscriptions/check-email/', { email });
+  }
+
   changePassword(data: { old_password: string; new_password: string }): Observable<any> {
     return this.post(API_CONFIG.ENDPOINTS.AUTH.CHANGE_PASSWORD, data);
   }
 
   resetPassword(email: string): Observable<any> {
     return this.post(API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD, { email });
+  }
+
+  requestPasswordReset(email: string): Observable<any> {
+    return this.post('/auth/reset-password/', { email });
+  }
+
+  confirmPasswordReset(uid: string, token: string, password: string): Observable<any> {
+    return this.post('/auth/reset-password-confirm/', { uid, token, new_password: password });
   }
 
   getUsers(params?: any): Observable<any> {
@@ -158,6 +171,10 @@ export class AuthService extends BaseApiService {
 
   deleteUser(id: number): Observable<any> {
     return this.delete(`${API_CONFIG.ENDPOINTS.AUTH.USERS}${id}/`);
+  }
+
+  bulkDeleteUsers(userIds: number[]): Observable<any> {
+    return this.post(`${API_CONFIG.ENDPOINTS.AUTH.USERS}bulk_delete/`, { user_ids: userIds });
   }
 
   getUsersAvailableForEmployee(): Observable<User[]> {

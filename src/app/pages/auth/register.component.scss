@@ -9,25 +9,60 @@
   }
 }
 
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out;
 }
 
 // Custom input focus effects
 :host ::ng-deep {
-  .p-inputtext:focus,
-  .p-password input:focus {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    border-color: #3b82f6 !important;
+  .p-inputtext,
+  .p-password input {
+    transition: all 0.3s ease;
+    
+    &:hover:not(:focus) {
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      border-color: #3b82f6 !important;
+      transform: translateY(-1px);
+    }
   }
 
   // Custom button styles
   .p-button {
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     
     &:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+    
+    &:active:not(:disabled) {
+      transform: translateY(0);
     }
   }
 
@@ -36,25 +71,25 @@
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  // Plan card hover effects
-  .plan-card {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
-    &:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    }
-  }
-
   // Checkbox custom styling
   .p-checkbox .p-checkbox-box {
     border-radius: 6px;
     transition: all 0.2s ease;
+    
+    &:hover {
+      border-color: #3b82f6;
+    }
   }
 
   .p-checkbox .p-checkbox-box.p-highlight {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     border-color: #3b82f6;
+    animation: scaleIn 0.2s ease;
+  }
+  
+  // Toast animations
+  .p-toast {
+    animation: slideInRight 0.3s ease;
   }
 }
 
@@ -63,11 +98,21 @@
   backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
 }
 
 .dark .glass-card {
   background: rgba(30, 41, 59, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  &:hover {
+    background: rgba(30, 41, 59, 0.95);
+  }
 }
 
 // Gradient text
@@ -76,4 +121,9 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+// Smooth scroll behavior
+html {
+  scroll-behavior: smooth;
 }

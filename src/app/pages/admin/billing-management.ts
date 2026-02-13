@@ -13,6 +13,7 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { CardModule } from 'primeng/card';
 import { DatePipe, CurrencyPipe } from '@angular/common';
 import { BillingService } from '../../core/services/billing.service';
+import { TenantService } from '../../core/services/tenant/tenant.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
@@ -211,7 +212,7 @@ interface BillingStats {
                 <div class="flex flex-col gap-4">
                     <div>
                         <label class="block font-bold mb-2">Tenant</label>
-                        <p-select [(ngModel)]="newInvoice.tenant" [options]="tenantOptions" optionLabel="name" optionValue="id" placeholder="Select Tenant" fluid />
+                        <p-select [(ngModel)]="newInvoice.tenant" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Select Tenant" fluid />
                     </div>
                     <div>
                         <label class="block font-bold mb-2">Amount</label>
@@ -245,10 +246,7 @@ export class BillingManagement implements OnInit {
         due_date: null
     };
 
-    tenantOptions = [
-        { name: 'Barbería El Corte', id: 1 },
-        { name: 'Salón Moderno', id: 2 }
-    ];
+    tenantOptions = signal<any[]>([]);
 
     statusOptions = [
         { label: 'All Status', value: null },
@@ -260,11 +258,13 @@ export class BillingManagement implements OnInit {
 
     constructor(
         private billingService: BillingService,
+        private tenantService: TenantService,
         private messageService: MessageService
     ) {}
 
     ngOnInit() {
         this.loadInvoices();
+        this.loadTenants();
     }
 
     loadInvoices() {
@@ -278,6 +278,19 @@ export class BillingManagement implements OnInit {
                 this.loading.set(false);
             },
             error: (error) => this.handleLoadError(error)
+        });
+    }
+
+    loadTenants() {
+        this.tenantService.getTenants().subscribe({
+            next: (data: any) => {
+                const tenants = Array.isArray(data) ? data : data.results || [];
+                this.tenantOptions.set(tenants.map((t: any) => ({ name: t.name, id: t.id })));
+            },
+            error: (error) => {
+                console.error('Error loading tenants:', error);
+                this.tenantOptions.set([]);
+            }
         });
     }
 

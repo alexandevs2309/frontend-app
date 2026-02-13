@@ -84,6 +84,10 @@ export class TenantService extends BaseApiService {
     return this.post(`${API_CONFIG.ENDPOINTS.TENANTS}bulk_deactivate/`, { tenant_ids: tenantIds });
   }
 
+  bulkDelete(tenantIds: number[]): Observable<any> {
+    return this.post(`${API_CONFIG.ENDPOINTS.TENANTS}bulk_delete/`, { tenant_ids: tenantIds });
+  }
+
   // Current tenant info (for logged user)
   getCurrentTenant(): Observable<Tenant> {
     return this.get(`${API_CONFIG.ENDPOINTS.TENANTS}current/`);
