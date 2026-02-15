@@ -1082,7 +1082,12 @@ export class EmployeesManagement implements OnInit {
     try {
       const config = await this.employeeService.getPayrollConfig(this.empleadoDetalle.id).toPromise() as any;
       if (config) {
-        this.formularioNomina.patchValue(config);
+        // Mapear nombres del backend a nombres del formulario
+        this.formularioNomina.patchValue({
+          salary_type: config.payment_type || 'commission',
+          contractual_monthly_salary: config.fixed_salary || 0,
+          commission_percentage: config.commission_rate || 40
+        });
       }
     } catch (error) {
       if (!environment.production) {
@@ -1096,7 +1101,14 @@ export class EmployeesManagement implements OnInit {
 
     this.guardandoNomina.set(true);
     try {
-      await this.employeeService.updatePayrollConfig(this.empleadoDetalle.id, this.formularioNomina.value).toPromise();
+      // Mapear nombres del formulario a nombres del backend
+      const backendData = {
+        payment_type: this.formularioNomina.get('salary_type')?.value,
+        fixed_salary: this.formularioNomina.get('contractual_monthly_salary')?.value || 0,
+        commission_rate: this.formularioNomina.get('commission_percentage')?.value || 0
+      };
+
+      await this.employeeService.updatePayrollConfig(this.empleadoDetalle.id, backendData).toPromise();
 
       // Recargar datos de empleados para reflejar cambios inmediatamente
       await this.cargarDatos();

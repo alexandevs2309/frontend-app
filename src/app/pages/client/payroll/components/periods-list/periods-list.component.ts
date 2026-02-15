@@ -6,7 +6,11 @@ import { TagModule } from 'primeng/tag';
 import { CardModule } from 'primeng/card';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService } from 'primeng/api';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { FormsModule } from '@angular/forms';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { PayrollService } from '../../services/payroll.service';
 import { Period } from '../../interfaces/payroll.interface';
 import { PaymentConfirmationComponent } from '../payment-confirmation/payment-confirmation.component';
@@ -16,9 +20,10 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
   standalone: true,
   imports: [
     CommonModule, ButtonModule, TableModule, TagModule, CardModule, 
-    ToastModule, TooltipModule, PaymentConfirmationComponent
+    ToastModule, TooltipModule, PaymentConfirmationComponent, DialogModule,
+    InputTextModule, FormsModule, ConfirmDialogModule
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   template: `
     <div class="p-6">
       <!-- Header -->
@@ -57,24 +62,41 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
               <td>{{ formatCurrency(period.deductions_total) }}</td>
               <td class="font-bold">{{ formatCurrency(period.net_amount) }}</td>
               <td>
-                <span *ngIf="period.status === 'open'" 
-                      class="font-medium" style="color: var(--text-color-secondary);">
-                  <i class="pi pi-clock mr-1"></i>Pendiente
-                </span>
+                <!-- Abierto -->
+                <button *ngIf="period.status === 'open'" pButton label="Enviar" 
+                        icon="pi pi-send" class="p-button-sm p-button-info"
+                        (click)="submitForApproval(period)"></button>
                 
-                <div *ngIf="period.status === 'ready'">
-                  <button pButton label="Registrar Pago" icon="pi pi-credit-card"
+                <!-- Pendiente de Aprobación -->
+                <div *ngIf="period.status === 'pending_approval'" class="flex gap-2">
+                  <button pButton label="Aprobar" icon="pi pi-check"
                           class="p-button-sm p-button-success"
-                          [disabled]="!period.can_pay"
-                          [pTooltip]="period.pay_block_reason || 'Listo para pagar'"
-                          tooltipPosition="top"
-                          (click)="openPaymentDialog(period)"></button>
+                          (click)="approvePeriod(period)"></button>
+                  <button pButton label="Rechazar" icon="pi pi-times"
+                          class="p-button-sm p-button-danger"
+                          (click)="openRejectDialog(period)"></button>
                 </div>
                 
+                <!-- Aprobado -->
+                <button *ngIf="period.status === 'approved'" pButton label="Registrar Pago" 
+                        icon="pi pi-credit-card" class="p-button-sm p-button-success"
+                        [disabled]="!period.can_pay"
+                        [pTooltip]="period.pay_block_reason || 'Listo para pagar'"
+                        tooltipPosition="top"
+                        (click)="openPaymentDialog(period)"></button>
+                
+                <!-- Pagado -->
                 <span *ngIf="period.status === 'paid'" 
                       class="font-medium"
                       style="color: var(--success-color-text);">
                   <i class="pi pi-check-circle mr-1"></i>Pagado
+                </span>
+                
+                <!-- Rechazado -->
+                <span *ngIf="period.status === 'rejected'" 
+                      class="font-medium"
+                      style="color: var(--danger-color-text);">
+                  <i class="pi pi-times-circle mr-1"></i>Rechazado
                 </span>
               </td>
             </tr>
@@ -90,6 +112,24 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
         </p-table>
       </p-card>
 
+      <!-- Diálogo de Rechazo -->
+      <p-dialog header="Rechazar Período" [(visible)]="showRejectDialog" [modal]="true" 
+                [style]="{width: '450px'}">
+        <div class="p-4">
+          <label class="block font-medium mb-2">Motivo del Rechazo:</label>
+          <textarea [(ngModel)]="rejectionReason" rows="4" 
+                    class="w-full p-2 border border-gray-300 rounded" 
+                    placeholder="Ingrese el motivo..."></textarea>
+        </div>
+        <ng-template pTemplate="footer">
+          <button pButton label="Cancelar" class="p-button-text" 
+                  (click)="closeRejectDialog()"></button>
+          <button pButton label="Rechazar" icon="pi pi-times" 
+                  class="p-button-danger" [disabled]="!rejectionReason"
+                  (click)="confirmReject()"></button>
+        </ng-template>
+      </p-dialog>
+
       <!-- Componente de confirmación de pago -->
       <app-payment-confirmation
         [visible]="showPaymentDialog"
@@ -99,17 +139,21 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
       </app-payment-confirmation>
     </div>
 
+    <p-confirmDialog></p-confirmDialog>
     <p-toast></p-toast>
   `
 })
 export class PeriodsListComponent implements OnInit {
   private payrollService = inject(PayrollService);
   private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
 
   loading = signal(false);
   periods = signal<Period[]>([]);
   selectedPeriod = signal<Period | null>(null);
   showPaymentDialog = false;
+  showRejectDialog = false;
+  rejectionReason = '';
 
   ngOnInit() {
     this.loadPeriods();
@@ -164,17 +208,21 @@ export class PeriodsListComponent implements OnInit {
   getStatusLabel(status: string): string {
     const labels = {
       'open': 'Abierto',
-      'ready': 'Listo',
-      'paid': 'Pagado'
+      'pending_approval': 'Pendiente',
+      'approved': 'Aprobado',
+      'paid': 'Pagado',
+      'rejected': 'Rechazado'
     };
     return labels[status as keyof typeof labels] || status;
   }
 
-  getStatusSeverity(status: string): 'info' | 'success' | 'warn' {
+  getStatusSeverity(status: string): 'info' | 'success' | 'warn' | 'danger' {
     const severities = {
       'open': 'info' as const,
-      'ready': 'warn' as const,
-      'paid': 'success' as const
+      'pending_approval': 'warn' as const,
+      'approved': 'success' as const,
+      'paid': 'success' as const,
+      'rejected': 'danger' as const
     };
     return severities[status as keyof typeof severities] || 'info';
   }
@@ -264,5 +312,95 @@ export class PeriodsListComponent implements OnInit {
       </body>
       </html>
     `;
+  }
+
+  submitForApproval(period: Period) {
+    this.confirmationService.confirm({
+      message: `¿Enviar período de ${period.employee_name} para aprobación?`,
+      header: 'Confirmar Envío',
+      icon: 'pi pi-send',
+      accept: () => {
+        this.payrollService.submitForApproval(period.id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Enviado',
+              detail: 'Período enviado para aprobación'
+            });
+            this.loadPeriods();
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: error.error?.error || 'No se pudo enviar el período'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  approvePeriod(period: Period) {
+    this.confirmationService.confirm({
+      message: `¿Aprobar período de ${period.employee_name} por ${this.formatCurrency(period.net_amount)}?`,
+      header: 'Confirmar Aprobación',
+      icon: 'pi pi-check',
+      accept: () => {
+        this.payrollService.approvePeriod(period.id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Aprobado',
+              detail: 'Período aprobado exitosamente'
+            });
+            this.loadPeriods();
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: error.error?.error || 'No se pudo aprobar el período'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  openRejectDialog(period: Period) {
+    this.selectedPeriod.set(period);
+    this.rejectionReason = '';
+    this.showRejectDialog = true;
+  }
+
+  closeRejectDialog() {
+    this.showRejectDialog = false;
+    this.selectedPeriod.set(null);
+    this.rejectionReason = '';
+  }
+
+  confirmReject() {
+    const period = this.selectedPeriod();
+    if (!period || !this.rejectionReason) return;
+
+    this.payrollService.rejectPeriod(period.id, this.rejectionReason).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Rechazado',
+          detail: 'Período rechazado'
+        });
+        this.closeRejectDialog();
+        this.loadPeriods();
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.error?.error || 'No se pudo rechazar el período'
+        });
+      }
+    });
   }
 }

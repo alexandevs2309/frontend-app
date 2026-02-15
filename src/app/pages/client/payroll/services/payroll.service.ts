@@ -12,17 +12,38 @@ export class PayrollService extends BaseApiService {
    * Obtener períodos de nómina
    */
   getPeriods(): Observable<{ periods: Period[] }> {
-    return this.get('/payroll/client/payroll/');
+    return this.get('/employees/payroll/client/payroll/');
   }
 
   /**
    * Registrar pago de período
    */
   registerPayment(payment: PaymentRequest): Observable<PaymentResponse> {
-    return this.post('/payroll/client/payroll/register_payment/', payment);
+    return this.post('/employees/payroll/client/payroll/register_payment/', payment);
+  }
+
+  /**
+   * Enviar período para aprobación
+   */
+  submitForApproval(periodId: number): Observable<any> {
+    return this.post(`/employees/payroll/client/payroll/${periodId}/submit/`, {});
+  }
+
+  /**
+   * Aprobar período
+   */
+  approvePeriod(periodId: number): Observable<any> {
+    return this.post(`/employees/payroll/client/payroll/${periodId}/approve/`, {});
+  }
+
+  /**
+   * Rechazar período
+   */
+  rejectPeriod(periodId: number, reason: string): Observable<any> {
+    return this.post(`/employees/payroll/client/payroll/${periodId}/reject/`, { reason });
   }
 
   getPaymentReceipt(paymentId: string): Observable<any> {
-    return this.get(`/payroll/client/payroll/payments/${paymentId}/receipt/`);
+    return this.get(`/employees/payroll/payments/${paymentId}/receipt/`);
   }
 }
