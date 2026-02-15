@@ -141,4 +141,9 @@ export class PosService extends BaseApiService {
   generateCashRegisterReport(registerId: number): Observable<any> {
     return this.get(`${API_CONFIG.ENDPOINTS.POS.CASH_REGISTERS}${registerId}/report/`);
   }
+
+  // Validar stock en tiempo real
+  validateStock(items: any[]): Observable<any> {
+    return this.post(`${API_CONFIG.ENDPOINTS.POS.SALES}validate_stock/`, { items });
+  }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, HostListener, ViewChild, ElementRef, ChangeDetectionStrategy, computed, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, HostListener, ViewChild, ElementRef, ChangeDetectionStrategy, computed, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -21,6 +21,8 @@ import { environment } from '../../../../environments/environment';
 import { SaleDto, SaleWithDetailsDto, CreateSaleDto } from '../../../core/dto/sale.dto';
 import { SaleDetailDto, CartItemDto } from '../../../core/dto/sale-detail.dto';
 import { PaymentDto, PaymentMethodDto } from '../../../core/dto/payment.dto';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 
 interface CartItem {
@@ -41,7 +43,7 @@ type PaymentMethod = 'cash' | 'card' | 'transfer' | 'mixed';
     providers: [MessageService],
     templateUrl: './pos-system.html'
 })
-export class PosSystem implements OnInit {
+export class PosSystem implements OnInit, OnDestroy {
     private readonly posService = inject(PosService);
     private readonly servicesService = inject(ServiceService);
     private readonly inventoryService = inject(InventoryService);
@@ -59,8 +61,8 @@ export class PosSystem implements OnInit {
     subtotal = computed(() => this.carrito().reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0));
     total = computed(() => {
         const subtotal = this.subtotal();
-        const descuentoValor = Number(this.descuento) || 0;
-        const descuentoFinal = this.tipoDescuento === '%' ? (subtotal * descuentoValor / 100) : descuentoValor;
+        const descuentoValor = Number(this.descuento()) || 0;
+        const descuentoFinal = this.tipoDescuento() === '%' ? (subtotal * descuentoValor / 100) : descuentoValor;
         return Math.max(0, subtotal - descuentoFinal);
     });
     puedeVenderComputed = computed(() => {
@@ -91,8 +93,8 @@ export class PosSystem implements OnInit {
     clienteSeleccionado: any = null;
     empleadoSeleccionado = signal<any>(null);
     metodoPagoSeleccionado = signal<'cash' | 'card' | 'transfer' | 'mixed' | ''>('');
-    descuento = 0;
-    tipoDescuento: '$' | '%' = '$';
+    descuento = signal(0);
+    tipoDescuento = signal<'$' | '%'>('$');
     limiteDescuento = 20;
 
     metodoPagoTemporal = '';
@@ -101,7 +103,9 @@ export class PosSystem implements OnInit {
     mostrarDialogoAbrirCaja = false;
     mostrarDialogoCerrarCaja = false;
     mostrarDialogoPago = false;
+    mostrarDialogoPagosMixtos = false;
     mostrarDialogoArqueo = false;
+    mostrarDialogoHistorialArqueos = false;
     mostrarDialogoHistorial = false;
     mostrarDialogoPromociones = false;
     mostrarDialogoTicket = false;
@@ -121,8 +125,11 @@ export class PosSystem implements OnInit {
     promociones: any[] = [];
     promocionAplicada: any = null;
     historialVentas: SaleWithDetailsDto[] = [];
+    historialArqueos: any[] = [];
     configuracionPos: any = {};
     nombreUsuarioActual = '';
+    rolUsuarioActual = '';
+    permisosUsuario: string[] = [];
 
     // Método público para template
     private mapCartItemToSaleDetail(item: CartItem): SaleDetailDto {
@@ -185,7 +192,11 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     modoScanner = false;
     clientesFrecuentes: any[] = [];
     Math = Math;
-    vistaCompacta = false; // Nueva propiedad para toggle de vista
+    vistaCompacta = false;
+    private searchSubject = new Subject<string>();
+    private categorySubject = new Subject<string>();
+    private cache = new Map<string, { data: any, timestamp: number }>();
+    private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos // Nueva propiedad para toggle de vista
 
     metodosPago = [
         { label: 'Efectivo', value: 'cash' },
@@ -195,16 +206,57 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     ];
 
     constructor() {
-        // Effect removido - las estadísticas se guardan manualmente después de cada venta
+        // Configurar debounce para búsqueda
+        this.searchSubject.pipe(
+            debounceTime(300),
+            distinctUntilChanged()
+        ).subscribe(term => {
+            this.busqueda = term;
+            this.filtrarItems();
+        });
+
+        // Configurar debounce para categoría
+        this.categorySubject.pipe(
+            debounceTime(200),
+            distinctUntilChanged()
+        ).subscribe(category => {
+            this.categoriaSeleccionada = category;
+            this.filtrarItems();
+        });
     }
 
     async ngOnInit(): Promise<void> {
         await this.cargarConfiguracion();
+        
+        // Validar permisos para usar POS
+        if (!this.puedeUsarPOS()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Acceso denegado',
+                detail: 'No tiene permisos para usar el sistema POS',
+                life: 10000
+            });
+            return;
+        }
+        
         this.cargarDatos();
         this.verificarEstadoCaja();
         this.cargarEstadisticasGuardadas();
         this.cargarPromociones();
         this.setupKeyboardShortcuts();
+    }
+
+    ngOnDestroy(): void {
+        this.searchSubject.complete();
+        this.categorySubject.complete();
+    }
+
+    onSearchChange(value: string): void {
+        this.searchSubject.next(value);
+    }
+
+    onCategoryChange(value: string): void {
+        this.categorySubject.next(value);
     }
 
     // Utility function to normalize API responses
@@ -217,6 +269,22 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     async cargarDatos() {
         if (this.cargandoDatos) return;
+        
+        // Verificar caché
+        const cacheKey = 'pos_data';
+        const cached = this.cache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+            console.log('⚡ Usando datos en caché');
+            this.servicios = cached.data.servicios;
+            this.productos = cached.data.productos;
+            this.clientes = cached.data.clientes;
+            this.empleados = cached.data.empleados;
+            this.clientesFrecuentes = cached.data.clientesFrecuentes;
+            this.extraerCategorias();
+            this.filtrarItems();
+            return;
+        }
+        
         this.cargandoDatos = true;
 
         try {
@@ -252,13 +320,25 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             const employees = this.normalizeArray<any>(employeesResponse);
             console.log('👨‍💼 Employees normalized:', employees.length, 'items');
             this.empleados = employees
-                .filter((emp: any) => emp.is_active)
+                .filter((emp: any) => emp.is_active && ['Estilista', 'Utility'].includes(emp.user?.role))
                 .map((emp: any) => ({
                     ...emp,
-                    displayName: emp.user?.full_name || emp.full_name || emp.name || `Empleado ${emp.id}`
+                    displayName: `${emp.user?.full_name || emp.full_name || emp.name || `Empleado ${emp.id}`} (${emp.user?.role || 'Sin rol'})`
                 }));
 
             console.log('✅ Datos cargados - Servicios:', this.servicios.length, 'Productos:', this.productos.length, 'Clientes:', this.clientes.length, 'Empleados:', this.empleados.length);
+            
+            // Guardar en caché
+            this.cache.set(cacheKey, {
+                data: {
+                    servicios: this.servicios,
+                    productos: this.productos,
+                    clientes: this.clientes,
+                    empleados: this.empleados,
+                    clientesFrecuentes: this.clientesFrecuentes
+                },
+                timestamp: Date.now()
+            });
             
             this.extraerCategorias();
             this.filtrarItems();
@@ -314,7 +394,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         this.itemsFiltrados = items;
     }
 
-    agregarAlCarrito(item: any) {
+    async agregarAlCarrito(item: any) {
         if (!this.cajaAbierta()) {
             this.messageService.add({
                 severity: 'error',
@@ -322,6 +402,29 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 detail: 'Debe abrir la caja antes de realizar ventas'
             });
             return;
+        }
+
+        // Verificar stock en tiempo real antes de agregar
+        if (this.tipoActivo === 'products') {
+            try {
+                const productoActual = await this.inventoryService.getProduct(item.id).toPromise();
+                if (productoActual && productoActual.stock <= 0) {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Sin stock',
+                        detail: `${item.name} ya no tiene stock disponible`
+                    });
+                    // Actualizar stock local
+                    const index = this.productos.findIndex(p => p.id === item.id);
+                    if (index !== -1 && productoActual) this.productos[index].stock = productoActual.stock;
+                    this.filtrarItems();
+                    return;
+                }
+                // Actualizar stock local con valor real
+                if (productoActual) item.stock = productoActual.stock;
+            } catch (error) {
+                console.error('Error verificando stock:', error);
+            }
         }
 
         const existeEnCarrito = this.carrito().find(cartItem =>
@@ -353,10 +456,13 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         };
 
         this.carrito.update(cart => [...cart, cartItem]);
+        
+        // Animación de éxito
         this.messageService.add({
             severity: 'success',
-            summary: 'Agregado al carrito',
-            detail: `${item.name} agregado correctamente`
+            summary: '✅ Agregado',
+            detail: `${item.name}`,
+            life: 2000
         });
     }
 
@@ -391,8 +497,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         this.clienteSeleccionado = null;
         this.empleadoSeleccionado.set(null);
         this.metodoPagoSeleccionado.set('');
-        this.descuento = 0;
-        this.tipoDescuento = '$';
+        this.descuento.set(0);
+        this.tipoDescuento.set('$');
         this.resetearPago();
     }
 
@@ -419,37 +525,39 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     alternarTipoDescuento() {
-        this.tipoDescuento = this.tipoDescuento === '$' ? '%' : '$';
-        this.descuento = 0;
+        this.tipoDescuento.set(this.tipoDescuento() === '$' ? '%' : '$');
+        this.descuento.set(0);
     }
 
     validarDescuento() {
         const subtotal = this.calcularSubtotal();
+        const descuentoActual = this.descuento();
         
-        if (this.tipoDescuento === '%') {
-            if (this.descuento > this.limiteDescuento) {
+        if (this.tipoDescuento() === '%') {
+            const limiteReal = this.puedeAplicarDescuentoAlto() ? 100 : this.limiteDescuento;
+            if (descuentoActual > limiteReal) {
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'Descuento limitado',
-                    detail: `El descuento máximo permitido es ${this.limiteDescuento}%`
+                    detail: `El descuento máximo permitido es ${limiteReal}%`
                 });
-                this.descuento = this.limiteDescuento;
+                this.descuento.set(limiteReal);
             }
-            if (this.descuento < 0) {
-                this.descuento = 0;
+            if (descuentoActual < 0) {
+                this.descuento.set(0);
             }
         } else {
             // Validar descuento en $
-            if (this.descuento > subtotal) {
+            if (descuentoActual > subtotal) {
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'Descuento inválido',
                     detail: `El descuento no puede ser mayor al subtotal ($${subtotal.toFixed(2)})`
                 });
-                this.descuento = subtotal;
+                this.descuento.set(subtotal);
             }
-            if (this.descuento < 0) {
-                this.descuento = 0;
+            if (descuentoActual < 0) {
+                this.descuento.set(0);
             }
         }
     }
@@ -481,7 +589,24 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             return;
         }
 
-        if (this.metodoPagoSeleccionado() === 'cash' || this.metodoPagoSeleccionado() === 'mixed') {
+        if (this.metodoPagoSeleccionado() === 'mixed') {
+            if (this.pagosMixtos.length === 0) {
+                this.mostrarDialogoPagosMixtos = true;
+                return;
+            }
+            // Si ya hay pagos mixtos agregados, validar antes de continuar
+            if (!this.validarPagoMixto()) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Pagos incompletos',
+                    detail: this.obtenerMensajePagoMixto()
+                });
+                this.mostrarDialogoPagosMixtos = true;
+                return;
+            }
+        }
+
+        if (this.metodoPagoSeleccionado() === 'cash') {
             this.mostrarDialogoPago = true;
             return;
         }
@@ -498,43 +623,90 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         if (this.procesandoVenta) return;
         this.procesandoVenta = true;
         try {
+            // 1. Validar stock en tiempo real antes de procesar
+            const productosEnCarrito = this.carrito()
+                .filter(item => item.type === 'product')
+                .map(item => ({
+                    id: item.item.id,
+                    type: 'product',
+                    quantity: item.quantity
+                }));
+
+            if (productosEnCarrito.length > 0) {
+                try {
+                    await this.posService.validateStock(productosEnCarrito).toPromise();
+                } catch (error: any) {
+                    // Stock insuficiente detectado
+                    const errorData = error.error;
+                    if (errorData && errorData.errors) {
+                        const errorMessages = errorData.errors
+                            .map((e: any) => e.message)
+                            .join('\n');
+                        
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Stock insuficiente',
+                            detail: errorMessages,
+                            life: 8000
+                        });
+                        
+                        // Recargar datos para actualizar stock
+                        await this.cargarDatos();
+                        this.procesandoVenta = false;
+                        return;
+                    }
+                }
+            }
+
+            // 2. Procesar venta si stock es válido
+            const subtotal = this.calcularSubtotal();
+            const descuentoValor = Number(this.descuento()) || 0;
+            const descuentoFinal = this.tipoDescuento() === '%' ? (subtotal * descuentoValor / 100) : descuentoValor;
+            
+            // Construir array de pagos
+            let payments: any[];
+            if (this.metodoPagoSeleccionado() === 'mixed' && this.pagosMixtos.length > 0) {
+                payments = this.pagosMixtos.map(p => ({
+                    method: p.metodo,
+                    amount: Number(p.monto)
+                }));
+            } else {
+                payments = [{
+                    method: this.metodoPagoSeleccionado(),
+                    amount: this.calcularTotal()
+                }];
+            }
+            
             const ventaData: CreateSaleDto = {
                 client: this.clienteSeleccionado?.id || undefined,
                 employee_id: this.empleadoSeleccionado()?.id ?? undefined,
                 payment_method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
-                discount: Number(this.descuento) || 0,
+                discount: descuentoFinal,
                 total: this.calcularTotal(),
                 paid: this.calcularTotal(),
                 details: this.carrito().map(item => this.mapCartItemToSaleDetail(item)),
-                payments: [{
-                    method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
-                    amount: this.calcularTotal()
-                }]
+                payments: payments
             };
             const venta = await this.posService.createSale(ventaData).toPromise();
 
-            // Sonido de confirmación
             this.reproducirSonidoVenta();
-
             this.messageService.add({
                 severity: 'success',
                 summary: 'Venta procesada',
                 detail: 'Venta procesada exitosamente'
             });
 
-            // Actualizar estadísticas ANTES de limpiar carrito
             await this.actualizarEstadisticasVenta();
-
-            // Mostrar ticket automáticamente
             this.mostrarTicket(venta);
-
             this.limpiarCarrito();
             this.resetearPago();
         } catch (error: any) {
+            const errorMsg = error?.error?.detail || error?.error?.message || 'Error al procesar la venta';
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
-                detail: 'Error al procesar la venta'
+                detail: errorMsg,
+                life: 8000
             });
         } finally {
             this.procesandoVenta = false;
@@ -545,8 +717,11 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         this.montoRecibido = 0;
         this.cambio = 0;
         this.pagosMixtos = [];
+        this.metodoPagoTemporal = '';
+        this.montoTemporal = 0;
         this.promocionAplicada = null;
         this.mostrarDialogoPago = false;
+        this.mostrarDialogoPagosMixtos = false;
     }
 
     async verificarEstadoCaja() {
@@ -565,6 +740,14 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     async abrirCaja() {
+        if (!this.puedeAbrirCaja()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Sin permisos',
+                detail: 'No tiene permisos para abrir la caja'
+            });
+            return;
+        }
         if (this.montoInicialCaja < 0) {
             this.messageService.add({
                 severity: 'error',
@@ -680,6 +863,14 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     async cerrarCaja() {
+        if (!this.puedeCerrarCaja()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Sin permisos',
+                detail: 'No tiene permisos para cerrar la caja'
+            });
+            return;
+        }
         // Validar que no haya items en el carrito
         if (this.carrito().length > 0) {
             const confirmar = confirm('Hay items en el carrito. ¿Está seguro de cerrar la caja? Se perderán los items.');
@@ -804,9 +995,29 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             });
             return;
         }
+        
+        const totalActual = this.calcularTotalPagosMixtos();
+        const totalVenta = this.calcularTotal();
+        const restante = totalVenta - totalActual;
+        
+        if (monto > restante + 0.01) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Monto excesivo',
+                detail: `Solo falta $${restante.toFixed(2)}. Ajuste el monto.`
+            });
+            return;
+        }
+        
         this.pagosMixtos.push({ metodo, monto: Number(monto) });
         this.metodoPagoTemporal = '';
         this.montoTemporal = 0;
+        
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Pago agregado',
+            detail: `${this.getPaymentMethodName(metodo as PaymentMethod)}: $${monto.toFixed(2)}`
+        });
     }
 
     removerPagoMixto(index: number) {
@@ -853,7 +1064,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     async aplicarPromocion(promocion: any) {
         this.promocionAplicada = promocion;
-        this.descuento = Number(promocion.discount_value) || 0;
+        this.descuento.set(Number(promocion.discount_value) || 0);
         this.mostrarDialogoPromociones = false;
     }
 
@@ -1023,6 +1234,16 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             const efectivoEsperado = (Number(cajaActual.initial_cash) || 0) + this.ventasEfectivoHoy;
             const diferencia = totalContado - efectivoEsperado;
 
+            // Guardar arqueo en localStorage
+            this.guardarArqueoHistorico({
+                fecha: new Date().toISOString(),
+                totalContado,
+                efectivoEsperado,
+                diferencia,
+                usuario: this.obtenerUsuarioActual(),
+                denominaciones: this.denominaciones.filter(d => d.cantidad > 0)
+            });
+
             // Limpiar denominaciones después del arqueo
             this.denominaciones.forEach(d => {
                 d.cantidad = 0;
@@ -1070,7 +1291,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 this.limiteDescuento = settings.service_discount_limit || 20;
             }
             
-            // Obtener nombre del usuario actual
+            // Obtener datos del usuario actual
             try {
                 const userResponse = await fetch(`${environment.apiUrl}/auth/users/${userId}/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -1078,12 +1299,15 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 if (userResponse.ok) {
                     const userData = await userResponse.json();
                     this.nombreUsuarioActual = userData.full_name || userData.email || 'Cajero';
+                    this.rolUsuarioActual = userData.role || '';
                 } else {
                     this.nombreUsuarioActual = 'Cajero';
+                    this.rolUsuarioActual = '';
                 }
             } catch (userError) {
                 console.error('Error cargando usuario:', userError);
                 this.nombreUsuarioActual = 'Cajero';
+                this.rolUsuarioActual = '';
             }
         } catch (error) {
             console.error('Error cargando configuración:', error);
@@ -1095,6 +1319,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 website: ''
             };
             this.nombreUsuarioActual = 'Cajero';
+            this.rolUsuarioActual = '';
         }
     }
 
@@ -1149,7 +1374,22 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     validarPagoMixto(): boolean {
-        return this.calcularTotalPagosMixtos() >= this.calcularTotal();
+        const totalPagos = this.calcularTotalPagosMixtos();
+        const totalVenta = this.calcularTotal();
+        return Math.abs(totalPagos - totalVenta) < 0.01; // Exacto con tolerancia de 1 centavo
+    }
+
+    obtenerMensajePagoMixto(): string {
+        const totalPagos = this.calcularTotalPagosMixtos();
+        const totalVenta = this.calcularTotal();
+        const diferencia = totalVenta - totalPagos;
+        
+        if (diferencia > 0.01) {
+            return `Falta agregar $${diferencia.toFixed(2)}`;
+        } else if (diferencia < -0.01) {
+            return `Sobra $${Math.abs(diferencia).toFixed(2)}`;
+        }
+        return 'Total correcto';
     }
 
     formatearMoneda(valor: any): string {
@@ -1161,20 +1401,27 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     mostrarTicket(venta: any) {
         // Guardar datos de la venta actual antes de limpiar el carrito
+        const payments = this.metodoPagoSeleccionado() === 'mixed' && this.pagosMixtos.length > 0
+            ? this.pagosMixtos.map(p => ({
+                method: p.metodo as 'cash' | 'card' | 'transfer' | 'mixed',
+                amount: Number(p.monto)
+            }))
+            : [{
+                method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
+                amount: this.calcularTotal()
+            }];
+
         this.ventaActual = {
             id: venta.id,
             client: this.clienteSeleccionado?.id,
             employee_id: this.empleadoSeleccionado()?.id,
             payment_method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
-            discount: this.descuento,
+            discount: this.descuento(),
             total: this.calcularTotal(),
             paid: this.calcularTotal(),
             date_time: new Date().toISOString(),
             details: this.carrito().map(item => this.mapCartItemToSaleDetail(item)),
-            payments: [{
-                method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
-                amount: this.calcularTotal()
-            }],
+            payments: payments,
             client_name: this.clienteSeleccionado?.full_name,
             employee_name: this.empleadoSeleccionado()?.display_name
         };
@@ -1568,7 +1815,7 @@ ${this.carrito().map(item =>
     aplicarDescuentoClienteFrecuente() {
         if (this.clienteSeleccionado && this.esClienteFrecuente(this.clienteSeleccionado)) {
             const descuentoVIP = this.calcularSubtotal() * 0.1; // 10% descuento
-            this.descuento = Math.max(this.descuento, descuentoVIP);
+            this.descuento.set(Math.max(this.descuento(), descuentoVIP));
             this.messageService.add({
                 severity: 'success',
                 summary: 'Descuento VIP aplicado',
@@ -1595,11 +1842,78 @@ ${this.carrito().map(item =>
         return {
             items: this.carrito().length,
             subtotal: this.calcularSubtotal(),
-            descuento: this.descuento,
+            descuento: this.descuento(),
             total: this.calcularTotal(),
             cliente: this.clienteSeleccionado?.full_name || 'Cliente General',
             empleado: this.empleadoSeleccionado()?.display_name || this.empleadoSeleccionado()?.user?.full_name || 'N/A',
             payment_method: this.metodoPagoSeleccionado()
         };
+    }
+
+    // Métodos de validación de permisos
+    puedeUsarPOS(): boolean {
+        const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin'];
+        return rolesPermitidos.includes(this.rolUsuarioActual);
+    }
+
+    puedeAbrirCaja(): boolean {
+        const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin'];
+        return rolesPermitidos.includes(this.rolUsuarioActual);
+    }
+
+    puedeCerrarCaja(): boolean {
+        const rolesPermitidos = ['Manager', 'Client-Admin', 'SuperAdmin'];
+        return rolesPermitidos.includes(this.rolUsuarioActual);
+    }
+
+    puedeAplicarDescuentoAlto(): boolean {
+        const rolesPermitidos = ['Manager', 'Client-Admin', 'SuperAdmin'];
+        return rolesPermitidos.includes(this.rolUsuarioActual);
+    }
+
+    puedeVerHistorial(): boolean {
+        const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin'];
+        return rolesPermitidos.includes(this.rolUsuarioActual);
+    }
+
+    guardarArqueoHistorico(arqueo: any) {
+        try {
+            const userId = this.obtenerUserId();
+            const key = `arqueos_historicos_user_${userId}`;
+            const arqueosGuardados = localStorage.getItem(key);
+            let arqueos = arqueosGuardados ? JSON.parse(arqueosGuardados) : [];
+            
+            // Agregar nuevo arqueo al inicio
+            arqueos.unshift(arqueo);
+            
+            // Mantener solo últimos 50 arqueos
+            if (arqueos.length > 50) arqueos = arqueos.slice(0, 50);
+            
+            localStorage.setItem(key, JSON.stringify(arqueos));
+        } catch (error) {
+            console.error('Error guardando arqueo histórico:', error);
+        }
+    }
+
+    cargarHistorialArqueos() {
+        try {
+            const userId = this.obtenerUserId();
+            const key = `arqueos_historicos_user_${userId}`;
+            const arqueosGuardados = localStorage.getItem(key);
+            this.historialArqueos = arqueosGuardados ? JSON.parse(arqueosGuardados) : [];
+        } catch (error) {
+            console.error('Error cargando historial de arqueos:', error);
+            this.historialArqueos = [];
+        }
+    }
+
+    limpiarCache(): void {
+        this.cache.clear();
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Caché limpiado',
+            detail: 'Se recargarán los datos desde el servidor',
+            life: 2000
+        });
     }
 }

@@ -1,10 +1,10 @@
 <div class="p-4 flex flex-col gap-4">
 
   <!-- HEADER -->
-  <div class="relative overflow-hidden rounded-2xl p-6 mb-6 shadow-2xl" style="background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);">
+  <div class="relative overflow-hidden rounded-2xl p-6 mb-6 shadow-2xl bg-primary-500">
     <div class="absolute inset-0 bg-black/10"></div>
     <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-    <div class="absolute bottom-0 left-0 w-48 h-48 bg-emerald-400/20 rounded-full blur-2xl -ml-24 -mb-24"></div>
+    <div class="absolute bottom-0 left-0 w-48 h-48 bg-primary-400/20 rounded-full blur-2xl -ml-24 -mb-24"></div>
     
     <div class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div class="flex items-center gap-4">
@@ -19,14 +19,19 @@
       <div class="flex items-center gap-3">
         <button *ngIf="!cajaAbierta()" pButton label="Abrir Caja" icon="pi pi-unlock" 
                 (click)="mostrarDialogoAbrirCaja = true"
+                [disabled]="!puedeAbrirCaja()"
+                [pTooltip]="!puedeAbrirCaja() ? 'Sin permisos para abrir caja' : ''"
                 class="bg-white text-emerald-600 hover:bg-emerald-50 border-0 shadow-lg transform hover:scale-105 transition-all"></button>
         <button *ngIf="cajaAbierta()" pButton label="Cerrar Caja" icon="pi pi-lock" 
+                [disabled]="!puedeCerrarCaja()"
+                [pTooltip]="!puedeCerrarCaja() ? 'Sin permisos para cerrar caja' : ''"
                 class="bg-red-500 hover:bg-red-600 border-0 text-white shadow-lg" (click)="prepararCierreCaja()"></button>
         <button *ngIf="cajaAbierta()" pButton label="Arqueo" icon="pi pi-calculator" 
                 (click)="mostrarDialogoArqueo = true"
                 class="bg-amber-500 hover:bg-amber-600 border-0 text-white shadow-lg"></button>
-        <div *ngIf="cajaAbierta()" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/20 backdrop-blur-sm text-white shadow-lg animate-pulse">
-          <i class="pi pi-circle-fill text-green-400 text-xs"></i>
+        <div *ngIf="cajaAbierta()" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/20 backdrop-blur-sm text-white shadow-lg">
+          <i class="pi pi-circle-fill text-yellow-300 text-xs animate-pulse"></i>
+          <span class="text-sm font-semibold">Caja Abierta</span>
         </div>
       </div>
     </div>
@@ -42,8 +47,8 @@
         <p-select [options]="categorias" [(ngModel)]="categoriaSeleccionada"
                   optionLabel="name" optionValue="value"
                   placeholder="Categorías"
-                  (onChange)="filtrarItems()" class="w-48" [disabled]="cargandoDatos"></p-select>
-        <input pInputText [(ngModel)]="busqueda" placeholder="Buscar..." (input)="filtrarItems()" class="w-64" [disabled]="cargandoDatos" style="padding: 0.5rem;">
+                  (onChange)="onCategoryChange($event.value)" class="w-48" [disabled]="cargandoDatos"></p-select>
+        <input pInputText [ngModel]="busqueda" placeholder="Buscar..." (input)="onSearchChange($event.target.value)" class="w-64" [disabled]="cargandoDatos" style="padding: 0.5rem;">
         <button pButton [icon]="vistaCompacta ? 'pi pi-th-large' : 'pi pi-list'"
                 [class]="vistaCompacta ? 'p-button-success' : 'p-button-outlined'"
                 (click)="vistaCompacta = !vistaCompacta"
@@ -51,7 +56,7 @@
                 [disabled]="cargandoDatos"
                 class="p-button-sm"></button>
         <button pButton icon="pi pi-qrcode" [class]="modoScanner ? 'p-button-success' : 'p-button-outlined'" (click)="modoScanner = !modoScanner" pTooltip="Scanner" [disabled]="cargandoDatos" class="p-button-sm"></button>
-        <button pButton icon="pi pi-refresh" (click)="cargarDatos()" [loading]="cargandoDatos" pTooltip="Recargar" class="p-button-outlined p-button-sm"></button>
+        <button pButton icon="pi pi-refresh" (click)="limpiarCache(); cargarDatos()" [loading]="cargandoDatos" pTooltip="Recargar datos" class="p-button-outlined p-button-sm"></button>
       </div>
 
       <!-- Scanner de Código de Barras -->
@@ -87,14 +92,11 @@
         <!-- Vista Normal (Tarjetas) -->
         <div *ngIf="!vistaCompacta" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div *ngFor="let item of itemsFiltrados"
-               class="group relative p-5 rounded-2xl shadow-lg transition-all duration-300 border-2 transform cursor-pointer overflow-hidden"
-               style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);"
-               [class.hover:shadow-2xl]="puedeAgregarMas(item)"
-               [class.hover:scale-105]="puedeAgregarMas(item)"
+               class="group relative p-5 rounded-2xl shadow-lg transition-all duration-300 border-2 transform cursor-pointer overflow-hidden bg-surface-0 dark:bg-surface-800 hover:shadow-2xl hover:scale-105 animate-item"
                [class.hover:border-emerald-500]="puedeAgregarMas(item)"
                [class.opacity-50]="!puedeAgregarMas(item)"
                [class.cursor-not-allowed]="!puedeAgregarMas(item)"
-               [style.border-color]="puedeAgregarMas(item) ? '#d1fae5' : '#e5e7eb'"
+               [style.border-color]="puedeAgregarMas(item) ? 'var(--primary-color)' : 'var(--surface-border)'"
                (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
             
             <!-- Efecto de brillo al hover -->
@@ -103,28 +105,28 @@
             <!-- Imagen o icono -->
             <div class="relative z-10">
               <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="w-full h-36 object-cover rounded-xl mb-3 shadow-md">
-              <div *ngIf="!item.image" class="w-full h-36 bg-gradient-to-br from-emerald-100 via-teal-50 to-green-100 rounded-xl mb-3 flex items-center justify-center shadow-inner">
-                <i [class]="tipoActivo === 'services' ? 'pi pi-cut' : 'pi pi-box'" class="text-6xl text-emerald-600 drop-shadow-lg"></i>
+              <div *ngIf="!item.image" class="w-full h-36 bg-gradient-to-br from-primary-100 via-primary-50 to-primary-100 dark:from-primary-900 dark:via-primary-900 dark:to-primary-900 rounded-xl mb-3 flex items-center justify-center shadow-inner">
+                <i [class]="tipoActivo === 'services' ? 'pi pi-cut' : 'pi pi-box'" class="text-6xl text-primary-600 dark:text-primary-400 drop-shadow-lg"></i>
               </div>
               
               <!-- Nombre y precio -->
               <div class="flex justify-between items-start mb-2">
-                <h6 class="font-bold text-lg text-gray-800 group-hover:text-emerald-600 transition-colors">{{ item.name }}</h6>
-                <div class="px-3 py-1 rounded-full shadow-md" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <h6 class="font-bold text-lg text-surface-900 dark:text-surface-0 group-hover:text-primary-600 transition-colors">{{ item.name }}</h6>
+                <div class="px-3 py-1 rounded-full shadow-md bg-primary-500">
                   <span class="text-lg font-bold text-white">{{ formatearMoneda(item.price) }}</span>
                 </div>
               </div>
               
-              <p class="text-sm text-gray-600 mb-3 line-clamp-2" *ngIf="item.description">{{ item.description }}</p>
+              <p class="text-sm text-surface-600 dark:text-surface-400 mb-3 line-clamp-2" *ngIf="item.description">{{ item.description }}</p>
               
               <!-- Footer con categoría y stock -->
               <div class="flex justify-between items-center">
-                <span class="text-xs px-3 py-1.5 rounded-full font-semibold shadow-sm" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                <span class="text-xs px-3 py-1.5 rounded-full font-semibold shadow-sm bg-primary-500 text-white">
                   {{ item.category || 'General' }}
                 </span>
                 <div *ngIf="tipoActivo==='products'" class="flex items-center gap-1">
-                  <i class="pi pi-box text-xs" [style.color]="obtenerStockDisponible(item) > 5 ? '#10b981' : obtenerStockDisponible(item) > 0 ? '#f59e0b' : '#ef4444'"></i>
-                  <span class="text-xs font-bold" [style.color]="obtenerStockDisponible(item) > 5 ? '#10b981' : obtenerStockDisponible(item) > 0 ? '#f59e0b' : '#ef4444'">
+                  <i class="pi pi-box text-xs" [style.color]="obtenerStockDisponible(item) > 5 ? 'var(--primary-color)' : obtenerStockDisponible(item) > 0 ? '#f59e0b' : '#ef4444'"></i>
+                  <span class="text-xs font-bold" [style.color]="obtenerStockDisponible(item) > 5 ? 'var(--primary-color)' : obtenerStockDisponible(item) > 0 ? '#f59e0b' : '#ef4444'">
                     {{ obtenerStockDisponible(item) }}
                   </span>
                 </div>
@@ -132,8 +134,7 @@
               
               <!-- Botón de agregar (aparece al hover) -->
               <div *ngIf="puedeAgregarMas(item)" class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform" 
-                        style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <button class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform bg-primary-500 hover:bg-primary-600">
                   <i class="pi pi-plus text-white font-bold"></i>
                 </button>
               </div>
@@ -142,8 +143,8 @@
         </div>
 
         <!-- Vista Compacta (Lista) -->
-        <div *ngIf="vistaCompacta" class="rounded-lg shadow overflow-hidden" style="background-color: var(--surface-card);">
-          <div class="divide-y" style="border-color: var(--surface-border);">
+        <div *ngIf="vistaCompacta" class="rounded-lg shadow overflow-hidden bg-surface-0 dark:bg-surface-800">
+          <div class="divide-y divide-surface-200 dark:divide-surface-700">
             <div *ngFor="let item of itemsFiltrados"
                  class="flex items-center p-3 transition-colors"
                  [class.cursor-pointer]="puedeAgregarMas(item)"
@@ -219,10 +220,10 @@
       </ng-template>
 
       <!-- CARRITO -->
-      <div *ngIf="carrito().length>0" class="mt-4 p-4 rounded-lg shadow-inner" style="background-color: var(--surface-ground);">
-        <h5 class="font-bold mb-3 text-lg">Carrito</h5>
+      <div *ngIf="carrito().length>0" class="mt-4 p-4 rounded-lg shadow-inner bg-surface-50 dark:bg-surface-900">
+        <h5 class="font-bold mb-3 text-lg text-surface-900 dark:text-surface-0">Carrito</h5>
         <div class="flex flex-col gap-2">
-          <div *ngFor="let item of carrito(); let i=index" class="flex justify-between items-center p-2 rounded-lg shadow" style="background-color: var(--surface-card);">
+          <div *ngFor="let item of carrito(); let i=index" class="flex justify-between items-center p-2 rounded-lg shadow bg-surface-0 dark:bg-surface-800">
             <div class="flex-1">
               <h6 class="font-medium">{{ item.item.name }}</h6>
               <p class="text-sm m-0" style="color: var(--text-color-secondary);">{{ item.type==='service'?'Servicio':'Producto' }}</p>
@@ -243,19 +244,19 @@
 
     <!-- PANEL DERECHO: Resumen -->
     <div class="flex flex-col gap-4 sticky top-4">
-      <div class="p-6 rounded-2xl shadow-2xl flex flex-col gap-4 relative overflow-hidden" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 50%, #dcfce7 100%); border: 2px solid #10b981;">
+      <div class="p-6 rounded-2xl shadow-2xl flex flex-col gap-4 relative overflow-hidden bg-surface-0 dark:bg-surface-800 border-2 border-primary-500">
         
         <!-- Decoración de fondo -->
         <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
         <div class="absolute bottom-0 left-0 w-24 h-24 bg-teal-500/10 rounded-full blur-2xl"></div>
 
-        <div class="flex items-center gap-3 pb-3 border-b relative z-10" style="border-color: color-mix(in srgb, #10b981 20%, transparent);">
-          <div class="p-3 rounded-xl shadow-lg animate-pulse" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+        <div class="flex items-center gap-3 pb-3 border-b relative z-10 border-surface-200 dark:border-surface-700">
+          <div class="p-3 rounded-xl shadow-lg animate-pulse bg-primary-500">
             <i class="pi pi-shopping-bag text-2xl text-white"></i>
           </div>
           <div>
-            <h5 class="font-bold text-xl bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Resumen de Venta</h5>
-            <p class="text-xs text-gray-600">{{carrito().length}} items en carrito</p>
+            <h5 class="font-bold text-xl text-primary-600 dark:text-primary-400">Resumen de Venta</h5>
+            <p class="text-xs text-surface-600 dark:text-surface-400">{{carrito().length}} items en carrito</p>
           </div>
         </div>
 
@@ -294,19 +295,19 @@
         </div>
 
         <!-- Totales -->
-        <div class="p-4 rounded-xl" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981;">
-          <div class="flex justify-between mb-2 text-gray-700"><span class="font-medium">Subtotal:</span><span class="font-semibold">{{ formatearMoneda(calcularSubtotal()) }}</span></div>
-          <div class="flex justify-between mb-3">
+        <div class="p-4 rounded-xl bg-surface-50 dark:bg-surface-900 border-2 border-primary-500">
+          <div class="flex justify-between mb-2 text-surface-700 dark:text-surface-300"><span class="font-medium">Subtotal:</span><span class="font-semibold">{{ formatearMoneda(calcularSubtotal()) }}</span></div>
+          <div class="flex justify-between mb-3 text-surface-700 dark:text-surface-300">
             <span class="font-medium text-gray-700">Descuento:</span>
             <div class="flex items-center gap-2">
-              <input type="number" pInputText [(ngModel)]="descuento" (ngModelChange)="validarDescuento()" class="w-16 text-right" min="0" [max]="tipoDescuento === '%' ? limiteDescuento : calcularSubtotal()">
-              <button pButton [label]="tipoDescuento" size="small" class="p-button-outlined w-8" (click)="alternarTipoDescuento()"></button>
+              <input type="number" pInputText [ngModel]="descuento()" (ngModelChange)="descuento.set($event); validarDescuento()" class="w-16 text-right" min="0" [max]="tipoDescuento() === '%' ? limiteDescuento : calcularSubtotal()">
+              <button pButton [label]="tipoDescuento()" size="small" class="p-button-outlined w-8" (click)="alternarTipoDescuento()"></button>
             </div>
           </div>
           <hr class="my-3 border-emerald-300">
           <div class="flex justify-between font-bold text-2xl">
-            <span class="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Total:</span>
-            <span class="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">{{ formatearMoneda(calcularTotal()) }}</span>
+            <span class="text-primary-600 dark:text-primary-400">Total:</span>
+            <span class="text-primary-600 dark:text-primary-400">{{ formatearMoneda(calcularTotal()) }}</span>
           </div>
         </div>
 
@@ -326,30 +327,34 @@
                   [loading]="procesandoVenta"
                   (click)="procesarVenta()"
                   class="w-full shadow-lg transform hover:scale-105 transition-all"
-                  style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; font-weight: bold; padding: 0.75rem;"
+                  severity="success"
                   [pTooltip]="!puedeVenderComputed() ? obtenerMensajeValidacion() : 'Procesar venta'"></button>
           <button pButton label="Limpiar" icon="pi pi-trash" (click)="limpiarCarrito()" class="p-button-outlined w-full" [disabled]="carrito().length === 0 || procesandoVenta"></button>
-          <button pButton label="Historial" icon="pi pi-history" (click)="mostrarDialogoHistorial=true; cargarHistorialVentas()" class="p-button-outlined w-full" size="small" [disabled]="procesandoVenta"></button>
+          <button pButton label="Historial" icon="pi pi-history" 
+                  (click)="mostrarDialogoHistorial=true; cargarHistorialVentas()" 
+                  [disabled]="procesandoVenta || !puedeVerHistorial()"
+                  [pTooltip]="!puedeVerHistorial() ? 'Sin permisos para ver historial' : ''"
+                  class="p-button-outlined w-full" size="small"></button>
         </div>
 
         <!-- Estadísticas -->
-        <div class="p-4 rounded-xl relative overflow-hidden shadow-lg" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6;">
+        <div class="p-4 rounded-xl relative overflow-hidden shadow-lg bg-surface-50 dark:bg-surface-900 border-2 border-blue-500">
           <div class="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
-          <h6 class="font-bold mb-3 flex items-center gap-2 relative z-10" style="color: #1e40af;">
+          <h6 class="font-bold mb-3 flex items-center gap-2 relative z-10 text-blue-800 dark:text-blue-400">
             <i class="pi pi-chart-line"></i>
             Estadísticas del Día
           </h6>
           <div class="space-y-2 relative z-10">
-            <div class="flex justify-between items-center p-2 rounded-lg bg-white/50">
-              <span class="text-sm text-gray-700 flex items-center gap-2"><i class="pi pi-shopping-cart text-blue-600"></i>Ventas:</span>
+            <div class="flex justify-between items-center p-2 rounded-lg bg-surface-0 dark:bg-surface-800">
+              <span class="text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2"><i class="pi pi-shopping-cart text-blue-600"></i>Ventas:</span>
               <span class="font-bold text-lg text-blue-600">{{ estadisticasDia().ventas }}</span>
             </div>
-            <div class="flex justify-between items-center p-2 rounded-lg bg-white/50">
-              <span class="text-sm text-gray-700 flex items-center gap-2"><i class="pi pi-dollar text-green-600"></i>Ingresos:</span>
+            <div class="flex justify-between items-center p-2 rounded-lg bg-surface-0 dark:bg-surface-800">
+              <span class="text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2"><i class="pi pi-dollar text-green-600"></i>Ingresos:</span>
               <span class="font-bold text-lg text-green-600">{{ formatearMoneda(estadisticasDia().ingresos) }}</span>
             </div>
-            <div class="flex justify-between items-center p-2 rounded-lg bg-white/50">
-              <span class="text-sm text-gray-700 flex items-center gap-2"><i class="pi pi-ticket text-purple-600"></i>Ticket Promedio:</span>
+            <div class="flex justify-between items-center p-2 rounded-lg bg-surface-0 dark:bg-surface-800">
+              <span class="text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2"><i class="pi pi-ticket text-purple-600"></i>Ticket Promedio:</span>
               <span class="font-bold text-lg text-purple-600">{{ formatearMoneda(estadisticasDia().ticketPromedio) }}</span>
             </div>
           </div>
@@ -551,10 +556,22 @@
     </span>
   </div>
 
+  <!-- Desglose de pagos mixtos -->
   <div class="payment-info">
-    <span class="payment-method">
-      💳 {{ getPaymentMethodName(ventaActual.payment_method) }}
-    </span>
+    <div *ngIf="ventaActual.payment_method === 'mixed' && ventaActual.payments && ventaActual.payments.length > 1">
+      <div class="separator-thin" style="margin: 8px 0;"></div>
+      <div style="font-size: 10px; font-weight: bold; margin-bottom: 4px; color: #666;">DESGLOSE DE PAGOS:</div>
+      <div *ngFor="let pago of ventaActual.payments" 
+           style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; padding: 2px 4px; background: #f8f9fa; border-radius: 2px;">
+        <span>💳 {{ getPaymentMethodName(pago.method) }}</span>
+        <span style="font-family: 'Courier New', monospace; font-weight: bold;">{{ formatearMoneda(pago.amount) }}</span>
+      </div>
+    </div>
+    <div *ngIf="ventaActual.payment_method !== 'mixed' || !ventaActual.payments || ventaActual.payments.length <= 1">
+      <span class="payment-method">
+        💳 {{ getPaymentMethodName(ventaActual.payment_method) }}
+      </span>
+    </div>
   </div>
 </div>
 
@@ -635,6 +652,71 @@
         <button pButton label="Confirmar Pago"
                 (click)="confirmarVenta()"
                 [disabled]="!validarMontoRecibido()"
+                class="p-button-success"></button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- DIÁLOGO DE PAGOS MIXTOS -->
+  <p-dialog header="Pago Mixto" [(visible)]="mostrarDialogoPagosMixtos" [modal]="true" [style]="{width:'500px'}">
+    <div class="flex flex-col gap-4">
+      <div class="p-3 bg-primary-50 rounded border border-primary-200">
+        <div class="flex justify-between text-lg font-bold">
+          <span>Total a pagar:</span>
+          <span class="text-primary-600">{{ formatearMoneda(calcularTotal()) }}</span>
+        </div>
+      </div>
+
+      <!-- Agregar pago -->
+      <div class="p-3 bg-gray-50 rounded">
+        <h6 class="font-bold mb-3">Agregar método de pago</h6>
+        <div class="flex gap-2 mb-2">
+          <p-select [(ngModel)]="metodoPagoTemporal" [options]="[
+            {label: 'Efectivo', value: 'cash'},
+            {label: 'Tarjeta', value: 'card'},
+            {label: 'Transferencia', value: 'transfer'}
+          ]" optionLabel="label" optionValue="value" placeholder="Método" class="flex-1"></p-select>
+          <p-inputNumber [(ngModel)]="montoTemporal" mode="currency" currency="USD" locale="en-US" placeholder="Monto" class="flex-1"></p-inputNumber>
+          <button pButton icon="pi pi-plus" (click)="agregarPagoMixto(metodoPagoTemporal, montoTemporal)" class="p-button-success"></button>
+        </div>
+      </div>
+
+      <!-- Lista de pagos -->
+      <div *ngIf="pagosMixtos.length > 0" class="flex flex-col gap-2">
+        <h6 class="font-bold">Pagos agregados:</h6>
+        <div *ngFor="let pago of pagosMixtos; let i = index" class="flex justify-between items-center p-2 bg-white rounded border">
+          <span class="font-medium">{{ getPaymentMethodName(pago.metodo) }}</span>
+          <span class="font-mono">{{ formatearMoneda(pago.monto) }}</span>
+          <button pButton icon="pi pi-trash" size="small" (click)="removerPagoMixto(i)" class="p-button-danger p-button-text"></button>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div class="p-3 rounded" [class]="validarPagoMixto() ? 'bg-green-50 border border-green-200' : 'bg-orange-50 border border-orange-200'">
+        <div class="flex justify-between mb-2">
+          <span>Total a pagar:</span>
+          <span class="font-mono font-bold">{{ formatearMoneda(calcularTotal()) }}</span>
+        </div>
+        <div class="flex justify-between mb-2">
+          <span>Total pagado:</span>
+          <span class="font-mono font-bold" [class]="validarPagoMixto() ? 'text-green-600' : 'text-orange-600'">
+            {{ formatearMoneda(calcularTotalPagosMixtos()) }}
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-semibold">Estado:</span>
+          <span class="text-sm font-bold px-3 py-1 rounded" 
+                [class]="validarPagoMixto() ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'">
+            {{ obtenerMensajePagoMixto() }}
+          </span>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button pButton label="Cancelar" (click)="mostrarDialogoPagosMixtos=false; pagosMixtos=[]" class="p-button-text"></button>
+        <button pButton label="Confirmar Venta"
+                (click)="confirmarVenta()"
+                [disabled]="!validarPagoMixto()"
                 class="p-button-success"></button>
       </div>
     </div>
@@ -779,6 +861,36 @@
   line-height: 1.4;
 }
 
+/* Responsive para móviles y tablets */
+@media (max-width: 768px) {
+  .ticket-profesional {
+    max-width: 100%;
+    font-size: 11px;
+    padding: 8px;
+  }
+  .business-name { font-size: 16px !important; }
+  .total-row.final { font-size: 13px !important; }
+  .items-header, .item-row { font-size: 10px !important; }
+  .logo-placeholder { font-size: 28px !important; }
+  .business-info { font-size: 10px !important; }
+  .transaction-info { font-size: 11px !important; }
+}
+
+@media (max-width: 480px) {
+  .ticket-profesional {
+    font-size: 10px;
+    padding: 4px;
+  }
+  .business-name { font-size: 14px !important; }
+  .total-row.final { font-size: 12px !important; }
+  .items-header, .item-row { font-size: 9px !important; }
+  .logo-placeholder { font-size: 24px !important; }
+  .business-info { font-size: 9px !important; }
+  .transaction-info { font-size: 10px !important; }
+  .qr-container { padding: 4px !important; }
+  .qr-code { width: 60px !important; height: 60px !important; }
+}
+
 .ticket-header { text-align: center; margin-bottom: 16px; }
 .logo-placeholder { font-size: 32px; margin-bottom: 8px; }
 .business-name { font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
@@ -820,5 +932,24 @@
   .ticket-profesional, .ticket-profesional * { visibility: visible; }
   .ticket-profesional { position: absolute; left: 0; top: 0; width: 80mm; font-size: 10px; }
   .ticket-actions { display: none; }
+}
+
+/* Animaciones */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-item {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-item:active {
+  animation: pulse 0.2s ease-in-out;
 }
 </style>
