@@ -40,13 +40,24 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
     providers: [MessageService, ConfirmationService],
     template: `
         <div class="card">
-            <div class="flex justify-between items-center mb-4">
-                <div>
-                    <h5 class="m-0">Gestión de Clientes</h5>
-                    <p class="text-gray-600 mt-1">Administra la base de datos de clientes de tu barbería</p>
+            <!-- Hero Header -->
+            <div class="relative overflow-hidden bg-gradient-to-r from-green-500 via-teal-500 to-cyan-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
+                <div class="absolute inset-0 bg-black/10"></div>
+                <div class="absolute bottom-0 left-0 w-56 h-56 bg-white/10 rounded-full blur-3xl -ml-28 -mb-28"></div>
+                
+                <div class="relative flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
+                            <i class="pi pi-users text-4xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold drop-shadow-lg">Gestión de Clientes</h2>
+                            <p class="text-teal-100 mt-1">Administra la base de datos de clientes de tu barbería</p>
+                        </div>
+                    </div>
+                    <button pButton label="Nuevo Cliente" icon="pi pi-plus" (click)="abrirDialogo()" 
+                            class="bg-white text-teal-600 hover:bg-teal-50 border-0 shadow-lg transform hover:scale-105 transition-all"></button>
                 </div>
-                <button pButton label="Nuevo Cliente" icon="pi pi-plus"
-                        (click)="abrirDialogo()" class="p-button-primary"></button>
             </div>
 
             <p-table [value]="clientes()" [loading]="cargando()"

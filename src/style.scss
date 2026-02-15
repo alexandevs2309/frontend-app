@@ -1,20 +1,18 @@
 /* PALETA OBJETIVO - OVERRIDES SEGUROS */
-:root {
-  /* Tokens de color - COMENTADOS para usar Sakai */
-  /* --brand: #7C6AF2;
-  --brand-soft: #E9E6FF;
-  --brand-hover: #6B5AE0;
-  --surface: #FFFFFF;
-  --surface-soft: #F8F9FF;
-  --text: #1F2937;
-  --text-secondary: #6B7280;
-  --text-muted: #9CA3AF;
-  --border: #E5E7EB;
-  --accent: #F472B6;
-  --success: #34D399;
-  --warning: #FBBF24;
-  --error: #F87171; */
-}
+/* Tokens de color - COMENTADOS para usar Sakai */
+/* --brand: #7C6AF2;
+--brand-soft: #E9E6FF;
+--brand-hover: #6B5AE0;
+--surface: #FFFFFF;
+--surface-soft: #F8F9FF;
+--text: #1F2937;
+--text-secondary: #6B7280;
+--text-muted: #9CA3AF;
+--border: #E5E7EB;
+--accent: #F472B6;
+--success: #34D399;
+--warning: #FBBF24;
+--error: #F87171; */
 
 /* Aplicación global de la paleta - USANDO VARIABLES SAKAI */
 body {
@@ -300,3 +298,6 @@ body {
 
 /* PLATFORM STYLES - CAPA GLOBAL */
 @import './assets/layout/platform';
+@import '@fullcalendar/core/main.css';
+@import '@fullcalendar/daygrid/main.css';
+@import '@fullcalendar/timegrid/main.css';

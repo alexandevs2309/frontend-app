@@ -1,16 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
+import { BadgeModule } from 'primeng/badge';
 import { AppMenuitem } from './app.menuitem';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { TrialService } from '../../core/services/trial.service';
+import { NotificationBadgeService } from '../../core/services/notification/notification-badge.service';
 import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-menu',
     standalone: true,
-    imports: [CommonModule, AppMenuitem, RouterModule],
+    imports: [CommonModule, AppMenuitem, RouterModule, BadgeModule],
     template: `<ul class="layout-menu">
         <ng-container *ngFor="let item of model; let i = index">
             <li app-menuitem *ngIf="!item.separator" [item]="item" [index]="i" [root]="true"></li>
@@ -21,6 +23,7 @@ import { Subscription } from 'rxjs';
 export class AppMenu implements OnInit, OnDestroy {
     model: MenuItem[] = [];
     private subscription = new Subscription();
+    notificationService = inject(NotificationBadgeService);
 
     constructor(
         private authService: AuthService,
@@ -32,6 +35,12 @@ export class AppMenu implements OnInit, OnDestroy {
         const currentUser = this.authService.getCurrentUser();
         if (currentUser) {
             this.updateMenuForUser(currentUser.role);
+            // Load appointments for badge
+            if (currentUser.role !== 'SUPER_ADMIN') {
+                this.notificationService.loadAppointments();
+                // Refresh every 5 minutes
+                setInterval(() => this.notificationService.refresh(), 5 * 60000);
+            }
         }
 
         // Subscribe to user changes
@@ -39,6 +48,9 @@ export class AppMenu implements OnInit, OnDestroy {
             this.authService.currentUser$.subscribe(user => {
                 if (user) {
                     this.updateMenuForUser(user.role);
+                    if (user.role !== 'SUPER_ADMIN') {
+                        this.notificationService.loadAppointments();
+                    }
                 } else {
                     this.model = [];
                 }
@@ -86,6 +98,8 @@ export class AppMenu implements OnInit, OnDestroy {
     getClientMenu(): MenuItem[] {
         const user = this.authService.getCurrentUser();
         const userRole = user?.role;
+        const badgeCount = this.notificationService.badgeCount();
+        
         const menuItems: MenuItem[] = [
             { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/client/dashboard'] }
         ];
@@ -93,10 +107,15 @@ export class AppMenu implements OnInit, OnDestroy {
         if (userRole === 'CLIENT_ADMIN') {
             // CLIENT_ADMIN: All features available
             menuItems.push(
-                { label: 'Usuarios', icon: 'pi pi-fw pi-user', routerLink: ['/client/users'] },
                 { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
                 { label: 'Clientes', icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
-                { label: 'Citas', icon: 'pi pi-fw pi-calendar', routerLink: ['/client/appointments'] },
+                { 
+                    label: 'Citas', 
+                    icon: 'pi pi-fw pi-calendar', 
+                    routerLink: ['/client/appointments'],
+                    badge: badgeCount > 0 ? badgeCount.toString() : undefined,
+                    badgeStyleClass: 'p-badge-danger'
+                },
                 { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
                 { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: 'Punto de Venta', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
@@ -107,7 +126,13 @@ export class AppMenu implements OnInit, OnDestroy {
         } else if (userRole === 'CLIENT_STAFF') {
             // CLIENT_STAFF: Limited features
             menuItems.push(
-                { label: 'Mis Citas', icon: 'pi pi-fw pi-calendar', routerLink: ['/client/appointments'] },
+                { 
+                    label: 'Mis Citas', 
+                    icon: 'pi pi-fw pi-calendar', 
+                    routerLink: ['/client/appointments'],
+                    badge: badgeCount > 0 ? badgeCount.toString() : undefined,
+                    badgeStyleClass: 'p-badge-danger'
+                },
                 { label: 'Clientes', icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
                 { label: 'Ventas', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
                 { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },

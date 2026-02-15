@@ -229,6 +229,47 @@
         </div>
       </div>
     </div>
+
+    <!-- CONFIGURACIÓN POS -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors border-l-4 border-emerald-500">
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+        <i class="pi pi-shopping-cart text-emerald-600 dark:text-emerald-400"></i>
+        Configuración POS (Tickets)
+      </h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Esta información aparecerá en los tickets de venta</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Nombre del Negocio</label>
+          <input type="text" pInputText [(ngModel)]="settings().pos_config!.business_name"
+                 class="w-full" placeholder="Mi Barbería Premium">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Dirección</label>
+          <input type="text" pInputText [(ngModel)]="settings().pos_config!.address"
+                 class="w-full" placeholder="Calle Principal #123">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Teléfono</label>
+          <input type="tel" pInputText [(ngModel)]="settings().pos_config!.phone"
+                 class="w-full" placeholder="809-555-1234">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Email</label>
+          <input type="email" pInputText [(ngModel)]="settings().pos_config!.email"
+                 class="w-full" placeholder="contacto@mibarberia.com">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Sitio Web</label>
+          <input type="url" pInputText [(ngModel)]="settings().pos_config!.website"
+                 class="w-full" placeholder="www.mibarberia.com">
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- BOTONES DE ACCIÓN -->

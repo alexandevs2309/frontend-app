@@ -61,7 +61,14 @@ export class AppLayout implements OnInit, OnDestroy {
     }
 
     ngOnInit() {
-        // Layout initialization
+        // Cambiar a overlay solo en POS
+        this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe((event: NavigationEnd) => {
+            if (event.url.includes('/pos')) {
+                this.layoutService.layoutConfig.update(config => ({ ...config, menuMode: 'overlay' }));
+            } else if (this.layoutService.layoutConfig().menuMode === 'overlay') {
+                this.layoutService.layoutConfig.update(config => ({ ...config, menuMode: 'static' }));
+            }
+        });
     }
 
     isOutsideClicked(event: MouseEvent) {

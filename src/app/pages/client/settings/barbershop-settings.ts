@@ -28,7 +28,13 @@ interface BarbershopSettings {
     phone: string;
     email: string;
     address: string;
-
+  };
+  pos_config?: {
+    business_name: string;
+    address: string;
+    phone: string;
+    email: string;
+    website: string;
   };
   tax_rate: number;
   service_discount_limit: number;
@@ -73,6 +79,13 @@ export class BarbershopSettingsComponent implements OnInit {
       email: '',
       address: ''
     },
+    pos_config: {
+      business_name: '',
+      address: '',
+      phone: '',
+      email: '',
+      website: ''
+    },
     tax_rate: 0,
     service_discount_limit: 20,
     cancellation_policy_hours: 24,
@@ -111,6 +124,15 @@ export class BarbershopSettingsComponent implements OnInit {
     this.http.get<BarbershopSettings>(`${environment.apiUrl}/settings/barbershop/`)
       .subscribe({
         next: (data) => {
+          if (!data.pos_config) {
+            data.pos_config = {
+              business_name: '',
+              address: '',
+              phone: '',
+              email: '',
+              website: ''
+            };
+          }
           this.settings.set(data);
           this.loading.set(false);
         },
@@ -136,7 +158,6 @@ export class BarbershopSettingsComponent implements OnInit {
         next: (response: any) => {
           this.loading.set(false);
           
-          // Si requiere confirmación, mostrar diálogo
           if (response.requires_confirmation) {
             this.criticalChanges.set(response.critical_changes);
             this.pendingData.set(this.settings());
@@ -147,31 +168,16 @@ export class BarbershopSettingsComponent implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: 'Guardado',
-            detail: response.changes_logged ? 
-              'Configuración actualizada y cambios registrados' : 
-              'Configuración actualizada correctamente'
+            detail: 'Configuración actualizada correctamente'
           });
         },
         error: (error) => {
           this.loading.set(false);
-          
-          if (error.error?.validation_errors) {
-            const errors = error.error.validation_errors
-              .map((e: any) => `${e.setting}: ${e.error}`)
-              .join(', ');
-            
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error de Validación',
-              detail: errors
-            });
-          } else {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudo guardar la configuración'
-            });
-          }
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo guardar la configuración'
+          });
         }
       });
   }

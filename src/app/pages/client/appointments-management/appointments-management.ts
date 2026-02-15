@@ -27,13 +27,22 @@ import { environment } from '../../../../environments/environment';
     providers: [MessageService, ConfirmationService],
     template: `
         <div class="p-4 md:p-6">
-            <!-- Header -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6">
-                <div>
-                    <h2 class="text-2xl font-semibold">Gestión de Citas</h2>
-                    <p class="text-gray-600 text-sm mt-1">Administra las citas de tu barbería</p>
+            <!-- Hero Header -->
+            <div class="relative overflow-hidden bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
+                <div class="absolute inset-0 bg-black/10"></div>
+                <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-24 -mt-24"></div>
+                
+                <div class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
+                            <i class="pi pi-list text-4xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold drop-shadow-lg">Lista de Citas</h2>
+                            <p class="text-purple-100 mt-1">Vista detallada de todas las citas</p>
+                        </div>
+                    </div>
                 </div>
-                <button pButton label="Nueva Cita" icon="pi pi-plus" (click)="abrirDialogo()" class="p-button-primary w-full md:w-auto"></button>
             </div>
 
             <!-- Filtros -->
@@ -241,6 +250,10 @@ export class AppointmentsManagement implements OnInit {
 
     ngOnInit() {
         this.cargarDatos();
+        // Escuchar evento de edición desde calendario
+        window.addEventListener('editAppointment', (e: any) => {
+            this.editarCita(e.detail);
+        });
     }
 
     async cargarDatos() {
@@ -310,6 +323,10 @@ export class AppointmentsManagement implements OnInit {
         }
     }
 
+    loadAppointments() {
+        this.cargarDatos();
+    }
+
     abrirDialogo() {
         this.citaSeleccionada = null;
         this.formulario.reset({
@@ -377,6 +394,8 @@ export class AppointmentsManagement implements OnInit {
 
             this.cerrarDialogo();
             this.cargarDatos();
+            // Notificar al componente padre para refrescar calendario
+            window.dispatchEvent(new CustomEvent('appointmentSaved'));
         } catch (error: any) {
             if (!environment.production) {
                 console.error('Error guardando cita:', error);

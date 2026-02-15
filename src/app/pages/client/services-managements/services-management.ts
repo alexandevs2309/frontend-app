@@ -40,13 +40,24 @@ import { ServiceDto, ServiceCategoryDto, CreateServiceDto, UpdateServiceDto } fr
     providers: [MessageService, ConfirmationService],
     template: `
         <div class="card">
-            <div class="flex justify-between items-center mb-4">
-                <div>
-                    <h5 class="m-0">Gestión de Servicios</h5>
-                    <p class="text-gray-600 mt-1">Administra los servicios que ofrece tu barbería</p>
+            <!-- Hero Header -->
+            <div class="relative overflow-hidden bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white p-6 rounded-2xl mb-6 shadow-2xl">
+                <div class="absolute inset-0 bg-black/10"></div>
+                <div class="absolute bottom-0 right-0 w-52 h-52 bg-white/10 rounded-full blur-3xl -mr-26 -mb-26"></div>
+                
+                <div class="relative flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
+                            <i class="pi pi-star text-4xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold drop-shadow-lg">Gestión de Servicios</h2>
+                            <p class="text-blue-100 mt-1">Administra los servicios que ofrece tu barbería</p>
+                        </div>
+                    </div>
+                    <button pButton label="Nuevo Servicio" icon="pi pi-plus" (click)="abrirDialogo()" 
+                            class="bg-white text-indigo-600 hover:bg-indigo-50 border-0 shadow-lg transform hover:scale-105 transition-all"></button>
                 </div>
-                <button pButton label="Nuevo Servicio" icon="pi pi-plus"
-                        (click)="abrirDialogo()" class="p-button-primary"></button>
             </div>
 
             <p-table [value]="servicios()" [loading]="cargando()"

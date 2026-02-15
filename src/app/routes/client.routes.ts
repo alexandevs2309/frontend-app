@@ -26,11 +26,6 @@ export const clientRoutes: Routes = [
             },
 
             {
-                path: 'users',
-                canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/admin/users-management').then(m => m.UsersManagement)
-            },
-            {
                 path: 'employees',
                 canActivate: [TrialGuard],
                 loadComponent: () => import('../pages/client/employees/employees-management').then(m => m.EmployeesManagement)
@@ -38,7 +33,7 @@ export const clientRoutes: Routes = [
             {
                 path: 'appointments',
                 canActivate: [TrialGuard],
-                loadComponent: () => import('../pages/client/appointments-management/appointments-management').then(m => m.AppointmentsManagement)
+                loadComponent: () => import('../pages/client/appointments-management/appointments-main').then(m => m.AppointmentsMain)
             },
             {
                 path: 'pos',

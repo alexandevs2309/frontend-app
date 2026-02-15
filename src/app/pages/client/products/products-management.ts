@@ -43,16 +43,27 @@ import { environment } from '../../../../environments/environment';
     providers: [MessageService, ConfirmationService],
     template: `
         <div class="card">
-            <div class="flex justify-between items-center mb-4">
-                <div>
-                    <h5 class="m-0">Gestión de Productos</h5>
-                    <p class="text-gray-600 mt-1">Administra tu inventario de productos de barbería</p>
-                </div>
-                <div class="flex gap-2">
-                    <button pButton label="Ajustar Stock" icon="pi pi-refresh"
-                            (click)="abrirDialogoStock()" class="p-button-outlined"></button>
-                    <button pButton label="Nuevo Producto" icon="pi pi-plus"
-                            (click)="abrirDialogo()" class="p-button-primary"></button>
+            <!-- Hero Header -->
+            <div class="relative overflow-hidden bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
+                <div class="absolute inset-0 bg-black/10"></div>
+                <div class="absolute top-0 left-0 w-60 h-60 bg-white/10 rounded-full blur-3xl -ml-30 -mt-30"></div>
+                
+                <div class="relative flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
+                            <i class="pi pi-box text-4xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold drop-shadow-lg">Gestión de Productos</h2>
+                            <p class="text-emerald-100 mt-1">Administra tu inventario de productos de barbería</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button pButton label="Ajustar Stock" icon="pi pi-refresh" (click)="abrirDialogoStock()" 
+                                class="bg-white/20 hover:bg-white/30 border-0 text-white"></button>
+                        <button pButton label="Nuevo Producto" icon="pi pi-plus" (click)="abrirDialogo()" 
+                                class="bg-white text-emerald-600 hover:bg-emerald-50 border-0 shadow-lg transform hover:scale-105 transition-all"></button>
+                    </div>
                 </div>
             </div>
 
@@ -119,9 +130,6 @@ import { environment } from '../../../../environments/environment';
                             </div>
                         </td>
                         <td>
-                            <p-tag [value]="producto.sku || 'Sin Sku'"
-                                severity="info" *ngIf="producto.sku">
-                            </p-tag>
                             <code class="bg-gray-100 px-2 py-1 rounded text-sm">{{producto.sku}}</code>
                         </td>
                         <td>
@@ -492,10 +500,19 @@ export class ProductsManagement implements OnInit {
             if (!environment.production) {
                 console.error('Error guardando producto:', error);
             }
+            
+            // Extraer mensaje de error específico de la imagen
+            let errorDetail = 'Error al guardar el producto';
+            if (error?.error?.image && Array.isArray(error.error.image)) {
+                errorDetail = error.error.image[0];
+            } else if (error?.error?.detail) {
+                errorDetail = error.error.detail;
+            }
+            
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
-                detail: error?.error?.detail || 'Error al guardar el producto'
+                detail: errorDetail
             });
         } finally {
             this.guardando.set(false);
@@ -605,7 +622,33 @@ export class ProductsManagement implements OnInit {
     onImageSelect(event: any) {
         const file = event.files[0];
         if (file) {
+            // Validar tipo de archivo
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Formato Inválido',
+                    detail: 'Solo se permiten imágenes en formato JPG, PNG o GIF'
+                });
+                return;
+            }
+
+            // Validar tamaño (5MB)
+            if (file.size > 5000000) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Archivo muy grande',
+                    detail: 'La imagen no debe superar los 5MB'
+                });
+                return;
+            }
+
             this.imagenSeleccionada = file;
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Imagen Seleccionada',
+                detail: `${file.name} listo para subir`
+            });
         }
     }
 

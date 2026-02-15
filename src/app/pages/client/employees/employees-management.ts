@@ -63,13 +63,27 @@ interface PaymentDto {
   providers: [MessageService, ConfirmationService],
   template: `
     <div class="card">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Gestión de Empleados</h2>
-        <div class="flex gap-2">
-          <button pButton icon="pi pi-refresh" (click)="cargarDatos()"
-                  [loading]="cargando()" class="p-button-outlined"></button>
-          <button pButton label="Nuevo Empleado" icon="pi pi-plus"
-                  (click)="abrirDialogo()"></button>
+      <!-- Hero Header -->
+      <div class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
+        <div class="absolute inset-0 bg-black/10"></div>
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+        
+        <div class="relative flex justify-between items-center">
+          <div class="flex items-center gap-4">
+            <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
+              <i class="pi pi-briefcase text-4xl"></i>
+            </div>
+            <div>
+              <h2 class="text-3xl font-bold drop-shadow-lg">Gestión de Empleados</h2>
+              <p class="text-orange-100 mt-1">Administra tu equipo de trabajo</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button pButton icon="pi pi-refresh" (click)="cargarDatos()"
+                    [loading]="cargando()" class="bg-white/20 hover:bg-white/30 border-0 text-white"></button>
+            <button pButton label="Nuevo Empleado" icon="pi pi-plus" (click)="abrirDialogo()"
+                    class="bg-white text-orange-600 hover:bg-orange-50 border-0 shadow-lg transform hover:scale-105 transition-all"></button>
+          </div>
         </div>
       </div>
 
@@ -783,6 +797,23 @@ export class EmployeesManagement implements OnInit {
 
   ngOnInit() {
     this.cargarDatos();
+    this.cargarConfiguracionDefecto();
+  }
+
+  async cargarConfiguracionDefecto() {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${environment.apiUrl}/settings/barbershop/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const config = await response.json();
+        this.formularioNomina.patchValue({
+          commission_percentage: config.default_commission_rate || 40,
+          contractual_monthly_salary: config.default_fixed_salary || 0
+        });
+      }
+    } catch {}
   }
 
   async cargarDatos() {
@@ -904,8 +935,8 @@ export class EmployeesManagement implements OnInit {
           detail: 'Empleado actualizado correctamente'
         });
       } else {
-        // Crear solo usuario - los datos de empleado se manejan automáticamente
-        await this.authService.createUser({
+        // Crear usuario
+        const newUser = await this.authService.createUser({
           email: formData.email,
           full_name: formData.full_name,
           password: formData.password,
@@ -913,9 +944,23 @@ export class EmployeesManagement implements OnInit {
           tenant: this.authService.getTenantId()
         } as any).toPromise();
         
-        // NOTA: No se crea registro Employee explícitamente
-        // POST /api/employees/ está deshabilitado en el backend
-        // El backend crea automáticamente el Employee via signals
+        // Esperar un momento para que el signal cree el Employee
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Buscar el Employee recién creado y actualizarlo con los datos adicionales
+        const empleadosRes = await this.employeeService.getEmployees().toPromise();
+        const empleados = (empleadosRes as any)?.results || [];
+        const nuevoEmpleado = empleados.find((e: any) => e.user.id === (newUser as any).id);
+        
+        if (nuevoEmpleado && nuevoEmpleado.id > 0) {
+          const updateData = {
+            specialty: formData.specialty || undefined,
+            phone: formData.phone || undefined,
+            hire_date: formData.hire_date ? new Date(formData.hire_date).toISOString().split('T')[0] : undefined,
+            is_active: formData.is_active
+          };
+          await this.employeeService.patchEmployee(nuevoEmpleado.id, updateData).toPromise();
+        }
 
         this.messageService.add({
           severity: 'success',
