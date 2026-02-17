@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, tap, catchError } from 'rxjs';
+import { BehaviorSubject, Observable, tap, catchError, map, of } from 'rxjs';
 import { BaseApiService } from '../base-api.service';
 import { API_CONFIG } from '../../config/api.config';
 import { TrialService } from '../trial.service';
@@ -277,17 +277,36 @@ export class AuthService extends BaseApiService {
         const user = JSON.parse(userStr);
         // Normalizar rol al cargar desde storage
         user.role = this.normalizeRole(user.role);
-        this.currentUserSubject.next(user);
-        this.isAuthenticatedSubject.next(true);
         
-        // Cargar trial status si es necesario
-        if (user.role !== 'SUPER_ADMIN') {
-          this.trialService.loadTrialStatus();
-        }
+        // VALIDAR: Verificar que el rol en localStorage coincide con JWT
+        this.validateUserRole(user).subscribe({
+          next: (isValid) => {
+            if (isValid) {
+              this.currentUserSubject.next(user);
+              this.isAuthenticatedSubject.next(true);
+              
+              if (user.role !== 'SUPER_ADMIN') {
+                this.trialService.loadTrialStatus();
+              }
+            } else {
+              console.warn('Role mismatch detected - clearing auth');
+              this.clearAuthData();
+            }
+          },
+          error: () => this.clearAuthData()
+        });
       } catch (error) {
         this.clearAuthData();
       }
     }
+  }
+  
+  private validateUserRole(user: any): Observable<boolean> {
+    // Llamar endpoint que valida JWT y devuelve rol real
+    return this.get<{role: string}>('/auth/me/').pipe(
+      map(response => response.role === user.role),
+      catchError(() => of(false))
+    );
   }
 
   private normalizeRole(role: string): string {
