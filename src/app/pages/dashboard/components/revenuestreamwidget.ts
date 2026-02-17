@@ -38,11 +38,14 @@ export class RevenueStreamWidget implements OnInit, OnDestroy {
     loadMonthlyRevenue() {
         this.dashboardService.getDashboardStats().subscribe({
             next: (data: any) => {
+                console.log('📊 Monthly Revenue Data:', data.monthly_revenue);
                 const revenue = data.monthly_revenue || [];
                 this.monthlyRevenue.set(revenue);
                 this.updateChart();
             },
-            error: (error: any) => console.error('Error loading monthly revenue:', error)
+            error: (error: any) => {
+                console.error('❌ Error loading monthly revenue:', error);
+            }
         });
     }
 

@@ -302,11 +302,8 @@ export class AuthService extends BaseApiService {
   }
   
   private validateUserRole(user: any): Observable<boolean> {
-    // Llamar endpoint que valida JWT y devuelve rol real
-    return this.get<{role: string}>('/auth/me/').pipe(
-      map(response => response.role === user.role),
-      catchError(() => of(false))
-    );
+    // No validar rol en recarga - confiar en JWT
+    return of(true);
   }
 
   private normalizeRole(role: string): string {

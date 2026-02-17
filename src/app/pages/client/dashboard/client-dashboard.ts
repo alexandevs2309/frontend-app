@@ -127,8 +127,10 @@ export class ClientDashboard implements OnInit, OnDestroy {
 
     private readonly roleNames = {
         'SuperAdmin': 'Super Administrador',
-        'Client-Admin': 'Administrador de Barbería', 
-        'Client-Staff': 'Empleado de Barbería'
+        'CLIENT_ADMIN': 'Administrador',
+        'Client-Admin': 'Administrador', 
+        'CLIENT_STAFF': 'Empleado',
+        'Client-Staff': 'Empleado'
     } as const;
 
     getRoleDisplayName(role: string): string {

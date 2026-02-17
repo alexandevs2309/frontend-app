@@ -9,6 +9,7 @@ import { LayoutService } from '../service/layout.service';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { MessageService } from 'primeng/api';
 import { AppConfigService } from '../../core/services/app-config.service';
+import { BarbershopSettingsService } from '../../shared/services/barbershop-settings.service';
 @Component({
     selector: 'app-topbar',
     standalone: true,
@@ -19,7 +20,8 @@ import { AppConfigService } from '../../core/services/app-config.service';
                 <i class="pi pi-bars"></i>
             </button>
             <a class="layout-topbar-logo" [routerLink]="getDashboardRoute()" style="cursor: pointer;">
-                <svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <img *ngIf="barbershopSettings.getLogo()" [src]="barbershopSettings.getLogo()" alt="Logo" class="h-10 w-auto" />
+                <svg *ngIf="!barbershopSettings.getLogo()" viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                         fill-rule="evenodd"
                         clip-rule="evenodd"
@@ -92,6 +94,7 @@ export class AppTopbar {
     constructor(
         public layoutService: LayoutService,
         public appConfig: AppConfigService,
+        public barbershopSettings: BarbershopSettingsService,
         private authService: AuthService,
         private router: Router,
         private messageService: MessageService

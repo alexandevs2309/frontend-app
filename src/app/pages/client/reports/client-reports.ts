@@ -9,7 +9,7 @@ import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ProgressBarModule } from 'primeng/progressbar';
-import { ReportService } from '../../../core/services/report/report.service';
+import { DashboardService } from '../../../core/services/dashboard/dashboard.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -35,7 +35,7 @@ import { environment } from '../../../../environments/environment';
     <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
       <div>
         <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Reportes y Análisis</h3>
-        <p class="text-gray-600 dark:text-gray-300 mt-1">Dashboard con datos reales de tu barbería</p>
+        <p class="text-gray-600 dark:text-gray-300 mt-1">Visualiza el rendimiento de tu negocio</p>
       </div>
 
       <div class="flex flex-col sm:flex-row gap-3">
@@ -68,25 +68,13 @@ import { environment } from '../../../../environments/environment';
     </div>
   </div>
 
-  <!-- Mensaje de Saneamiento -->
-  <div class="rounded-2xl p-6 shadow-sm bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
-    <div class="flex items-center gap-3">
-      <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-xl"></i>
-      <div>
-        <h6 class="font-semibold text-blue-900 dark:text-blue-100">Reportes Saneados</h6>
-        <p class="text-blue-700 dark:text-blue-200 text-sm mt-1">
-          Este dashboard ahora muestra únicamente datos reales de tu base de datos. 
-          Se han eliminado todas las simulaciones y estimaciones para garantizar la veracidad de la información.
-        </p>
-      </div>
-    </div>
-  </div>
+
 </div>
 
     `
 })
 export class ClientReports implements OnInit {
-    private reportService = inject(ReportService);
+    private dashboardService = inject(DashboardService);
     private fb = inject(FormBuilder);
 
     activeTab = 'dashboard';
@@ -107,36 +95,36 @@ export class ClientReports implements OnInit {
     // KPI Cards solo con datos reales
     kpiCards = [
         {
-            label: 'Ingresos del Mes',
+            label: 'Ingresos Febrero',
             value: '$0.00',
             color: 'text-blue-600',
             trendIcon: '',
             trendColor: '',
-            trendText: 'Datos reales'
+            trendText: 'Mes actual'
         },
         {
-            label: 'Citas del Mes', 
+            label: 'Ingresos Totales', 
             value: '0',
             color: 'text-orange-600',
             trendIcon: '',
             trendColor: '',
-            trendText: 'Datos reales'
+            trendText: 'Últimos 6 meses'
         },
         {
-            label: 'Clientes Activos',
+            label: 'Promedio Mensual',
             value: '0',
             color: 'text-green-600',
             trendIcon: '',
             trendColor: '',
-            trendText: 'Datos reales'
+            trendText: 'Últimos 6 meses'
         },
         {
-            label: 'Empleados Activos',
+            label: 'Meses Activos',
             value: '0',
             color: 'text-purple-600',
             trendIcon: '',
             trendColor: '',
-            trendText: 'Datos reales'
+            trendText: 'Con ventas'
         }
     ];
 
@@ -179,45 +167,48 @@ export class ClientReports implements OnInit {
         };
     }
 
-    async cargarDatos() {
-        try {
-            // Cargar estadísticas del dashboard - SOLO DATOS REALES
-            const stats = await this.reportService.getDashboardStats('month').toPromise();
-            
-            // Actualizar KPIs con datos reales
-            this.kpis.set({
-                ingresos: stats.monthly_revenue || 0,
-                citas: stats.monthly_appointments || 0,
-                clientesNuevos: 0, // No disponible - no simular
-                ticketPromedio: stats.monthly_revenue && stats.monthly_appointments ?
-                    stats.monthly_revenue / stats.monthly_appointments : 0
-            });
+    cargarDatos() {
+        console.log('🔍 Iniciando carga de datos de reportes...');
+        this.dashboardService.getDashboardStats().subscribe({
+            next: (stats: any) => {
+                console.log('📊 Reports Stats RAW:', JSON.stringify(stats, null, 2));
+                
+                const monthlyRevenue = stats.monthly_revenue || [];
+                const currentMonthRevenue = monthlyRevenue.length > 0 ? 
+                    monthlyRevenue[monthlyRevenue.length - 1].revenue : 0;
+                
+                // Calcular totales desde monthly_revenue ya que el backend no los calcula bien
+                const totalRevenue = monthlyRevenue.reduce((sum: number, item: any) => sum + (item.revenue || 0), 0);
+                const activeMonths = monthlyRevenue.filter((item: any) => item.revenue > 0).length;
+                const averageRevenue = activeMonths > 0 ? totalRevenue / activeMonths : 0;
+                
+                console.log('📆 Ingresos mes actual:', currentMonthRevenue);
+                console.log('💰 Total 6 meses:', totalRevenue);
+                console.log('📊 Promedio mensual:', averageRevenue);
+                
+                this.kpiCards[0].value = this.formatearMoneda(currentMonthRevenue);
+                this.kpiCards[1].value = this.formatearMoneda(totalRevenue);
+                this.kpiCards[2].value = this.formatearMoneda(averageRevenue);
+                this.kpiCards[3].value = activeMonths.toString();
+                
+                console.log('✅ KPI Cards actualizados:', this.kpiCards);
 
-            // Actualizar KPI Cards con valores reales
-            this.kpiCards[0].value = this.formatearMoneda(stats.monthly_revenue || 0);
-            this.kpiCards[1].value = (stats.monthly_appointments || 0).toString();
-            this.kpiCards[2].value = (stats.total_clients || 0).toString();
-            this.kpiCards[3].value = (stats.active_employees || 0).toString();
-
-            // Cargar reporte de ventas para gráfico
-            const salesReport = await this.reportService.getSalesReport().toPromise();
-            if (salesReport.sales_by_day?.length > 0) {
-                this.actualizarGraficoIngresos(salesReport.sales_by_day);
+                if (stats.monthly_revenue?.length > 0) {
+                    this.actualizarGraficoIngresos(stats.monthly_revenue);
+                }
+            },
+            error: (error) => {
+                console.error('❌ Error cargando reportes:', error);
+                if (!environment.production) {
+                    console.error('Error completo:', error);
+                }
             }
-
-        } catch (error) {
-            if (!environment.production) {
-                console.error('Error cargando reportes:', error);
-            }
-        }
+        });
     }
 
-    actualizarGraficoIngresos(salesByDay: any[]) {
-        const labels = salesByDay.map(day => {
-            const date = new Date(day.date);
-            return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-        });
-        const data = salesByDay.map(day => day.sales);
+    actualizarGraficoIngresos(monthlyRevenue: any[]) {
+        const labels = monthlyRevenue.map(item => item.month || 'Mes');
+        const data = monthlyRevenue.map(item => item.revenue || 0);
 
         this.chartIngresos = {
             labels,

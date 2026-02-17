@@ -45,6 +45,15 @@ export class Login implements OnInit {
     ) {}
 
     ngOnInit(): void {
+        // ✅ Redirigir si ya está autenticado
+        this.authService.isAuthenticated$.subscribe(isAuth => {
+            if (isAuth) {
+                const currentUser = this.authService.getCurrentUser();
+                const userRole = currentUser?.role;
+                this.redirectUser(userRole || '');
+            }
+        });
+
         // Inicializa el formulario reactivo
         this.loginForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]],

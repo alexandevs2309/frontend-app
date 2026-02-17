@@ -19,8 +19,6 @@ interface BarbershopSettings {
   logo?: string;
   currency: string;
   currency_symbol: string;
-  default_commission_rate: number;
-  default_fixed_salary: number;
   business_hours: {
     [key: string]: { open: string; close: string; closed: boolean };
   };
@@ -36,11 +34,6 @@ interface BarbershopSettings {
     email: string;
     website: string;
   };
-  tax_rate: number;
-  service_discount_limit: number;
-  cancellation_policy_hours: number;
-  late_arrival_grace_minutes: number;
-  booking_advance_days: number;
 }
 
 @Component({
@@ -63,8 +56,6 @@ export class BarbershopSettingsComponent implements OnInit {
     name: '',
     currency: 'DOP',
     currency_symbol: 'RD$',
-    default_commission_rate: 40,
-    default_fixed_salary: 1200000,
     business_hours: {
       monday: { open: '08:00', close: '20:00', closed: false },
       tuesday: { open: '08:00', close: '20:00', closed: false },
@@ -85,12 +76,7 @@ export class BarbershopSettingsComponent implements OnInit {
       phone: '',
       email: '',
       website: ''
-    },
-    tax_rate: 0,
-    service_discount_limit: 20,
-    cancellation_policy_hours: 24,
-    late_arrival_grace_minutes: 15,
-    booking_advance_days: 30
+    }
   });
 
   loading = signal(false);

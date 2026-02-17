@@ -8,8 +8,6 @@ export interface BarbershopSettings {
   logo?: string;
   currency: string;
   currency_symbol: string;
-  default_commission_rate: number;
-  default_fixed_salary: number;
   business_hours: {
     [key: string]: {
       open: string;
@@ -22,11 +20,6 @@ export interface BarbershopSettings {
     email: string;
     address: string;
   };
-  tax_rate: number;
-  service_discount_limit: number;
-  cancellation_policy_hours: number;
-  late_arrival_grace_minutes: number;
-  booking_advance_days: number;
 }
 
 @Injectable({
@@ -39,8 +32,6 @@ export class BarbershopSettingsService {
     name: '',
     currency: 'COP',
     currency_symbol: '$',
-    default_commission_rate: 40,
-    default_fixed_salary: 1200000,
     business_hours: {
       monday: { open: '08:00', close: '18:00', closed: false },
       tuesday: { open: '08:00', close: '18:00', closed: false },
@@ -54,12 +45,7 @@ export class BarbershopSettingsService {
       phone: '',
       email: '',
       address: ''
-    },
-    tax_rate: 0,
-    service_discount_limit: 20,
-    cancellation_policy_hours: 24,
-    late_arrival_grace_minutes: 15,
-    booking_advance_days: 30
+    }
   });
 
   settings$ = this.settingsSubject.asObservable();
@@ -95,12 +81,8 @@ export class BarbershopSettingsService {
     return this.settings().currency_symbol;
   }
 
-  getDefaultCommissionRate(): number {
-    return this.settings().default_commission_rate;
-  }
-
-  getDefaultFixedSalary(): number {
-    return this.settings().default_fixed_salary;
+  getLogo(): string | null {
+    return this.settings().logo || null;
   }
 
   updateBusinessHours(day: string, field: 'open' | 'close' | 'closed', value: any) {
