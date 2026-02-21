@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { shareReplay, map } from 'rxjs/operators';
 import {BaseApiService} from '../base-api.service'
 import { API_CONFIG } from '../../config/api.config';
 
@@ -40,18 +41,30 @@ export class DashboardService extends BaseApiService {
   }
 
   getDashboardStats(): Observable<DashboardStats> {
-    return this.get<DashboardStats>(API_CONFIG.ENDPOINTS.POS.DASHBOARD_STATS);
+    return this.get<DashboardStats>(API_CONFIG.ENDPOINTS.POS.DASHBOARD_STATS).pipe(
+      map(data => structuredClone(data)), // ✅ CLONA para OnPush
+      shareReplay(1)
+    );
   }
 
   getRecentSales(limit: number = 10): Observable<any> {
-    return this.get<any>(`${API_CONFIG.ENDPOINTS.POS.SALES}?limit=${limit}&ordering=-date_time`);
+    return this.get<any>(`${API_CONFIG.ENDPOINTS.POS.SALES}?limit=${limit}&ordering=-date_time`).pipe(
+      map(data => structuredClone(data)), // ✅ CLONA para OnPush
+      shareReplay(1)
+    );
   }
 
   getTopServices(limit: number = 5): Observable<any> {
-    return this.get<any>(`${API_CONFIG.ENDPOINTS.SERVICES}`);
+    return this.get<any>(`${API_CONFIG.ENDPOINTS.SERVICES}`).pipe(
+      map(data => structuredClone(data)), // ✅ CLONA para OnPush
+      shareReplay(1)
+    );
   }
 
   getMonthlyRevenue(): Observable<any> {
-    return this.get<any>(`${API_CONFIG.ENDPOINTS.POS.SALES}`);
+    return this.get<any>(`${API_CONFIG.ENDPOINTS.POS.SALES}`).pipe(
+      map(data => structuredClone(data)), // ✅ CLONA para OnPush
+      shareReplay(1)
+    );
   }
 }

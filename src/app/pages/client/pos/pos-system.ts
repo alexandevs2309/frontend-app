@@ -1373,6 +1373,14 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         return item.valor;
     }
 
+    trackByItemId(index: number, item: any): any {
+        return item.id;
+    }
+
+    trackByCartItem(index: number, item: any): any {
+        return item.id;
+    }
+
     validarPagoMixto(): boolean {
         const totalPagos = this.calcularTotalPagosMixtos();
         const totalVenta = this.calcularTotal();

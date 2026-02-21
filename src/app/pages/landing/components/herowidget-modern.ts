@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
-import { RippleModule } from 'primeng/ripple';
 import { RouterModule } from '@angular/router';
 import { LandingService, SaasMetrics } from '../../../shared/services/landing.service';
 import { MicroAnimationService } from './micro-animation.service';
@@ -11,7 +10,7 @@ declare var Gradient: any;
 @Component({
     selector: 'hero-widget',
     standalone: true,
-    imports: [CommonModule, ButtonModule, RippleModule, RouterModule],
+    imports: [CommonModule, ButtonModule, RouterModule],
     template: `
         <section #heroSection class="min-h-screen flex items-center py-24 lg:py-32 relative overflow-hidden transform -skew-y-3" 
                  style="--gradient-color-1: #4f46e5; --gradient-color-2: #7c3aed; --gradient-color-3: #ec4899; --gradient-color-4: #f59e0b;">
@@ -28,19 +27,19 @@ declare var Gradient: any;
                     <div class="text-center lg:text-left">
                         <div class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white/90 text-sm font-semibold mb-6 fade-in-up">
                             <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                            +1,847 barberías ya dominan el juego
+                            +1,847 barberías activas en Latinoamérica
                         </div>
                         
                         <h1 class="text-5xl lg:text-7xl font-black leading-tight text-white mb-6 fade-in-up">
                             <span class="block">DOMINA tu</span>
-                            <span class="bg-linear-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent block">BARBERÍA</span>
-                            <span class="block mt-2">como un verdadero BOSS</span>
+                            <span class="bg-linear-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent block"> BARBERÍA</span>
+                            <span class="block mt-2"> como un verdadero BOSS </span>
                         </h1>
                         
                         <p class="text-xl lg:text-2xl text-white/95 leading-relaxed mb-8 fade-in-up font-medium">
-                            <span class="text-yellow-300 font-bold">⚡ Bro, olvida el Excel.</span> Auron Suite automatiza TODO: 
-                            citas, cash, comisiones, inventario. 
-                            <span class="text-green-300 font-bold">Los barberos serios aumentan sus ingresos 40% garantizado.</span>
+                            <span class="text-yellow-300 font-bold"> Controla tu barbería. </span> Automatiza citas, cash, comisiones, inventario, dinero y empleados en un solo sistema, . 
+                            <span class="text-green-300 font-bold">Desde un local hasta múltiples sucursales. </span>
+                            <span class="text-green-500 font-bold">Aumenta tus ingresos hasta 40% sin depender de Excel.</span>
                         </p>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 fade-in-up">
@@ -71,12 +70,12 @@ declare var Gradient: any;
                         </div>
                         
                         <div class="flex flex-col sm:flex-row gap-4 mb-8 fade-in-up">
-                            <button pButton pRipple
+                            <button pButton
                                     routerLink="/auth/register"
-                                    label="🔥 SÍ, QUIERO DOMINAR - 14 DÍAS GRATIS"
+                                    label="Empieza gratis 14 días, Ver cómo funciona (2 minutos) "
                                     class="bg-white! text-indigo-600! px-8! py-5! text-lg! font-black! rounded-full! hover:bg-gray-100! shadow-2xl! hover:shadow-3xl! transform! hover:-translate-y-1! transition-all! uppercase! tracking-wide!">
                             </button>
-                            <button pButton pRipple
+                            <button pButton
                                     (click)="openVideoModal()"
                                     label="🎥 Ver el sistema en acción (2 min)"
                                     [outlined]="true"
@@ -169,13 +168,23 @@ export class HeroWidget implements OnInit, OnDestroy, AfterViewInit {
 
     ngOnInit() {
         this.loadMetrics();
-        setTimeout(() => this.microAnimation.initTitleAnimations(), 100);
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => this.microAnimation.initTitleAnimations());
+        } else {
+            setTimeout(() => this.microAnimation.initTitleAnimations(), 100);
+        }
     }
 
     ngAfterViewInit() {
         this.setupIntersectionObserver();
-        this.initGradient();
+        
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => this.initGradient(), { timeout: 3000 });
+        } else {
+            setTimeout(() => this.initGradient(), 2000);
+        }
     }
+
 
     ngOnDestroy() {
         this.microAnimation.destroy();
@@ -189,9 +198,12 @@ export class HeroWidget implements OnInit, OnDestroy, AfterViewInit {
                     this.isInViewport = entry.isIntersecting;
                     if (this.gradient) {
                         if (this.isInViewport) {
-                            this.gradient.play();
+                            this.startAnimation();
                         } else {
-                            this.gradient.pause();
+                            if (this.animationId) {
+                                cancelAnimationFrame(this.animationId);
+                                this.animationId = 0;
+                            }
                         }
                     }
                 });
@@ -203,6 +215,11 @@ export class HeroWidget implements OnInit, OnDestroy, AfterViewInit {
     }
 
     private initGradient() {
+        if (window.innerWidth < 1024) {
+            this.showFallback();
+            return;
+        }
+        
         if (this.isWebGLSupported() && !this.prefersReducedMotion()) {
             this.loadStripeGradient();
         } else {
@@ -227,7 +244,7 @@ export class HeroWidget implements OnInit, OnDestroy, AfterViewInit {
             this.gradient = new Gradient();
             this.gradient.initGradient('#gradient-canvas');
             
-            if (!this.prefersReducedMotion()) {
+            if (!this.prefersReducedMotion() && this.isInViewport) {
                 this.startAnimation();
             }
             
@@ -238,17 +255,21 @@ export class HeroWidget implements OnInit, OnDestroy, AfterViewInit {
     }
 
     private startAnimation() {
+        if (!this.gradient || this.animationId) return;
+
         const animate = (currentTime: number) => {
-            if (currentTime - this.lastFrameTime >= this.frameInterval) {
-                if (this.isInViewport && this.gradient) {
-                    this.gradient.animate(currentTime);
-                }
-                this.lastFrameTime = currentTime;
+            if (!this.isInViewport || !this.gradient) {
+                this.animationId = 0;
+                return;
             }
+            
+            this.gradient.animate(currentTime);
             this.animationId = requestAnimationFrame(animate);
         };
+
         this.animationId = requestAnimationFrame(animate);
     }
+
 
     private showFallback() {
         this.canvas.nativeElement.style.display = 'none';

@@ -14,7 +14,7 @@ import { FooterWidget } from './components/footerwidget';
 import { VideoModal } from './components/video-modal';
 import { ScrollTopModule } from 'primeng/scrolltop';
 import { TooltipModule } from 'primeng/tooltip';
-import { HttpClientModule } from '@angular/common/http';
+
 
 @Component({
     selector: 'app-landing',
@@ -34,8 +34,7 @@ import { HttpClientModule } from '@angular/common/http';
         RippleModule, 
         StyleClassModule, 
         ButtonModule, 
-        DividerModule, 
-        HttpClientModule
+        DividerModule
     ],
     template: `
         <div class="bg-white dark:bg-slate-900">
@@ -46,7 +45,17 @@ import { HttpClientModule } from '@angular/common/http';
                 <hero-widget />
                 
                 <!-- Features con fondo blanco -->
-                <div class="bg-fixed bg-cover bg-center bg-[url('/assets/images/landing/7.png')] py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="features">
+                <div class="py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="features">
+                    <img 
+                        src="/assets/images/landing/7.webp" 
+                        alt="Features background"
+                        fetchpriority="high"
+                        decoding="async"
+                        width="1920"
+                        height="1080"
+                        class="absolute inset-0 w-full h-full object-cover"
+                        style="transform: skewY(2deg);"
+                    />
                     <div class="absolute inset-0 bg-white/75 dark:bg-slate-900/75"></div>
                     <div class="relative z-10 transform skew-y-2">
                         <div class="container mx-auto px-6 lg:px-8">
@@ -61,7 +70,17 @@ import { HttpClientModule } from '@angular/common/http';
                 </div>
                 
                 <!-- AI Section con fondo oscuro -->
-                <div class="bg-fixed bg-cover bg-center bg-[url('/assets/images/landing/9.png')] py-20 lg:py-32 relative overflow-hidden transform -skew-y-3" data-section="highlights">
+                <div class="py-20 lg:py-32 relative overflow-hidden transform -skew-y-3" data-section="highlights">
+                    <img 
+                        src="/assets/images/landing/9.webp" 
+                        alt="AI highlights background"
+                        loading="lazy"
+                        decoding="async"
+                        width="1920"
+                        height="1080"
+                        class="absolute inset-0 w-full h-full object-cover"
+                        style="transform: skewY(3deg);"
+                    />
                     <div class="absolute inset-0 bg-slate-900/70"></div>
                     <div class="relative z-10 transform skew-y-3">
                         <highlights-widget />
@@ -69,7 +88,17 @@ import { HttpClientModule } from '@angular/common/http';
                 </div>
                 
                 <!-- Testimonials con fondo claro -->
-                <div class="bg-fixed bg-cover bg-center bg-[url('/assets/images/landing/5.png')] py-20 lg:py-32 relative overflow-hidden transform -skew-y-1" data-section="testimonials">
+                <div class="py-20 lg:py-32 relative overflow-hidden transform -skew-y-1" data-section="testimonials">
+                    <img 
+                        src="/assets/images/landing/5.webp" 
+                        alt="Testimonials background"
+                        loading="lazy"
+                        decoding="async"
+                        width="1920"
+                        height="1080"
+                        class="absolute inset-0 w-full h-full object-cover"
+                        style="transform: skewY(1deg);"
+                    />
                     <div class="absolute inset-0 bg-slate-50/75 dark:bg-slate-800/75"></div>
                     <div class="relative z-10 transform skew-y-1">
                         <testimonials-widget />
@@ -90,7 +119,7 @@ import { HttpClientModule } from '@angular/common/http';
         </div>
         <video-modal [(visible)]="showVideoModal"></video-modal>
         <p-scrollTop [threshold]="300" styleClass="!right-6 !bg-linear-to-r !from-indigo-600 !to-purple-600 !border-0 !w-12 !h-12 shadow-lg hover:!scale-110 !transition-all !duration-300" pTooltip="Volver arriba" tooltipPosition="left">
-            <i class="pi pi-chevron-up !text-xl text-white"></i>
+            <i class="pi pi-chevron-up text-xl! text-white"></i>
         </p-scrollTop>
     `
 })

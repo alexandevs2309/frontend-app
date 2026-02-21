@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardService } from '../../../core/services/dashboard/dashboard.service';
 import { AppCurrencyPipe } from '../../../core/pipes/app-currency.pipe';
@@ -7,6 +7,7 @@ import { AppCurrencyPipe } from '../../../core/pipes/app-currency.pipe';
     standalone: true,
     selector: 'app-stats-widget',
     imports: [CommonModule, AppCurrencyPipe],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
             <div class="card mb-0">
@@ -43,7 +44,7 @@ import { AppCurrencyPipe } from '../../../core/pipes/app-currency.pipe';
                 <div class="flex justify-between mb-4">
                     <div>
                         <span class="block text-muted-color font-medium mb-4">Ingresos Febrero</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{getMonthRevenue() | appCurrency}}</div>
+                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{monthRevenue() | appCurrency}}</div>
                     </div>
                     <div class="flex items-center justify-center bg-cyan-100 dark:bg-cyan-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
                         <i class="pi pi-calendar text-cyan-500 text-xl!"></i>
@@ -72,6 +73,7 @@ import { AppCurrencyPipe } from '../../../core/pipes/app-currency.pipe';
 })
 export class StatsWidget implements OnInit {
     stats = signal<any>(null);
+    monthRevenue = signal<number>(0);
 
     constructor(private dashboardService: DashboardService) {}
 
@@ -82,8 +84,10 @@ export class StatsWidget implements OnInit {
     loadStats() {
         this.dashboardService.getDashboardStats().subscribe({
             next: (data) => {
+                // ✅ data ya está clonado por el servicio
                 console.log('📊 Dashboard Stats:', data);
                 this.stats.set(data);
+                this.updateMonthRevenue(data);
             },
             error: (error) => {
                 console.error('❌ Error loading stats:', error);
@@ -92,11 +96,12 @@ export class StatsWidget implements OnInit {
         });
     }
 
-    getMonthRevenue(): number {
-        const monthlyRevenue = this.stats()?.monthly_revenue || [];
+    private updateMonthRevenue(data: any) {
+        const monthlyRevenue = data?.monthly_revenue || [];
         if (monthlyRevenue.length > 0) {
-            return monthlyRevenue[monthlyRevenue.length - 1].revenue || 0;
+            this.monthRevenue.set(monthlyRevenue[monthlyRevenue.length - 1].revenue || 0);
+        } else {
+            this.monthRevenue.set(0);
         }
-        return 0;
     }
 }

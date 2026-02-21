@@ -91,7 +91,7 @@
 
         <!-- Vista Normal (Tarjetas) -->
         <div *ngIf="!vistaCompacta" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div *ngFor="let item of itemsFiltrados"
+          <div *ngFor="let item of itemsFiltrados; trackBy: trackByItemId"
                class="group relative p-5 rounded-2xl shadow-lg transition-all duration-300 border-2 transform cursor-pointer overflow-hidden bg-surface-0 dark:bg-surface-800 hover:shadow-2xl hover:scale-105 animate-item"
                [class.hover:border-emerald-500]="puedeAgregarMas(item)"
                [class.opacity-50]="!puedeAgregarMas(item)"
@@ -145,7 +145,7 @@
         <!-- Vista Compacta (Lista) -->
         <div *ngIf="vistaCompacta" class="rounded-lg shadow overflow-hidden bg-surface-0 dark:bg-surface-800">
           <div class="divide-y divide-surface-200 dark:divide-surface-700">
-            <div *ngFor="let item of itemsFiltrados"
+            <div *ngFor="let item of itemsFiltrados; trackBy: trackByItemId"
                  class="flex items-center p-3 transition-colors"
                  [class.cursor-pointer]="puedeAgregarMas(item)"
                  [class.opacity-50]="!puedeAgregarMas(item)"
@@ -223,7 +223,7 @@
       <div *ngIf="carrito().length>0" class="mt-4 p-4 rounded-lg shadow-inner bg-surface-50 dark:bg-surface-900">
         <h5 class="font-bold mb-3 text-lg text-surface-900 dark:text-surface-0">Carrito</h5>
         <div class="flex flex-col gap-2">
-          <div *ngFor="let item of carrito(); let i=index" class="flex justify-between items-center p-2 rounded-lg shadow bg-surface-0 dark:bg-surface-800">
+          <div *ngFor="let item of carrito(); let i=index; trackBy: trackByCartItem" class="flex justify-between items-center p-2 rounded-lg shadow bg-surface-0 dark:bg-surface-800">
             <div class="flex-1">
               <h6 class="font-medium">{{ item.item.name }}</h6>
               <p class="text-sm m-0" style="color: var(--text-color-secondary);">{{ item.type==='service'?'Servicio':'Producto' }}</p>

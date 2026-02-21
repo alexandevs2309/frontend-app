@@ -1,4 +1,4 @@
-import { Component, signal, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, signal, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth/auth.service';
 import { TrialService } from '../../../core/services/trial.service';
@@ -19,6 +19,7 @@ import { Subscription } from 'rxjs';
     standalone: true,
     imports: [CommonModule, ToastModule, TrialBannerComponent, SubscriptionStatusComponent, StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget],
     providers: [MessageService],
+    // changeDetection: ChangeDetectionStrategy.OnPush, // REMOVIDO - No es seguro
     template: `
         <p-toast position="top-right" />
         <app-trial-banner></app-trial-banner>
