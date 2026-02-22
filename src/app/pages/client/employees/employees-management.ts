@@ -64,25 +64,22 @@ interface PaymentDto {
   template: `
     <div class="card">
       <!-- Hero Header -->
-      <div class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
-        <div class="absolute inset-0 bg-black/10"></div>
-        <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-        
-        <div class="relative flex justify-between items-center">
+      <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-6 rounded-xl mb-6">
+        <div class="flex justify-between items-center">
           <div class="flex items-center gap-4">
-            <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
-              <i class="pi pi-briefcase text-4xl"></i>
+            <div class="p-3 bg-indigo-600 rounded-xl">
+              <i class="pi pi-briefcase text-white text-3xl"></i>
             </div>
             <div>
-              <h2 class="text-3xl font-bold drop-shadow-lg">Gestión de Empleados</h2>
-              <p class="text-orange-100 mt-1">Administra tu equipo de trabajo</p>
+              <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Gestión de Empleados</h2>
+              <p class="text-slate-600 dark:text-slate-400 mt-1">Administra tu equipo de trabajo</p>
             </div>
           </div>
           <div class="flex gap-2">
             <button pButton icon="pi pi-refresh" (click)="cargarDatos()"
-                    [loading]="cargando()" class="bg-white/20 hover:bg-white/30 border-0 text-white"></button>
+                    [loading]="cargando()" class="!bg-slate-100 dark:!bg-slate-800 !text-slate-700 dark:!text-slate-300 !border-0"></button>
             <button pButton label="Nuevo Empleado" icon="pi pi-plus" (click)="abrirDialogo()"
-                    class="bg-white text-orange-600 hover:bg-orange-50 border-0 shadow-lg transform hover:scale-105 transition-all"></button>
+                    class="!bg-indigo-600 !text-white hover:!bg-indigo-700 !border-0 !shadow-lg"></button>
           </div>
         </div>
       </div>
@@ -281,32 +278,32 @@ interface PaymentDto {
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" *ngIf="!cargandoResumenPrestamos()">
             <p-card>
               <div class="text-center">
-                <div class="text-2xl font-bold text-blue-600">{{resumenPrestamos()?.active_loans || 0}}</div>
-                <div class="text-sm text-gray-600">Préstamos Activos</div>
+                <div class="text-2xl font-bold text-slate-700 dark:text-slate-300">{{resumenPrestamos()?.active_loans || 0}}</div>
+                <div class="text-sm text-slate-600 dark:text-slate-400">Préstamos Activos</div>
               </div>
             </p-card>
             <p-card>
               <div class="text-center">
-                <div class="text-2xl font-bold text-green-600">
+                <div class="text-2xl font-bold text-indigo-600">
                   {{(resumenPrestamos()?.total_amount || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
                 </div>
-                <div class="text-sm text-gray-600">Total Prestado</div>
+                <div class="text-sm text-slate-600 dark:text-slate-400">Total Prestado</div>
               </div>
             </p-card>
             <p-card>
               <div class="text-center">
-                <div class="text-2xl font-bold text-orange-600">
+                <div class="text-2xl font-bold text-indigo-600">
                   {{(resumenPrestamos()?.remaining_balance || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
                 </div>
-                <div class="text-sm text-gray-600">Saldo Pendiente</div>
+                <div class="text-sm text-slate-600 dark:text-slate-400">Saldo Pendiente</div>
               </div>
             </p-card>
             <p-card>
               <div class="text-center">
-                <div class="text-2xl font-bold text-red-600">
+                <div class="text-2xl font-bold text-indigo-600">
                   {{(resumenPrestamos()?.next_deduction || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
                 </div>
-                <div class="text-sm text-gray-600">Próxima Deducción</div>
+                <div class="text-sm text-slate-600 dark:text-slate-400">Próxima Deducción</div>
               </div>
             </p-card>
           </div>
@@ -456,24 +453,24 @@ interface PaymentDto {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" *ngIf="!cargandoStats()">
             <p-card>
               <div class="text-center">
-                <div class="text-2xl font-bold text-blue-600">{{paymentStats()?.all_time?.total_payments || 0}}</div>
-                <div class="text-sm text-gray-600">Total Pagos</div>
+                <div class="text-2xl font-bold text-slate-700 dark:text-slate-300">{{paymentStats()?.all_time?.total_payments || 0}}</div>
+                <div class="text-sm text-slate-600 dark:text-slate-400">Total Pagos</div>
               </div>
             </p-card>
             <p-card>
               <div class="text-center">
-                <div class="text-2xl font-bold text-green-600">
+                <div class="text-2xl font-bold text-indigo-600">
                   {{(paymentStats()?.all_time?.total_net || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
                 </div>
-                <div class="text-sm text-gray-600">Total Pagado</div>
+                <div class="text-sm text-slate-600 dark:text-slate-400">Total Pagado</div>
               </div>
             </p-card>
             <p-card>
               <div class="text-center">
-                <div class="text-2xl font-bold text-purple-600">
+                <div class="text-2xl font-bold text-indigo-600">
                   {{(paymentStats()?.all_time?.average_payment || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
                 </div>
-                <div class="text-sm text-gray-600">Promedio por Pago</div>
+                <div class="text-sm text-slate-600 dark:text-slate-400">Promedio por Pago</div>
               </div>
             </p-card>
           </div>

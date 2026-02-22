@@ -12,7 +12,7 @@ import { PeriodsListComponent } from './components/periods-list/periods-list.com
       <div class="surface-card border-b surface-border px-6 py-4">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-color">💰 Nómina</h1>
+            <h1 class="text-2xl font-bold text-color">Nómina</h1>
             <p class="text-color-secondary">Gestión de períodos y pagos de empleados</p>
           </div>
         </div>

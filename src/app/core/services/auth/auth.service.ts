@@ -66,11 +66,10 @@ export class AuthService extends BaseApiService {
   }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.post<LoginResponse>(API_CONFIG.ENDPOINTS.AUTH.LOGIN, credentials)
+    return this.post<LoginResponse>('/auth/cookie-login/', credentials, { withCredentials: true })
       .pipe(
         tap(response => {
           this.setAuthData(response);
-          // Load entitlements for client users after successful login
           if (response.user?.role !== 'SUPER_ADMIN') {
             this.trialService.loadTrialStatus();
           }
@@ -83,26 +82,16 @@ export class AuthService extends BaseApiService {
   }
 
   logout(): Observable<any> {
-    const refreshToken = this.getRefreshToken();
-    const accessToken = this.getToken();
-
-    // Try server logout first with valid tokens
-    if (refreshToken && accessToken) {
-      this.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT, { refresh_token: refreshToken })
-        .subscribe({
-          next: () => console.log('Server logout successful'),
-          error: () => console.log('Server logout failed')
-        });
-    }
-
-    // Clear local data after attempting server logout
-    this.clearAuthData();
-
-    // Always return success to UI
-    return new Observable(observer => {
-      observer.next({ success: true });
-      observer.complete();
-    });
+    // ✅ Backend invalida cookies httpOnly
+    return this.post('/auth/cookie-logout/', {}, { withCredentials: true })
+      .pipe(
+        tap(() => this.clearAuthData()),
+        catchError(() => {
+          // Limpiar local incluso si falla backend
+          this.clearAuthData();
+          return of({ success: true });
+        })
+      );
   }
 
   logoutSecure(): Observable<any> {
@@ -216,49 +205,44 @@ export class AuthService extends BaseApiService {
   }
 
   getToken(): string | null {
-    // Solo localStorage para compatibilidad (las cookies httpOnly se manejan automáticamente)
-    return localStorage.getItem('access_token');
+    // ❌ DEPRECADO - Tokens en httpOnly cookies, no accesibles desde JS
+    return null;
   }
 
   getRefreshToken(): string | null {
-    return localStorage.getItem('refresh_token');
+    // ❌ DEPRECADO - Tokens en httpOnly cookies, no accesibles desde JS
+    return null;
   }
 
   private setAuthData(response: LoginResponse): void {
-    localStorage.setItem('access_token', response.access);
-    localStorage.setItem('refresh_token', response.refresh);
+    // ✅ NO almacenar tokens - están en httpOnly cookies
+    // Solo almacenar datos de usuario (no sensibles)
     
-    // Normalizar rol antes de almacenar
     const normalizedRole = this.normalizeRole(response.user?.role);
     
-    // Agregar tenant_id si viene en la respuesta
     const userWithTenant = {
       ...response.user,
       role: normalizedRole,
       tenant_id: response.tenant ? response.tenant.id : null
     };
     
+    // Solo datos de usuario para UI (no tokens)
     localStorage.setItem('user', JSON.stringify(userWithTenant));
 
     if (response.tenant) {
       localStorage.setItem('tenant', JSON.stringify(response.tenant));
     }
 
-    // Force state update
     this.currentUserSubject.next(userWithTenant);
     this.isAuthenticatedSubject.next(true);
     
-    // Load trial status for non-admin users
     if (normalizedRole !== 'SUPER_ADMIN') {
       this.trialService.loadTrialStatus();
     }
-    
-    console.log('Auth data set, user:', userWithTenant);
   }
 
   public clearAuthData(): void {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    // ✅ Solo limpiar datos locales (tokens ya invalidados en backend)
     localStorage.removeItem('tenant');
     localStorage.removeItem('user');
 
@@ -269,17 +253,15 @@ export class AuthService extends BaseApiService {
 
 
   private loadStoredAuth(): void {
-    const token = this.getToken();
     const userStr = localStorage.getItem('user');
 
-    if (token && userStr) {
+    if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        // Normalizar rol al cargar desde storage
         user.role = this.normalizeRole(user.role);
         
-        // VALIDAR: Verificar que el rol en localStorage coincide con JWT
-        this.validateUserRole(user).subscribe({
+        // ✅ Validar sesión con backend (cookies httpOnly)
+        this.validateSession().subscribe({
           next: (isValid) => {
             if (isValid) {
               this.currentUserSubject.next(user);
@@ -289,7 +271,6 @@ export class AuthService extends BaseApiService {
                 this.trialService.loadTrialStatus();
               }
             } else {
-              console.warn('Role mismatch detected - clearing auth');
               this.clearAuthData();
             }
           },
@@ -301,9 +282,13 @@ export class AuthService extends BaseApiService {
     }
   }
   
-  private validateUserRole(user: any): Observable<boolean> {
-    // No validar rol en recarga - confiar en JWT
-    return of(true);
+  // ✅ Método público para guards y validación de sesión
+  public validateSession(): Observable<boolean> {
+    return this.get<any>('/auth/verify/', {}, { withCredentials: true })
+      .pipe(
+        map(() => true),
+        catchError(() => of(false))
+      );
   }
 
   private normalizeRole(role: string): string {

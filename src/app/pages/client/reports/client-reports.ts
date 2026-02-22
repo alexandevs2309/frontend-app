@@ -97,7 +97,7 @@ export class ClientReports implements OnInit {
         {
             label: 'Ingresos Febrero',
             value: '$0.00',
-            color: 'text-blue-600',
+            color: 'text-indigo-600',
             trendIcon: '',
             trendColor: '',
             trendText: 'Mes actual'
@@ -105,7 +105,7 @@ export class ClientReports implements OnInit {
         {
             label: 'Ingresos Totales', 
             value: '0',
-            color: 'text-orange-600',
+            color: 'text-indigo-600',
             trendIcon: '',
             trendColor: '',
             trendText: 'Últimos 6 meses'
@@ -113,7 +113,7 @@ export class ClientReports implements OnInit {
         {
             label: 'Promedio Mensual',
             value: '0',
-            color: 'text-green-600',
+            color: 'text-indigo-600',
             trendIcon: '',
             trendColor: '',
             trendText: 'Últimos 6 meses'
@@ -121,7 +121,7 @@ export class ClientReports implements OnInit {
         {
             label: 'Meses Activos',
             value: '0',
-            color: 'text-purple-600',
+            color: 'text-slate-700 dark:text-slate-300',
             trendIcon: '',
             trendColor: '',
             trendText: 'Con ventas'

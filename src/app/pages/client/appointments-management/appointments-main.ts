@@ -13,22 +13,19 @@ import { NotificationBadgeService } from '../../../core/services/notification/no
     template: `
         <div class="p-4 md:p-6">
             <!-- Hero Header -->
-            <div class="relative overflow-hidden bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
-                <div class="absolute inset-0 bg-black/10"></div>
-                <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-24 -mt-24"></div>
-                
-                <div class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-6 rounded-xl mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div class="flex items-center gap-4">
-                        <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
-                            <i class="pi pi-calendar text-4xl"></i>
+                        <div class="p-3 bg-indigo-600 rounded-xl">
+                            <i class="pi pi-calendar text-white text-3xl"></i>
                         </div>
                         <div>
-                            <h2 class="text-3xl font-bold drop-shadow-lg">Gestión de Citas</h2>
-                            <p class="text-purple-100 mt-1">Administra las citas de tu barbería</p>
+                            <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Gestión de Citas</h2>
+                            <p class="text-slate-600 dark:text-slate-400 mt-1">Administra las citas de tu barbería</p>
                         </div>
                     </div>
                     <button pButton label="Nueva Cita" icon="pi pi-plus" (click)="crearCita()" 
-                            class="bg-white text-purple-600 hover:bg-purple-50 border-0 shadow-lg transform hover:scale-105 transition-all"></button>
+                            class="!bg-indigo-600 !text-white hover:!bg-indigo-700 !border-0 !shadow-lg"></button>
                 </div>
             </div>
 

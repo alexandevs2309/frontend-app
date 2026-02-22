@@ -16,34 +16,33 @@ import { MicroAnimationService } from './micro-animation.service';
                         <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-6">
                             <i class="pi pi-fw pi-dollar text-3xl! text-green-600"></i>
                         </div>
-                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Ganancias por Quincena</h3>
+                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Cálculo Automático de Comisiones</h3>
                         <p class="text-slate-600 dark:text-slate-300 mb-4">
-                            Sistema automático que registra y notifica las ganancias de cada empleado por quincena en tiempo real.
+                            El sistema calcula y notifica las ganancias de cada empleado automáticamente cada quincena. Sin Excel, sin errores, sin discusiones.
                         </p>
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center text-green-600 dark:text-green-400 font-medium text-sm">
                                 <i class="pi pi-check-circle mr-2"></i>
-                                <span>Notificaciones automáticas</span>
+                                <span>Ahorra 2-3 horas por quincena</span>
                             </div>
-                            <span class="text-xs text-slate-400">Usado por 89% de clientes</span>
                         </div>
                     </div>
 
-                    <!-- Feature 2: Multitenancy -->
+                    <!-- Feature 2: Seguridad de Datos -->
                     <div class="bg-white dark:bg-slate-900 rounded-lg p-8 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors">
                         <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-6">
-                            <i class="pi pi-fw pi-building text-3xl! text-blue-600"></i>
+                            <i class="pi pi-fw pi-shield text-3xl! text-blue-600"></i>
                         </div>
-                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Multitenancy Avanzado</h3>
+                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Datos Protegidos y Privados</h3>
                         <p class="text-slate-600 dark:text-slate-300 mb-4">
-                            Cada peluquería tiene su propio espacio aislado con datos completamente separados y seguros.
+                            Tu información está completamente separada de otras barberías. Nadie más puede acceder a tus clientes, ventas o reportes.
                         </p>
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center text-blue-600 dark:text-blue-400 font-medium text-sm">
-                                <i class="pi pi-shield mr-2"></i>
-                                <span>Datos 100% aislados</span>
+                                <i class="pi pi-lock mr-2"></i>
+                                <span>Encriptación bancaria</span>
                             </div>
-                            <span class="text-xs text-slate-400">ISO 27001</span>
+                            <span class="text-xs text-slate-400">Respaldos diarios</span>
                         </div>
                     </div>
 
@@ -52,16 +51,16 @@ import { MicroAnimationService } from './micro-animation.service';
                         <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-6">
                             <i class="pi pi-fw pi-calendar text-3xl! text-purple-600"></i>
                         </div>
-                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Gestión Inteligente de Citas</h3>
+                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Recordatorios Automáticos</h3>
                         <p class="text-slate-600 dark:text-slate-300 mb-4">
-                            Sistema avanzado de reservas con validación en tiempo real y notificaciones automáticas.
+                            Tus clientes reciben recordatorios por WhatsApp/SMS 24h antes de su cita. Reduce cancelaciones y citas perdidas notablemente.
                         </p>
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center text-purple-600 dark:text-purple-400 font-medium text-sm">
-                                <i class="pi pi-clock mr-2"></i>
-                                <span>Tiempo real</span>
+                                <i class="pi pi-bell mr-2"></i>
+                                <span>Menos citas perdidas</span>
                             </div>
-                            <span class="text-xs text-slate-400">< 200ms</span>
+                            <span class="text-xs text-slate-400">WhatsApp/SMS</span>
                         </div>
                     </div>
 
@@ -70,43 +69,43 @@ import { MicroAnimationService } from './micro-animation.service';
                         <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center mb-6">
                             <i class="pi pi-fw pi-shopping-cart text-3xl! text-orange-600"></i>
                         </div>
-                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">POS Integrado</h3>
+                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Punto de Venta Integrado</h3>
                         <p class="text-slate-600 dark:text-slate-300 mb-4">
-                            Punto de venta completo con facturación, inventario y reportes de ventas integrados.
+                            Registra ventas, servicios y productos en segundos. Reportes automáticos al final del día. Adiós a Excel y cuadernos.
                         </p>
                         <div class="flex items-center text-orange-600 dark:text-orange-400 font-medium text-sm">
                             <i class="pi pi-credit-card mr-2"></i>
-                            <span>Pagos múltiples</span>
+                            <span>Múltiples métodos de pago</span>
                         </div>
                     </div>
 
-                    <!-- Feature 5: Analytics en Tiempo Real -->
+                    <!-- Feature 5: Reportes en Tiempo Real -->
                     <div class="bg-white dark:bg-slate-900 rounded-lg p-8 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors">
                         <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center mb-6">
                             <i class="pi pi-fw pi-chart-line text-3xl! text-indigo-600"></i>
                         </div>
-                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Analytics Avanzados</h3>
+                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Reportes Visuales</h3>
                         <p class="text-slate-600 dark:text-slate-300 mb-4">
-                            Dashboards interactivos con métricas en tiempo real y reportes exportables.
+                            Ve qué servicios generan más ingresos, qué empleados venden más, y en qué horarios tienes más demanda. Todo en tiempo real.
                         </p>
                         <div class="flex items-center text-indigo-600 dark:text-indigo-400 font-medium text-sm">
                             <i class="pi pi-chart-bar mr-2"></i>
-                            <span>Reportes automáticos</span>
+                            <span>Exportables a Excel/PDF</span>
                         </div>
                     </div>
 
-                    <!-- Feature 6: Seguridad Empresarial -->
+                    <!-- Feature 6: Control de Inventario -->
                     <div class="bg-white dark:bg-slate-900 rounded-lg p-8 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors">
                         <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mb-6">
-                            <i class="pi pi-fw pi-lock text-3xl! text-red-600"></i>
+                            <i class="pi pi-fw pi-box text-3xl! text-red-600"></i>
                         </div>
-                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Seguridad Empresarial</h3>
+                        <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Control de Inventario</h3>
                         <p class="text-slate-600 dark:text-slate-300 mb-4">
-                            Autenticación JWT, roles granulares, auditoría completa y backup automático.
+                            Alertas cuando un producto está por agotarse. Historial completo de entradas y salidas. Evita pérdidas por productos vencidos.
                         </p>
                         <div class="flex items-center text-red-600 dark:text-red-400 font-medium text-sm">
-                            <i class="pi pi-verified mr-2"></i>
-                            <span>Certificado SSL</span>
+                            <i class="pi pi-bell mr-2"></i>
+                            <span>Alertas de stock bajo</span>
                         </div>
                     </div>
                 </div>

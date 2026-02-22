@@ -1,11 +1,10 @@
 <div id="pricing">
-    <div class="container mx-auto px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
         <div class="text-center mb-20">
-            <div *ngIf="!isRealData" class="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg text-yellow-600 dark:text-yellow-400 text-sm inline-block">
-                ⚠️ Modo Demo - Mostrando precios de ejemplo
-            </div>
+           
             <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 mb-4">
-                💎 Planes y Precios
+                <i class="pi pi-tag mr-2"></i>
+                Planes y Precios
             </div>
             <h2 class="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-6">
                 Elige el plan perfecto para
@@ -26,8 +25,8 @@
 
                 <!-- Popular Badge -->
                 <div *ngIf="isPopularPlan(plan.name)" class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span class="bg-indigo-600 text-white px-4 py-1 rounded-full text-sm font-medium">
-                        🔥 67% lo elige
+                    <span class="bg-indigo-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                        Más popular
                     </span>
                 </div>
 
@@ -46,7 +45,7 @@
                 <div class="mb-8">
                     <ul class="space-y-4">
                         <li *ngFor="let feature of getPlanFeatures(plan)" class="flex items-center text-slate-700 dark:text-slate-300">
-                            <i class="pi pi-check-circle text-green-600 mr-3"></i>
+                            <i class="pi pi-check-circle text-emerald-500 mr-3"></i>
                             <span>{{ feature }}</span>
                         </li>
                     </ul>
@@ -57,8 +56,8 @@
                         (click)="selectPlan(plan.name, +plan.price)"
                         class="w-full py-3 text-base font-semibold transition-colors"
                         [class]="isPopularPlan(plan.name) ? 
-                            '!bg-indigo-600 !text-white hover:!bg-indigo-700 !border-0' : 
-                            '!bg-slate-100 dark:!bg-slate-800 !text-slate-900 dark:!text-white !border !border-slate-300 dark:!border-slate-600 hover:!bg-slate-200 dark:hover:!bg-slate-700'">
+                            'bg-indigo-600! text-white! hover:bg-indigo-700! border-0!' : 
+                            'bg-slate-100! dark:bg-slate-800! text-slate-900! dark:text-white! border! border-slate-300! dark:border-slate-600! hover:bg-slate-200! dark:hover:bg-slate-700!'">
                 </button>
 
                 <div *ngIf="showGuarantee(plan.name)" class="text-center mt-4">
@@ -83,7 +82,7 @@
                 <button pButton pRipple
                         label="Contactar Ventas Empresariales"
                         (click)="contactEnterprise()"
-                        class="!bg-indigo-600 !text-white hover:!bg-indigo-700 !border-0 !px-8 !py-4 !text-lg !font-semibold">
+                        class="bg-indigo-600! text-white! hover:bg-indigo-700! border-0! px-8! py-4! text-lg! font-semibold!">
                 </button>
                 <div class="mt-4">
                     <span class="text-slate-500 dark:text-slate-400 text-sm">
@@ -116,7 +115,6 @@
                     Sistema operativo
                 </span>
                 <span>•</span>
-                <span>{{ isRealData ? 'Precios actualizados hace 3h' : 'Precios de demostración' }}</span>
             </div>
         </div>
     </div>

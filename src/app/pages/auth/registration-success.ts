@@ -29,7 +29,7 @@ import { CardModule } from 'primeng/card';
             <!-- Email Sent Info -->
             <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6">
               <div class="flex items-start gap-4">
-                <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
                   <i class="pi pi-envelope text-white text-xl"></i>
                 </div>
                 <div class="flex-1">
@@ -121,7 +121,7 @@ import { CardModule } from 'primeng/card';
               <button pButton
                       label="Ir a Iniciar Sesión"
                       icon="pi pi-sign-in"
-                      class="flex-1 !bg-green-600 !border-green-600 !text-white"
+                      class="flex-1 bg-green-600! border-green-600! text-white!"
                       (click)="goToLogin()">
               </button>
               <button pButton

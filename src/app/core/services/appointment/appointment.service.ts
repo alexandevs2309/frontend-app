@@ -1,7 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { BaseApiService } from '../base-api.service';
 import { API_CONFIG } from '../../config/api.config';
+import { NotificationService } from '../notification/notification.service';
 
 export interface Appointment {
   id: number;
@@ -29,6 +31,7 @@ export interface AppointmentWithDetails extends Appointment {
   providedIn: 'root'
 })
 export class AppointmentService extends BaseApiService {
+  private notificationService = inject(NotificationService);
 
   getAppointments(params?: any): Observable<any> {
     return this.get(API_CONFIG.ENDPOINTS.APPOINTMENTS.BASE, params);
@@ -39,7 +42,12 @@ export class AppointmentService extends BaseApiService {
   }
 
   createAppointment(appointment: Partial<Appointment>): Observable<Appointment> {
-    return this.post(API_CONFIG.ENDPOINTS.APPOINTMENTS.BASE, appointment);
+    return this.post<Appointment>(API_CONFIG.ENDPOINTS.APPOINTMENTS.BASE, appointment).pipe(
+      tap(() => {
+        // ✅ Actualizar notificaciones inmediatamente después de crear cita
+        setTimeout(() => this.notificationService.refresh(), 500);
+      })
+    );
   }
 
   updateAppointment(id: number, appointment: Partial<Appointment>): Observable<Appointment> {

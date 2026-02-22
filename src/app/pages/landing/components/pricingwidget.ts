@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AnimationService } from '../../../shared/services/animation.service';
-import { LandingService, SubscriptionPlan, PaginatedResponse } from '../../../shared/services/landing.service';
+import { LandingPublicService, PublicPlan } from '../../../core/services/landing-public.service';
 
 @Component({
     selector: 'pricing-widget',
@@ -15,39 +15,17 @@ import { LandingService, SubscriptionPlan, PaginatedResponse } from '../../../sh
     styleUrls: ['./pricingwidget.scss']
 })
 export class PricingWidget implements OnInit, OnDestroy {
-    plans: SubscriptionPlan[] = [];
-    isRealData = false;
+    plans: PublicPlan[] = [];
 
     constructor(
         private router: Router,
         private animationService: AnimationService,
-        private landingService: LandingService
+        private landingService: LandingPublicService
     ) {}
 
     ngOnInit() {
-        this.loadPlans();
-    }
-
-    loadPlans() {
-        this.landingService.getSubscriptionPlans().subscribe({
-            next: (response: PaginatedResponse<SubscriptionPlan>) => {
-                // Filtrar solo los 3 planes principales para marketing
-                const featuredPlans = ['basic', 'standard', 'premium'];
-                this.plans = response.results
-                    .filter(p => p.is_active && featuredPlans.includes(p.name))
-                    .sort((a, b) => featuredPlans.indexOf(a.name) - featuredPlans.indexOf(b.name));
-                this.isRealData = true;
-            },
-            error: (error) => {
-                // Datos de fallback solo con los 3 planes principales
-                this.plans = [
-                    { id: 2, name: 'basic', price: '49.99', max_employees: 5, is_active: true } as SubscriptionPlan,
-                    { id: 3, name: 'standard', price: '49.99', max_employees: 10, is_active: true } as SubscriptionPlan,
-                    { id: 4, name: 'premium', price: '79.99', max_employees: 25, is_active: true } as SubscriptionPlan
-                ];
-                this.isRealData = false;
-            }
-        });
+        // Datos estáticos - render instantáneo, sin HTTP calls
+        this.plans = this.landingService.getPlans();
     }
 
     ngOnDestroy() {
@@ -76,22 +54,8 @@ export class PricingWidget implements OnInit, OnDestroy {
         return texts[name] || 'Elegir Plan';
     }
 
-    getPlanFeatures(plan: SubscriptionPlan): string[] {
-        // Usar features_list del backend si está disponible
-        if (plan.features_list && plan.features_list.length > 0) {
-            const employeeText = plan.max_employees === 0 ? 'Empleados ilimitados' : `Hasta ${plan.max_employees} empleados`;
-            return [employeeText, ...plan.features_list];
-        }
-        
-        // Features de fallback basadas en el diseño original
-        const features: { [key: string]: string[] } = {
-            'free': ['Funciones básicas', 'Gestión simple', 'Soporte comunidad'],
-            'basic': [`Hasta ${plan.max_employees} empleados`, 'Gestión de citas', 'Reportes básicos'],
-            'standard': [`Hasta ${plan.max_employees} empleados`, '20 citas/día', 'Gestión de citas', 'Reportes básicos', 'Soporte prioritario'],
-            'premium': [`Hasta ${plan.max_employees} empleados`, 'Reportes avanzados', 'Multi-ubicación', 'Soporte prioritario'],
-            'enterprise': ['Empleados ilimitados', 'Citas ilimitadas', 'Multi-ubicación', 'API personalizada', 'Soporte dedicado 24/7']
-        };
-        return features[plan.name] || ['Funciones básicas'];
+    getPlanFeatures(plan: PublicPlan): string[] {
+        return plan.features;
     }
     
     getPlanDescription(name: string): string {
@@ -124,7 +88,8 @@ export class PricingWidget implements OnInit, OnDestroy {
     }
     
     isPopularPlan(name: string): boolean {
-        return name === 'standard';
+        const plan = this.plans.find(p => p.name === name);
+        return plan?.popular || false;
     }
     
     showGuarantee(name: string): boolean {

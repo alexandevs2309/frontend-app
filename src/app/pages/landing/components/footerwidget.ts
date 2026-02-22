@@ -30,25 +30,25 @@ import { RippleModule } from 'primeng/ripple';
                                     icon="pi pi-twitter" 
                                     [rounded]="true" 
                                     [text]="true"
-                                    class="!text-slate-400 hover:!text-blue-400 !transition-colors">
+                                    class="text-slate-400 hover:!text-blue-400! transition-colors!">
                             </button>
                             <button pButton pRipple 
                                     icon="pi pi-facebook" 
                                     [rounded]="true" 
                                     [text]="true"
-                                    class="!text-slate-400 hover:!text-blue-500 !transition-colors">
+                                    class="text-slate-400! hover:text-blue-500! transition-colors!">
                             </button>
                             <button pButton pRipple 
                                     icon="pi pi-linkedin" 
                                     [rounded]="true" 
                                     [text]="true"
-                                    class="!text-slate-400 hover:!text-blue-600 !transition-colors">
+                                    class="text-slate-400 hover:text-blue-600 transition-colors">
                             </button>
                             <button pButton pRipple 
                                     icon="pi pi-github" 
                                     [rounded]="true" 
                                     [text]="true"
-                                    class="!text-slate-400 hover:!text-white !transition-colors">
+                                    class="text-slate-400 hover:text-white transition-colors">
                             </button>
                         </div>
                     </div>
@@ -170,7 +170,7 @@ import { RippleModule } from 'primeng/ripple';
                                 class="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors">
                             <button pButton pRipple 
                                     label="Suscribirse" 
-                                    class="!bg-indigo-600 !text-white !font-semibold !px-6 !py-3 hover:!bg-indigo-700 !border-0">
+                                    class="bg-indigo-600! text-white! font-semibold! px-6! py-3! hover:bg-indigo-700! border-0!">
                             </button>
                         </div>
                     </div>

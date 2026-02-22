@@ -122,7 +122,7 @@ export const API_CONFIG = {
     AUDIT: '/audit/',
     
     // Notifications
-    NOTIFICATIONS: '/notifications/notifications/',
+    NOTIFICATIONS: '/notifications/',
     
     // Compatibility endpoints
     COMPATIBILITY: {

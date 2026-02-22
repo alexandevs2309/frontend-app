@@ -44,21 +44,10 @@ import { TooltipModule } from 'primeng/tooltip';
                 <!-- Hero moderno -->
                 <hero-widget />
                 
-                <!-- Features con fondo blanco -->
-                <div class="py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="features">
-                    <img 
-                        src="/assets/images/landing/7.webp" 
-                        alt="Features background"
-                        fetchpriority="high"
-                        decoding="async"
-                        width="1920"
-                        height="1080"
-                        class="absolute inset-0 w-full h-full object-cover"
-                        style="transform: skewY(2deg);"
-                    />
-                    <div class="absolute inset-0 bg-white/75 dark:bg-slate-900/75"></div>
+                <!-- Features con fondo claro -->
+                <div class="bg-slate-50 dark:bg-slate-900 py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="features">
                     <div class="relative z-10 transform skew-y-2">
-                        <div class="container mx-auto px-6 lg:px-8">
+                        <div class="max-w-7xl mx-auto px-6 lg:px-8">
                             <div class="text-center mb-20">
                                 <span class="inline-block px-4 py-2 bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-full font-semibold text-sm mb-6 uppercase tracking-wide">Potencia Total</span>
                                 <h2 class="text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mb-6">Todo lo que necesitas.<br>Nada que sobre.</h2>
@@ -69,44 +58,22 @@ import { TooltipModule } from 'primeng/tooltip';
                     </div>
                 </div>
                 
-                <!-- AI Section con fondo oscuro -->
-                <div class="py-20 lg:py-32 relative overflow-hidden transform -skew-y-3" data-section="highlights">
-                    <img 
-                        src="/assets/images/landing/9.webp" 
-                        alt="AI highlights background"
-                        loading="lazy"
-                        decoding="async"
-                        width="1920"
-                        height="1080"
-                        class="absolute inset-0 w-full h-full object-cover"
-                        style="transform: skewY(3deg);"
-                    />
-                    <div class="absolute inset-0 bg-slate-900/70"></div>
+                <!-- Highlights con fondo oscuro -->
+                <div class="bg-linear-to-br from-indigo-900 via-indigo-800 to-purple-800 py-20 lg:py-32 relative overflow-hidden transform -skew-y-3" data-section="highlights">
                     <div class="relative z-10 transform skew-y-3">
                         <highlights-widget />
                     </div>
                 </div>
                 
-                <!-- Testimonials con fondo claro -->
-                <div class="py-20 lg:py-32 relative overflow-hidden transform -skew-y-1" data-section="testimonials">
-                    <img 
-                        src="/assets/images/landing/5.webp" 
-                        alt="Testimonials background"
-                        loading="lazy"
-                        decoding="async"
-                        width="1920"
-                        height="1080"
-                        class="absolute inset-0 w-full h-full object-cover"
-                        style="transform: skewY(1deg);"
-                    />
-                    <div class="absolute inset-0 bg-slate-50/75 dark:bg-slate-800/75"></div>
+                <!-- Testimonials con fondo blanco -->
+                <div class="bg-white dark:bg-slate-900 py-20 lg:py-32 relative overflow-hidden transform -skew-y-1" data-section="testimonials">
                     <div class="relative z-10 transform skew-y-1">
                         <testimonials-widget />
                     </div>
                 </div>
                 
                 <!-- Pricing con fondo claro -->
-                <div class="bg-slate-100 dark:bg-slate-800 py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="pricing">
+                <div class="bg-slate-50 dark:bg-slate-800 py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="pricing">
                     <div class="relative z-10 transform skew-y-2">
                         <pricing-widget />
                     </div>

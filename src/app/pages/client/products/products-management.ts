@@ -44,25 +44,22 @@ import { environment } from '../../../../environments/environment';
     template: `
         <div class="card">
             <!-- Hero Header -->
-            <div class="relative overflow-hidden bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
-                <div class="absolute inset-0 bg-black/10"></div>
-                <div class="absolute top-0 left-0 w-60 h-60 bg-white/10 rounded-full blur-3xl -ml-30 -mt-30"></div>
-                
-                <div class="relative flex justify-between items-center">
+            <div class="rounded-2xl p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                <div class="flex justify-between items-center">
                     <div class="flex items-center gap-4">
-                        <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
-                            <i class="pi pi-box text-4xl"></i>
+                        <div class="p-3 bg-indigo-600 rounded-xl shadow">
+                            <i class="pi pi-box text-4xl text-white"></i>
                         </div>
                         <div>
-                            <h2 class="text-3xl font-bold drop-shadow-lg">Gestión de Productos</h2>
-                            <p class="text-emerald-100 mt-1">Administra tu inventario de productos de barbería</p>
+                            <h2 class="text-3xl font-bold text-slate-900 dark:text-white">Gestión de Productos</h2>
+                            <p class="text-slate-600 dark:text-slate-400 mt-1">Administra tu inventario de productos de barbería</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
                         <button pButton label="Ajustar Stock" icon="pi pi-refresh" (click)="abrirDialogoStock()" 
-                                class="bg-white/20 hover:bg-white/30 border-0 text-white"></button>
+                                class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
                         <button pButton label="Nuevo Producto" icon="pi pi-plus" (click)="abrirDialogo()" 
-                                class="bg-white text-emerald-600 hover:bg-emerald-50 border-0 shadow-lg transform hover:scale-105 transition-all"></button>
+                                class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
                     </div>
                 </div>
             </div>

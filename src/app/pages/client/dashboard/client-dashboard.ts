@@ -25,24 +25,20 @@ import { Subscription } from 'rxjs';
         <app-trial-banner></app-trial-banner>
         
         @if (currentUser(); as user) {
-            <!-- Hero Header con Gradiente -->
-            <div class="relative overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 text-white p-8 rounded-2xl mb-8 shadow-2xl">
-                <div class="absolute inset-0 bg-black/10"></div>
-                <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-                <div class="absolute bottom-0 left-0 w-48 h-48 bg-purple-400/20 rounded-full blur-2xl -ml-24 -mb-24"></div>
-                
-                <div class="relative flex items-center gap-6">
-                    <div class="p-4 bg-white/20 backdrop-blur-sm rounded-2xl animate-float shadow-xl">
-                        <i class="pi pi-cut text-5xl"></i>
+            <!-- Hero Header -->
+            <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-8 rounded-xl mb-8">
+                <div class="flex items-center gap-6">
+                    <div class="p-4 bg-indigo-600 rounded-xl">
+                        <i class="pi pi-cut text-white text-4xl"></i>
                     </div>
                     <div>
-                        <h1 class="text-4xl font-bold mb-2 drop-shadow-lg">
-                            ¡Bienvenido, {{user.full_name}}! ✂️
+                        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-1">
+                            Bienvenido, {{user.full_name}}
                         </h1>
-                        <p class="text-blue-100 text-lg">
-                            <span class="font-semibold">{{getRoleDisplayName(user.role)}}</span>
-                            <span class="mx-3">•</span>
-                            <span>Panel de Control - Barbería</span>
+                        <p class="text-slate-600 dark:text-slate-400 text-base">
+                            <span class="font-medium">{{getRoleDisplayName(user.role)}}</span>
+                            <span class="mx-2">•</span>
+                            <span>Panel de Control</span>
                         </p>
                     </div>
                 </div>
@@ -64,15 +60,7 @@ import { Subscription } from 'rxjs';
             </div>
         }
     `,
-    styles: [`
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
-        }
-    `]
+    styles: [``]
 })
 export class ClientDashboard implements OnInit, OnDestroy {
     currentUser = signal<any>(null);
@@ -86,15 +74,18 @@ export class ClientDashboard implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit() {
-        this.trialService.loadTrialStatus();
+        // Cargar usuario primero (ya está en memoria)
         this.subscription.add(
             this.authService.currentUser$.subscribe(user => {
                 this.currentUser.set(user);
             })
         );
         
-        // Mostrar notificaciones de citas
-        setTimeout(() => this.showAppointmentNotifications(), 1000);
+        // ⚡ OPTIMIZACIÓN: Trial status en background
+        setTimeout(() => {
+            this.trialService.loadTrialStatus();
+            this.showAppointmentNotifications();
+        }, 0);
     }
 
     showAppointmentNotifications() {

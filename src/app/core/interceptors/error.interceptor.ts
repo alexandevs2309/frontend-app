@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { environment } from '../../../environments/environment';
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
@@ -45,35 +46,31 @@ export class ErrorInterceptor implements HttpInterceptor {
   }
 
   private handle401Error(): void {
-    // No redirigir al login si estamos en páginas públicas
+    // ✅ SEGURO - Cookies httpOnly manejadas por navegador
     const currentUrl = this.router.url;
     const publicPages = ['/landing', '/auth', '/maintenance'];
     const isPublicPage = publicPages.some(page => currentUrl.startsWith(page));
     
     if (!isPublicPage) {
-      // Solo limpiar si realmente hay un token inválido
-      const hasToken = localStorage.getItem('access_token');
-      if (hasToken) {
-        // Clear auth data directly
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('tenant');
-        
-        this.router.navigate(['/auth/login']);
-        this.messageService.add({ severity: 'error', summary: 'Sesión expirada', detail: 'Por favor, inicia sesión nuevamente.', life: 3000 });
-      }
+      // Limpiar solo datos locales (no tokens)
+      localStorage.removeItem('user');
+      localStorage.removeItem('tenant');
+      
+      this.router.navigate(['/auth/login']);
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Sesión expirada', 
+        detail: 'Por favor, inicia sesión nuevamente.', 
+        life: 3000 
+      });
     }
   }
 
   private handle402Error(error: HttpErrorResponse): void {
-    console.log('🚨 [ERROR INTERCEPTOR] 402 Payment Required detected:', error);
     const errorData = error.error;
     const code = errorData?.code;
-    console.log('🚨 [ERROR INTERCEPTOR] Error code:', code, 'Error data:', errorData);
     
     if (code === 'TRIAL_EXPIRED') {
-      console.log('🚨 [ERROR INTERCEPTOR] Trial expired - redirecting to payment');
       this.messageService.add({ 
         severity: 'warn', 
         summary: 'Período de prueba expirado', 
@@ -82,7 +79,6 @@ export class ErrorInterceptor implements HttpInterceptor {
       });
       this.router.navigate(['/client/payment']);
     } else if (code === 'SUBSCRIPTION_EXPIRED') {
-      console.log('🚨 [ERROR INTERCEPTOR] Subscription expired - redirecting to payment');
       this.messageService.add({ 
         severity: 'warn', 
         summary: 'Suscripción expirada', 
@@ -91,7 +87,6 @@ export class ErrorInterceptor implements HttpInterceptor {
       });
       this.router.navigate(['/client/payment']);
     } else {
-      console.log('🚨 [ERROR INTERCEPTOR] Generic 402 - redirecting to payment');
       this.messageService.add({ 
         severity: 'warn', 
         summary: 'Pago requerido', 
@@ -121,7 +116,18 @@ export class ErrorInterceptor implements HttpInterceptor {
   }
 
   private handleGenericError(error: HttpErrorResponse): void {
-    const message = error.error?.message || error.message || 'Error desconocido';
-    this.messageService.add({ severity: 'error', summary: 'Error', detail: message });
+    // ✅ SEGURO - No exponer detalles técnicos en producción
+    let message = 'Ha ocurrido un error. Intenta nuevamente.';
+    
+    // Solo mostrar detalles en desarrollo
+    if (!environment.production && error.error?.message) {
+      message = error.error.message;
+    }
+    
+    this.messageService.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: message 
+    });
   }
 }

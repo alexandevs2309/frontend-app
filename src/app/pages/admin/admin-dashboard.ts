@@ -25,9 +25,12 @@ import { Subscription } from 'rxjs';
                             <i class="pi pi-crown text-white text-3xl"></i>
                         </div>
                         <div>
-                            <h1 class="text-3xl font-bold text-white mb-1">
-                                ¡Bienvenido, {{user.full_name}}! 🚀
-                            </h1>
+                            <div class="flex items-center gap-3 mb-1">
+                                <i class="pi pi-sparkles text-white text-2xl"></i>
+                                <h1 class="text-3xl font-bold text-white">
+                                    ¡Bienvenido, {{user.full_name}}!
+                                </h1>
+                            </div>
                             <p class="text-white/90 text-lg">
                                 <span class="font-semibold">{{getRoleDisplayName(user.role)}}</span>
                                 <span class="mx-2">•</span>

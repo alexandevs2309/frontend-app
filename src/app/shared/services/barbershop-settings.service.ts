@@ -52,7 +52,14 @@ export class BarbershopSettingsService {
   settings = signal<BarbershopSettings>(this.settingsSubject.value);
 
   constructor() {
-    this.loadSettings();
+    // Solo cargar si no es SUPER_ADMIN
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user.role !== 'SUPER_ADMIN') {
+        this.loadSettings();
+      }
+    }
   }
 
   loadSettings() {

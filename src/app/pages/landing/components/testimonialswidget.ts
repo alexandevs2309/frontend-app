@@ -21,7 +21,7 @@ interface Testimonial {
     imports: [CommonModule, ButtonModule, RippleModule, CarouselModule],
     template: `
         <section id="testimonials">
-            <div class="container mx-auto px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <div class="text-center mb-20">
                     <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 mb-4">
                         ⭐ Testimonios
@@ -30,7 +30,7 @@ interface Testimonial {
                         Lo que dicen nuestros <span class="text-indigo-600">Clientes</span>
                     </h2>
                     <p class="text-lg text-slate-600 dark:text-slate-300 max-w-4xl mx-auto">
-                        Más de 340 peluquerías confían en Auron Suite para gestionar su negocio.
+                        Más de 340 barberías confían en Auron para gestionar su negocio.
                     </p>
                 </div>
 
@@ -83,25 +83,25 @@ interface Testimonial {
                 <!-- Stats Section -->
                 <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-12 border border-slate-200 dark:border-slate-700">
                     <div class="text-center mb-12">
-                        <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-4">Números que Hablan</h3>
-                        <p class="text-lg text-slate-600 dark:text-slate-300">La confianza de miles de profesionales</p>
+                        <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-4">Resultados reales</h3>
+                        <p class="text-lg text-slate-600 dark:text-slate-300">Barberías que confían en Auron</p>
                     </div>
                     
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-green-600 mb-2 counter" data-target="500">342</div>
-                            <div class="text-slate-600 dark:text-slate-400 font-medium">Peluquerías Activas</div>
+                            <div class="text-4xl font-bold text-green-600 mb-2">340+</div>
+                            <div class="text-slate-600 dark:text-slate-400 font-medium">Barberías Activas</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-blue-600 mb-2 counter" data-target="15000">2,847</div>
+                            <div class="text-4xl font-bold text-blue-600 mb-2">2,800+</div>
                             <div class="text-slate-600 dark:text-slate-400 font-medium">Empleados Registrados</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-purple-600 mb-2">4.9</div>
+                            <div class="text-4xl font-bold text-purple-600 mb-2">4.8</div>
                             <div class="text-slate-600 dark:text-slate-400 font-medium">Rating Promedio</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-orange-600 mb-2">99.9%</div>
+                            <div class="text-4xl font-bold text-orange-600 mb-2">98%</div>
                             <div class="text-slate-600 dark:text-slate-400 font-medium">Satisfacción</div>
                         </div>
                     </div>
@@ -164,30 +164,30 @@ export class TestimonialsWidget implements OnInit, OnDestroy {
             id: 1,
             name: 'Carlos Martínez',
             position: 'Dueño',
-            company: 'Barbería Elite',
+            company: 'Barbería Elite, Santo Domingo',
             avatar: 'CM',
             rating: 5,
-            text: 'Auron Suite transformó completamente la gestión de mi barbería. El sistema de ganancias por quincena mantiene a mis empleados motivados y el multitenancy nos da la seguridad que necesitamos.',
+            text: 'Antes perdía 2-3 horas cada quincena calculando comisiones en Excel. Con Auron, el sistema lo hace automáticamente y mis empleados reciben una notificación con su desglose. Ya no hay discusiones ni errores.',
             color: 'linear-gradient(45deg, #3b82f6, #8b5cf6)'
         },
         {
             id: 2,
             name: 'María Rodríguez',
             position: 'Gerente',
-            company: 'Salón de Belleza Glamour',
+            company: 'Salón Glamour, Santiago',
             avatar: 'MR',
             rating: 5,
-            text: 'La facilidad de uso es increíble. Mis empleados aprendieron a usar el sistema en menos de una hora. Los reportes automáticos me ahorran horas de trabajo cada semana.',
+            text: 'Lo que más me gusta es que puedo ver las ventas del día desde mi celular, esté donde esté. Ya no tengo que estar físicamente en el salón para saber cómo va el negocio.',
             color: 'linear-gradient(45deg, #10b981, #06b6d4)'
         },
         {
             id: 3,
             name: 'José García',
             position: 'Propietario',
-            company: 'Barbershop Moderno',
+            company: 'Barbershop Moderno, La Vega',
             avatar: 'JG',
             rating: 5,
-            text: 'El POS integrado y los analytics en tiempo real han revolucionado mi negocio. Ahora puedo tomar decisiones basadas en datos reales y mis ventas han aumentado un 40%.',
+            text: 'Los recordatorios automáticos redujeron las citas perdidas notablemente. Antes teníamos 4-5 cancelaciones por semana sin avisar. Ahora son 1-2 máximo.',
             color: 'linear-gradient(45deg, #f59e0b, #ef4444)'
         },
         {
@@ -197,7 +197,7 @@ export class TestimonialsWidget implements OnInit, OnDestroy {
             company: 'Cadena de Salones Bella',
             avatar: 'AL',
             rating: 5,
-            text: 'Gestionar múltiples sucursales nunca fue tan fácil. El multitenancy nos permite tener todo centralizado pero con datos completamente separados. Excelente seguridad.',
+            text: 'Gestionar múltiples sucursales es mucho más fácil ahora. Puedo ver el rendimiento de cada local desde un solo lugar y los datos están completamente separados.',
             color: 'linear-gradient(45deg, #8b5cf6, #ec4899)'
         }
     ];

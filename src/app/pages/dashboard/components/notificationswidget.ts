@@ -64,20 +64,20 @@ export class NotificationsWidget extends BaseApiService implements OnInit {
     getNotificationStyle(type: string): string {
         const styles: { [key: string]: string } = {
             'sale': 'bg-blue-100 dark:bg-blue-400/10',
-            'appointment': 'bg-green-100 dark:bg-green-400/10',
-            'system': 'bg-orange-100 dark:bg-orange-400/10',
-            'warning': 'bg-red-100 dark:bg-red-400/10'
+            'appointment': 'bg-emerald-100 dark:bg-emerald-400/10',
+            'system': 'bg-slate-100 dark:bg-slate-700',
+            'warning': 'bg-amber-100 dark:bg-amber-400/10'
         };
-        return styles[type] || 'bg-gray-100 dark:bg-gray-400/10';
+        return styles[type] || 'bg-slate-100 dark:bg-slate-700';
     }
 
     getNotificationIcon(type: string): string {
         const icons: { [key: string]: string } = {
             'sale': 'pi pi-dollar text-blue-500',
-            'appointment': 'pi pi-calendar text-green-500',
-            'system': 'pi pi-cog text-orange-500',
-            'warning': 'pi pi-exclamation-triangle text-red-500'
+            'appointment': 'pi pi-calendar text-emerald-500',
+            'system': 'pi pi-cog text-slate-600 dark:text-slate-400',
+            'warning': 'pi pi-exclamation-triangle text-amber-500'
         };
-        return icons[type] || 'pi pi-info-circle text-gray-500';
+        return icons[type] || 'pi pi-info-circle text-slate-500';
     }
 }

@@ -226,7 +226,12 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     async ngOnInit(): Promise<void> {
-        await this.cargarConfiguracion();
+        // ⚡ OPTIMIZACIÓN: Cargar datos críticos en paralelo
+        await Promise.all([
+            this.cargarConfiguracion(),
+            this.cargarDatos(),
+            this.verificarEstadoCaja()
+        ]);
         
         // Validar permisos para usar POS
         if (!this.puedeUsarPOS()) {
@@ -239,11 +244,12 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             return;
         }
         
-        this.cargarDatos();
-        this.verificarEstadoCaja();
+        // ⚡ OPTIMIZACIÓN: Cargar datos no críticos en background
         this.cargarEstadisticasGuardadas();
-        this.cargarPromociones();
-        this.setupKeyboardShortcuts();
+        setTimeout(() => {
+            this.cargarPromociones();
+            this.setupKeyboardShortcuts();
+        }, 0);
     }
 
     ngOnDestroy(): void {

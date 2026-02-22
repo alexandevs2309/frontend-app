@@ -8,16 +8,16 @@ import { RippleModule } from 'primeng/ripple';
     standalone: true,
     imports: [CommonModule, ButtonModule, RippleModule],
     template: `
-        <section class="container mx-auto px-6 lg:px-8">
+        <section class="max-w-7xl mx-auto px-6 lg:px-8">
             <div class="text-center mb-20">
                 <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-white/10 text-white mb-4">
                     ⚡ Inteligencia Artificial
                 </div>
                 <h2 class="text-4xl lg:text-5xl font-bold text-white mb-6">
-                    IA que <span class="text-yellow-400">Potencia</span> tu Negocio
+                    Tecnología que <span class="text-yellow-400">potencia</span> tu negocio
                 </h2>
                 <p class="text-lg text-slate-300 max-w-4xl mx-auto">
-                    Auron Suite integra inteligencia artificial para optimizar operaciones y maximizar ganancias.
+                    Auron funciona en cualquier dispositivo para que gestiones tu barbería desde donde estés.
                 </p>
             </div>
 
@@ -65,10 +65,9 @@ import { RippleModule } from 'primeng/ripple';
                             <div class="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center mb-8">
                                 <i class="pi pi-fw pi-mobile text-4xl! text-indigo-600"></i>
                             </div>
-                            <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-6">Optimizado para Móviles</h3>
+                            <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-6">Acceso desde tu celular</h3>
                             <p class="text-lg text-slate-600 dark:text-slate-300 mb-8 leading-relaxed">
-                                Gestiona tu barbería desde cualquier lugar. La app móvil de Auron Suite te permite
-                                controlar citas, ver ganancias y gestionar empleados desde tu smartphone.
+                                Gestiona tu barbería desde cualquier lugar. Revisa citas, ve ganancias del día y controla empleados desde tu smartphone.
                             </p>
 
                             <div class="space-y-4">
@@ -96,10 +95,9 @@ import { RippleModule } from 'primeng/ripple';
                             <div class="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center mb-8">
                                 <i class="pi pi-fw pi-desktop text-4xl! text-indigo-600"></i>
                             </div>
-                            <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-6">Potencia de Escritorio</h3>
+                            <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-6">Panel completo en escritorio</h3>
                             <p class="text-lg text-slate-600 dark:text-slate-300 mb-8 leading-relaxed">
-                                Aprovecha al máximo las capacidades de Auron Suite en tu computadora.
-                                Dashboards avanzados, reportes detallados y gestión completa de tu negocio.
+                                Aprovecha al máximo las capacidades de Auron en tu computadora. Reportes detallados, dashboards visuales y gestión completa.
                             </p>
 
                             <div class="space-y-4">
@@ -168,8 +166,8 @@ import { RippleModule } from 'primeng/ripple';
                 <!-- Performance Stats -->
                 <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-12 border border-slate-200 dark:border-slate-700">
                     <div class="text-center mb-12">
-                        <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-4">Rendimiento Excepcional</h3>
-                        <p class="text-lg text-slate-600 dark:text-slate-300">Optimizado para velocidad y confiabilidad</p>
+                        <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-4">Rendimiento confiable</h3>
+                        <p class="text-lg text-slate-600 dark:text-slate-300">Sistema rápido y seguro</p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-8">

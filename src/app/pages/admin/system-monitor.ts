@@ -20,7 +20,10 @@ import { SystemMonitorService, SystemHealth, RevenueAlert } from '../../core/ser
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">🔍 Monitor del Sistema</h1>
+                            <div class="flex items-center gap-3 mb-2">
+                                <i class="pi pi-chart-line text-indigo-600 dark:text-indigo-400 text-2xl"></i>
+                                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Monitor del Sistema</h1>
+                            </div>
                             <p class="text-gray-600 dark:text-gray-400">Monitoreo en tiempo real de la salud del sistema y alertas críticas</p>
                         </div>
                         <div class="flex gap-2">

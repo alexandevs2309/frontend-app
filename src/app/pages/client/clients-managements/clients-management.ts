@@ -41,22 +41,19 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
     template: `
         <div class="card">
             <!-- Hero Header -->
-            <div class="relative overflow-hidden bg-gradient-to-r from-green-500 via-teal-500 to-cyan-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
-                <div class="absolute inset-0 bg-black/10"></div>
-                <div class="absolute bottom-0 left-0 w-56 h-56 bg-white/10 rounded-full blur-3xl -ml-28 -mb-28"></div>
-                
-                <div class="relative flex justify-between items-center">
+            <div class="rounded-2xl p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                <div class="flex justify-between items-center">
                     <div class="flex items-center gap-4">
-                        <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
-                            <i class="pi pi-users text-4xl"></i>
+                        <div class="p-3 bg-indigo-600 rounded-xl shadow">
+                            <i class="pi pi-users text-4xl text-white"></i>
                         </div>
                         <div>
-                            <h2 class="text-3xl font-bold drop-shadow-lg">Gestión de Clientes</h2>
-                            <p class="text-teal-100 mt-1">Administra la base de datos de clientes de tu barbería</p>
+                            <h2 class="text-3xl font-bold text-slate-900 dark:text-white">Gestión de Clientes</h2>
+                            <p class="text-slate-600 dark:text-slate-400 mt-1">Administra la base de datos de clientes de tu barbería</p>
                         </div>
                     </div>
                     <button pButton label="Nuevo Cliente" icon="pi pi-plus" (click)="abrirDialogo()" 
-                            class="bg-white text-teal-600 hover:bg-teal-50 border-0 shadow-lg transform hover:scale-105 transition-all"></button>
+                            class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
                 </div>
             </div>
 

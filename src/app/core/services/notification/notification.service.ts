@@ -1,87 +1,142 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { Observable, BehaviorSubject, timer } from 'rxjs';
+import { switchMap, shareReplay, tap, catchError } from 'rxjs/operators';
 import { BaseApiService } from '../base-api.service';
 import { API_CONFIG } from '../../config/api.config';
+import { of } from 'rxjs';
+import { MessageService } from 'primeng/api';
 
-export interface SystemNotification {
+export interface InAppNotification {
   id: number;
+  type: 'appointment' | 'sale' | 'system' | 'warning';
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  read: boolean;
+  is_read: boolean;
   created_at: string;
-  tenant_id?: number;
-  user_id?: number;
+}
+
+export interface NotificationResponse {
+  count: number;
+  results: InAppNotification[];
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService extends BaseApiService {
-  private notificationsSubject = new BehaviorSubject<SystemNotification[]>([]);
-  public notifications$ = this.notificationsSubject.asObservable();
+  private messageService = inject(MessageService);
+  
+  // ✅ Single source of truth con signal
+  private notificationsSignal = signal<InAppNotification[]>([]);
+  
+  // ✅ Computed para contador total no leídas
+  public unreadCount = computed(() => 
+    this.notificationsSignal().filter(n => !n.is_read).length
+  );
 
-  unreadCount = signal(0);
+  // ✅ Computed para notificaciones de citas
+  public appointmentNotifications = computed(() =>
+    this.notificationsSignal().filter(n => n.type === 'appointment')
+  );
 
-  getNotifications(): Observable<SystemNotification[]> {
-    return this.get(`${API_CONFIG.ENDPOINTS.NOTIFICATIONS}`);
-  }
+  // ✅ Computed para contador de citas NO LEÍDAS
+  public appointmentCount = computed(() =>
+    this.appointmentNotifications().filter(n => !n.is_read).length
+  );
 
-  markAsRead(notificationId: number): Observable<any> {
-    return this.patch(`${API_CONFIG.ENDPOINTS.NOTIFICATIONS}${notificationId}/read/`);
-  }
+  // ✅ Computed para notificaciones de ventas
+  public saleNotifications = computed(() =>
+    this.notificationsSignal().filter(n => n.type === 'sale')
+  );
 
-  markAllAsRead(): Observable<any> {
-    return this.post(`${API_CONFIG.ENDPOINTS.NOTIFICATIONS}mark-all-read/`);
-  }
+  // ✅ Computed para contador de ventas NO LEÍDAS
+  public saleCount = computed(() =>
+    this.saleNotifications().filter(n => !n.is_read).length
+  );
 
-  deleteNotification(notificationId: number): Observable<any> {
-    return this.delete(`${API_CONFIG.ENDPOINTS.NOTIFICATIONS}${notificationId}/`);
-  }
-
-  loadNotifications(): void {
-    this.getNotifications().subscribe({
-      next: (notifications) => {
-        this.notificationsSubject.next(notifications);
-        this.unreadCount.set(notifications.filter(n => !n.read).length);
-      },
-      error: () => {
-        // Fallback notifications
-        const fallbackNotifications: SystemNotification[] = [
-          {
-            id: 1,
-            title: 'Nuevo tenant registrado',
-            message: 'Barbería "El Corte Perfecto" se ha registrado en el sistema',
-            type: 'success',
-            read: false,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 2,
-            title: 'Pago pendiente',
-            message: 'Tenant "Salón Moderno" tiene un pago pendiente',
-            type: 'warning',
-            read: false,
-            created_at: new Date(Date.now() - 3600000).toISOString()
-          }
-        ];
-        this.notificationsSubject.next(fallbackNotifications);
-        this.unreadCount.set(2);
+  // ✅ Observable compartido con polling cada 30s
+  public notifications$ = timer(0, 30000).pipe(
+    switchMap(() => this.fetchNotifications()),
+    tap(response => {
+      const previousCount = this.notificationsSignal().length;
+      this.notificationsSignal.set(response.results);
+      
+      // 🔔 Toast solo para notificaciones NUEVAS de citas
+      if (previousCount > 0) { // Evitar toast en carga inicial
+        const newAppointments = response.results.filter(
+          n => n.type === 'appointment' && !n.is_read
+        ).slice(0, previousCount === 0 ? 0 : response.results.length - previousCount);
+        
+        if (newAppointments.length > 0) {
+          this.messageService.add({
+            severity: 'info',
+            summary: '📅 Nueva cita asignada',
+            detail: newAppointments[0].message,
+            sticky: true,
+            closable: true
+          });
+        }
       }
+    }),
+    shareReplay({ bufferSize: 1, refCount: false })
+  );
+
+  private fetchNotifications(): Observable<NotificationResponse> {
+    console.log('🔔 Fetching notifications...');
+    return this.get<NotificationResponse>('/notifications/').pipe(
+      tap(response => console.log('🔔 Notifications received:', response)),
+      catchError(err => {
+        console.error('❌ Notifications error:', err);
+        return of({ count: 0, results: [] });
+      })
+    );
+  }
+
+  // ✅ Método para forzar actualización inmediata
+  public refresh(): void {
+    this.fetchNotifications().subscribe({
+      next: (response) => this.notificationsSignal.set(response.results)
     });
   }
 
-  addNotification(notification: Omit<SystemNotification, 'id' | 'created_at'>): void {
-    const newNotification: SystemNotification = {
-      ...notification,
-      id: Date.now(),
-      created_at: new Date().toISOString()
-    };
+  // ✅ Optimistic update al marcar como leída
+  markAsRead(notificationId: number): Observable<any> {
+    // Actualización optimista
+    const current = this.notificationsSignal();
+    this.notificationsSignal.set(
+      current.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+    );
 
-    const current = this.notificationsSubject.value;
-    this.notificationsSubject.next([newNotification, ...current]);
-    this.unreadCount.update(count => count + 1);
+    return this.patch(`/notifications/${notificationId}/`, { is_read: true }).pipe(
+      catchError(err => {
+        // Revertir si falla
+        this.refresh();
+        return of(err);
+      })
+    );
   }
 
+  markAllAsRead(): Observable<any> {
+    const current = this.notificationsSignal();
+    this.notificationsSignal.set(current.map(n => ({ ...n, is_read: true })));
 
+    return this.post('/notifications/mark-all-read/', {}).pipe(
+      catchError(err => {
+        this.refresh();
+        return of(err);
+      })
+    );
+  }
+
+  deleteNotification(notificationId: number): Observable<any> {
+    const current = this.notificationsSignal();
+    this.notificationsSignal.set(current.filter(n => n.id !== notificationId));
+
+    return this.delete(`/notifications/${notificationId}/`).pipe(
+      catchError(err => {
+        this.refresh();
+        return of(err);
+      })
+    );
+  }
 }

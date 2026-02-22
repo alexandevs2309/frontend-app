@@ -42,6 +42,9 @@
                             "namedChunks": false,
                             "extractLicenses": true,
                             "outputHashing": "all",
+                            "aot": true,
+                            "vendorChunk": false,
+                            "commonChunk": false,
                             "fileReplacements": [
                                 {
                                     "replace": "src/environments/environment.ts",
@@ -51,13 +54,25 @@
                             "budgets": [
                                 {
                                     "type": "initial",
-                                    "maximumWarning": "2mb",
-                                    "maximumError": "5mb"
+                                    "maximumWarning": "500kb",
+                                    "maximumError": "1mb"
                                 },
                                 {
                                     "type": "anyComponentStyle",
-                                    "maximumWarning": "6kb",
-                                    "maximumError": "10kb"
+                                    "maximumWarning": "4kb",
+                                    "maximumError": "8kb"
+                                },
+                                {
+                                    "type": "bundle",
+                                    "name": "main",
+                                    "maximumWarning": "400kb",
+                                    "maximumError": "800kb"
+                                },
+                                {
+                                    "type": "bundle",
+                                    "name": "polyfills",
+                                    "maximumWarning": "50kb",
+                                    "maximumError": "100kb"
                                 }
                             ]
                         },
