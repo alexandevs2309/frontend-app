@@ -60,7 +60,7 @@ interface SubscriptionPlan {
         <p-toolbar styleClass="mb-6 rounded-2xl shadow-lg border-0">
             <ng-template #start>
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-xl bg-linear-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
                         <i class="pi pi-credit-card text-white"></i>
                     </div>
                     <div>
@@ -95,7 +95,7 @@ interface SubscriptionPlan {
             styleClass="rounded-2xl overflow-hidden shadow-lg"
         >
             <ng-template #caption>
-                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20">
+                <div class="flex items-center justify-between p-4 bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20">
                     <h5 class="m-0 font-bold text-lg">Gestionar Planes de Suscripción</h5>
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
@@ -242,8 +242,6 @@ export class SubscriptionPlans implements OnInit {
     loading = signal(false);
     saving = signal(false);
 
-
-
     constructor(
         private subscriptionService: SubscriptionService,
         private messageService: MessageService,
@@ -273,8 +271,6 @@ export class SubscriptionPlans implements OnInit {
     onGlobalFilter(table: Table, event: Event) {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
-
-
 
     // Removed - Plans are created automatically via management command
 
@@ -425,6 +421,6 @@ export class SubscriptionPlans implements OnInit {
             error: error?.message || 'Unknown error',
             component: 'SubscriptionPlans'
         };
-        console.warn('[SubscriptionPlans Error]', errorInfo);
+        
     }
 }

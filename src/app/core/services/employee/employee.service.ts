@@ -31,8 +31,6 @@ export interface UpdateEmployeeRequest {
   is_active: boolean;
 }
 
-
-
 @Injectable({
   providedIn: 'root'
 })

@@ -226,12 +226,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     async ngOnInit(): Promise<void> {
-        // ⚡ OPTIMIZACIÓN: Cargar datos críticos en paralelo
-        await Promise.all([
-            this.cargarConfiguracion(),
-            this.cargarDatos(),
-            this.verificarEstadoCaja()
-        ]);
+        // ⚡ OPTIMIZACIÓN: Cargar configuración primero para obtener rol
+        await this.cargarConfiguracion();
         
         // Validar permisos para usar POS
         if (!this.puedeUsarPOS()) {
@@ -243,6 +239,12 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             });
             return;
         }
+        
+        // ⚡ OPTIMIZACIÓN: Cargar datos críticos en paralelo
+        await Promise.all([
+            this.cargarDatos(),
+            this.verificarEstadoCaja()
+        ]);
         
         // ⚡ OPTIMIZACIÓN: Cargar datos no críticos en background
         this.cargarEstadisticasGuardadas();
@@ -1273,16 +1275,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     async cargarConfiguracion() {
         try {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                throw new Error('No hay token de autenticación');
-            }
-            
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const userId = payload.user_id;
-            
             const response = await fetch(`${environment.apiUrl}/settings/barbershop/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include'
             });
             
             if (response.ok) {
@@ -1297,21 +1291,24 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 this.limiteDescuento = settings.service_discount_limit || 20;
             }
             
-            // Obtener datos del usuario actual
-            try {
-                const userResponse = await fetch(`${environment.apiUrl}/auth/users/${userId}/`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (userResponse.ok) {
-                    const userData = await userResponse.json();
+            // Obtener datos del usuario actual desde localStorage
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    const userData = JSON.parse(userStr);
                     this.nombreUsuarioActual = userData.full_name || userData.email || 'Cajero';
                     this.rolUsuarioActual = userData.role || '';
-                } else {
+                    console.log('POS - Usuario cargado:', {
+                        nombre: this.nombreUsuarioActual,
+                        rol: this.rolUsuarioActual,
+                        puedeUsarPOS: this.puedeUsarPOS(),
+                        puedeCerrarCaja: this.puedeCerrarCaja()
+                    });
+                } catch {
                     this.nombreUsuarioActual = 'Cajero';
                     this.rolUsuarioActual = '';
                 }
-            } catch (userError) {
-                console.error('Error cargando usuario:', userError);
+            } else {
                 this.nombreUsuarioActual = 'Cajero';
                 this.rolUsuarioActual = '';
             }
@@ -1807,10 +1804,10 @@ ${this.carrito().map(item =>
 
     obtenerUserId(): number {
         try {
-            const token = localStorage.getItem('access_token');
-            if (token) {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                return payload.user_id || 0;
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                return user.id || 0;
             }
         } catch {
             return 0;
@@ -1841,10 +1838,10 @@ ${this.carrito().map(item =>
 
     obtenerNombreNegocio(): string {
         try {
-            const token = localStorage.getItem('access_token');
-            if (token) {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                return payload.tenant_name || 'Barbería';
+            const tenantStr = localStorage.getItem('tenant');
+            if (tenantStr) {
+                const tenant = JSON.parse(tenantStr);
+                return tenant.name || 'Barbería';
             }
         } catch {
             return 'Barbería';
@@ -1866,28 +1863,34 @@ ${this.carrito().map(item =>
 
     // Métodos de validación de permisos
     puedeUsarPOS(): boolean {
-        const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin'];
-        return rolesPermitidos.includes(this.rolUsuarioActual);
+        // Normalizar rol para comparación (convertir guiones bajos a guiones medios)
+        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
+        const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin', 'Client-Staff', 'Estilista', 'Utility'];
+        return rolesPermitidos.includes(rolNormalizado);
     }
 
     puedeAbrirCaja(): boolean {
+        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
         const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin'];
-        return rolesPermitidos.includes(this.rolUsuarioActual);
+        return rolesPermitidos.includes(rolNormalizado);
     }
 
     puedeCerrarCaja(): boolean {
+        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
         const rolesPermitidos = ['Manager', 'Client-Admin', 'SuperAdmin'];
-        return rolesPermitidos.includes(this.rolUsuarioActual);
+        return rolesPermitidos.includes(rolNormalizado);
     }
 
     puedeAplicarDescuentoAlto(): boolean {
+        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
         const rolesPermitidos = ['Manager', 'Client-Admin', 'SuperAdmin'];
-        return rolesPermitidos.includes(this.rolUsuarioActual);
+        return rolesPermitidos.includes(rolNormalizado);
     }
 
     puedeVerHistorial(): boolean {
+        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
         const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin'];
-        return rolesPermitidos.includes(this.rolUsuarioActual);
+        return rolesPermitidos.includes(rolNormalizado);
     }
 
     guardarArqueoHistorico(arqueo: any) {

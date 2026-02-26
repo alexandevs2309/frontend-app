@@ -68,7 +68,7 @@ interface Tenant {
         <p-toolbar styleClass="mb-6 rounded-2xl shadow-lg border-0">
             <ng-template #start>
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center">
                         <i class="pi pi-building text-white"></i>
                     </div>
                     <div>
@@ -82,7 +82,7 @@ interface Tenant {
                     <p-button 
                         label="Nuevo Tenant" 
                         icon="pi pi-plus" 
-                        styleClass="bg-gradient-to-r from-blue-500 to-purple-500 border-0 shadow-lg hover:shadow-xl transition-all"
+                        styleClass="bg-linear-to-r from-blue-500 to-purple-500 border-0 shadow-lg hover:shadow-xl transition-all"
                         (onClick)="openNew()" 
                     />
                     <p-button 
@@ -113,7 +113,7 @@ interface Tenant {
             [loading]="loading()"
             styleClass="rounded-2xl overflow-hidden shadow-lg">
             <ng-template #caption>
-                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                <div class="flex items-center justify-between p-4 bg-linear-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
                     <h5 class="m-0 font-bold text-lg">Gestionar Tenants</h5>
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
@@ -268,8 +268,6 @@ export class TenantsManagement implements OnInit {
     loading = signal(false);
     saving = signal(false);
 
-
-
     constructor(
         private tenantService: TenantService,
         private subscriptionService: SubscriptionService,
@@ -309,8 +307,6 @@ export class TenantsManagement implements OnInit {
     onGlobalFilter(table: Table, event: Event) {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
-
-
 
     openNew() {
         this.tenant = { is_active: true };
@@ -432,8 +428,6 @@ export class TenantsManagement implements OnInit {
                     is_active: this.tenant.is_active
                 };
 
-
-
                 this.tenantService.createTenant(tenantData).subscribe({
                     next: (newTenant) => {
                         this.tenants.set([...this.tenants(), newTenant]);
@@ -525,6 +519,6 @@ export class TenantsManagement implements OnInit {
             error: error?.message || 'Unknown error',
             component: 'TenantsManagement'
         };
-        console.warn('[TenantsManagement Error]', errorInfo);
+        
     }
 }

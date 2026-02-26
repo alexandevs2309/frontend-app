@@ -218,8 +218,7 @@ export class TrialBannerComponent implements OnInit, OnDestroy {
       this.subscriptionStatus = await this.subscriptionService.getSubscriptionStatus().toPromise();
       this.updateBannerState();
     } catch (error) {
-      console.error('Error loading subscription status:', error);
-    }
+      }
   }
 
   upgradeNow() {

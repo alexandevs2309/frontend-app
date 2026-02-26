@@ -186,7 +186,6 @@ export class HeroWidget implements OnInit, OnDestroy, AfterViewInit {
         }
     }
 
-
     ngOnDestroy() {
         this.microAnimation.destroy();
         this.cleanup();
@@ -270,7 +269,6 @@ export class HeroWidget implements OnInit, OnDestroy, AfterViewInit {
 
         this.animationId = requestAnimationFrame(animate);
     }
-
 
     private showFallback() {
         this.canvas.nativeElement.style.display = 'none';

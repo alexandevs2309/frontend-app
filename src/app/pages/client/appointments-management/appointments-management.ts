@@ -28,7 +28,7 @@ import { environment } from '../../../../environments/environment';
     template: `
         <div class="p-4 md:p-6">
             <!-- Hero Header -->
-            <div class="relative overflow-hidden bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
+            <div class="relative overflow-hidden bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
                 <div class="absolute inset-0 bg-black/10"></div>
                 <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-24 -mt-24"></div>
                 
@@ -71,7 +71,6 @@ import { environment } from '../../../../environments/environment';
   <button pButton label="Limpiar Filtros" icon="pi pi-filter-slash"
           (click)="limpiarFiltros()" class="p-button-outlined w-full md:w-auto"></button>
 </div>
-
 
             <!-- Tabla / Grid -->
             <div class="block md:hidden space-y-4">
@@ -311,7 +310,7 @@ export class AppointmentsManagement implements OnInit {
             }));
         } catch (error) {
             if (!environment.production) {
-                console.error('Error cargando datos:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',
@@ -398,7 +397,7 @@ export class AppointmentsManagement implements OnInit {
             window.dispatchEvent(new CustomEvent('appointmentSaved'));
         } catch (error: any) {
             if (!environment.production) {
-                console.error('Error guardando cita:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',

@@ -167,7 +167,7 @@ export class PeriodsListComponent implements OnInit {
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error loading periods:', error);
+        
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -177,8 +177,6 @@ export class PeriodsListComponent implements OnInit {
       }
     });
   }
-
-
 
   openPaymentDialog(period: Period) {
     this.selectedPeriod.set(period);
@@ -237,7 +235,7 @@ export class PeriodsListComponent implements OnInit {
       // Abrir recibo en nueva ventana para imprimir
       this.abrirReciboEnVentana(response);
     } catch (error) {
-      console.error('Error cargando recibo:', error);
+      
     }
   }
 

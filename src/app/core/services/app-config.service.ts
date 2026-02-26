@@ -12,6 +12,10 @@ export class AppConfigService {
   }
 
   private loadPlatformName() {
+    // Solo cargar si hay token (usuario autenticado)
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    
     this.settingsService.getSettings().subscribe({
       next: (settings) => {
         if (settings.platform_name) {

@@ -57,7 +57,7 @@ interface User {
                     <p-button 
                         label="Nuevo Usuario" 
                         icon="pi pi-plus" 
-                        styleClass="bg-gradient-to-r from-indigo-500 to-purple-500 border-0 shadow-lg hover:shadow-xl transition-all"
+                        styleClass="bg-linear-to-r from-indigo-500 to-purple-500 border-0 shadow-lg hover:shadow-xl transition-all"
                         (onClick)="openNew()" 
                     />
                     <p-button 
@@ -290,7 +290,7 @@ export class UsersManagement implements OnInit {
                     const options = [{ name: tenant.name, id: tenant.id }];
                     this.tenantOptions.set(options);
                 } catch (error) {
-                    console.error('Error parsing tenant data:', error);
+                    
                     this.tenantOptions.set([]);
                 }
             } else {
@@ -309,7 +309,7 @@ export class UsersManagement implements OnInit {
                 this.roleOptions.set(options);
             },
             error: (error) => {
-                console.error('Error loading roles:', error);
+                
                 this.roleOptions.set([]);
             }
         });
@@ -431,7 +431,7 @@ export class UsersManagement implements OnInit {
                     return;
                 }
             } catch (error) {
-                console.error('Error parsing tenant data:', error);
+                
             }
         }
 
@@ -529,7 +529,7 @@ export class UsersManagement implements OnInit {
                 this.closeDialog();
             },
             error: (error) => {
-                console.error('Update user error:', error);
+                
                 this.showErrorMessage('Failed to update user', error);
                 this.saving.set(false);
             }
@@ -597,7 +597,7 @@ export class UsersManagement implements OnInit {
             error: error?.message || 'Unknown error',
             component: 'UsersManagement'
         };
-        console.warn('[UsersManagement Error]', errorInfo);
+        
     }
 
     UIHelpers = UIHelpers;

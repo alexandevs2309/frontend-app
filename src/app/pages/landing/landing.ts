@@ -15,7 +15,6 @@ import { VideoModal } from './components/video-modal';
 import { ScrollTopModule } from 'primeng/scrolltop';
 import { TooltipModule } from 'primeng/tooltip';
 
-
 @Component({
     selector: 'app-landing',
     standalone: true,

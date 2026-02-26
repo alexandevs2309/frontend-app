@@ -117,7 +117,6 @@ export class FeaturesWidget implements OnInit, OnDestroy {
 
   
 
-
     ngOnInit() {
         setTimeout(() => this.microAnimation.initTitleAnimations(), 100);
     }

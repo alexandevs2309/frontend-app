@@ -50,13 +50,13 @@ export class NotificationsWidget extends BaseApiService implements OnInit {
     loadNotifications() {
         this.get<any>(API_CONFIG.ENDPOINTS.NOTIFICATIONS).subscribe({
             next: (data: any) => {
-                console.log('🔔 Notifications Data:', data);
+                
                 const notifications = Array.isArray(data) ? data : (data.results || []);
                 this.notifications.set(notifications.slice(0, 5));
             },
             error: (error: any) => {
-                console.error('❌ Error loading notifications:', error);
-                console.error('Error details:', error.error);
+                
+                
             }
         });
     }

@@ -410,6 +410,6 @@ export class AuditLogs implements OnInit {
             error: error?.message || 'Unknown error',
             component: 'AuditLogs'
         };
-        console.warn('[AuditLogs Error]', errorInfo);
+        
     }
 }

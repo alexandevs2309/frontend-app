@@ -17,7 +17,7 @@ import { Subscription } from 'rxjs';
         @if (currentUser(); as user) {
             <!-- Hero Header con Gradiente -->
             <div class="mb-8 relative overflow-hidden rounded-3xl">
-                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-90"></div>
+                <div class="absolute inset-0 bg-linear-to-r from-blue-500 via-purple-500 to-pink-500 opacity-90"></div>
                 <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 40px 40px;"></div>
                 <div class="relative p-8">
                     <div class="flex items-center gap-4 mb-4">

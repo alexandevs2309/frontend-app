@@ -286,7 +286,7 @@ export class ClientsManagement implements OnInit {
 
         } catch (error) {
             if (!environment.production) {
-                console.error('Error cargando clientes:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',
@@ -363,7 +363,7 @@ export class ClientsManagement implements OnInit {
             this.cargarClientes();
         } catch (error: any) {
             if (!environment.production) {
-                console.error('Error guardando cliente:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',
@@ -397,7 +397,7 @@ export class ClientsManagement implements OnInit {
             this.cargarClientes();
         } catch (error: any) {
             if (!environment.production) {
-                console.error('Error eliminando cliente:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',
@@ -406,8 +406,6 @@ export class ClientsManagement implements OnInit {
             });
         }
     }
-
-
 
     formatearFecha(cliente: any): string {
         const fecha = cliente.birthday;

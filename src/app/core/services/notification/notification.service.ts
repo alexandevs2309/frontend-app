@@ -82,11 +82,8 @@ export class NotificationService extends BaseApiService {
   );
 
   private fetchNotifications(): Observable<NotificationResponse> {
-    console.log('🔔 Fetching notifications...');
     return this.get<NotificationResponse>('/notifications/').pipe(
-      tap(response => console.log('🔔 Notifications received:', response)),
       catchError(err => {
-        console.error('❌ Notifications error:', err);
         return of({ count: 0, results: [] });
       })
     );

@@ -93,7 +93,7 @@ export class SystemMonitorService extends BaseApiService {
         return health;
       }),
       catchError(error => {
-        console.error('System health check failed:', error);
+        
         const criticalHealth: SystemHealth = {
           overall_status: 'critical',
           services: {
@@ -218,7 +218,7 @@ export class SystemMonitorService extends BaseApiService {
         this.revenueAlerts.set(alerts);
       },
       error: (error) => {
-        console.error('Revenue alerts check failed:', error);
+        
       }
     });
   }

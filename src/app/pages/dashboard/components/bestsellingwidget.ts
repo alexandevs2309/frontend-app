@@ -49,12 +49,12 @@ export class BestSellingWidget implements OnInit {
         // Necesitamos obtenerlo de otro endpoint o calcularlo
         this.dashboardService.getRecentSales(100).subscribe({
             next: (data: any) => {
-                console.log('📊 Sales for Top Services:', data);
+                
                 const sales = Array.isArray(data) ? data : (data.results || []);
                 
                 // Debug: ver estructura de una venta
                 if (sales.length > 0) {
-                    console.log('📊 Sample sale structure:', sales[0]);
+                    
                 }
                 
                 // Calcular servicios más populares desde las ventas
@@ -84,13 +84,13 @@ export class BestSellingWidget implements OnInit {
                     .sort((a, b) => b.count - a.count)
                     .slice(0, 5);
                 
-                console.log('📊 Top Services calculated:', services);
+                
                 this.topServices.set(services);
                 this.maxCount = services.length > 0 ? Math.max(...services.map(s => s.count), 1) : 1;
             },
             error: (error: any) => {
-                console.error('❌ Error loading top services:', error);
-                console.error('Error details:', error.error);
+                
+                
             }
         });
     }

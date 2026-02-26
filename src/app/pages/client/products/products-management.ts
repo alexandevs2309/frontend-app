@@ -402,7 +402,7 @@ export class ProductsManagement implements OnInit {
 
         } catch (error: any) {
             if (!environment.production) {
-                console.error('Error cargando productos:', error);
+                
             }
 
             // Si es error 401/403, no mostrar mensaje ya que el interceptor maneja el logout
@@ -490,12 +490,11 @@ export class ProductsManagement implements OnInit {
                 detail: this.productoSeleccionado ? 'Producto actualizado correctamente' : 'Producto creado correctamente'
             });
 
-
             this.cerrarDialogo();
             this.cargarProductos();
         } catch (error: any) {
             if (!environment.production) {
-                console.error('Error guardando producto:', error);
+                
             }
             
             // Extraer mensaje de error específico de la imagen
@@ -563,7 +562,7 @@ export class ProductsManagement implements OnInit {
             this.cargarProductos();
         } catch (error: any) {
             if (!environment.production) {
-                console.error('Error ajustando stock:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',
@@ -597,7 +596,7 @@ export class ProductsManagement implements OnInit {
             this.cargarProductos();
         } catch (error: any) {
             if (!environment.production) {
-                console.error('Error eliminando producto:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',

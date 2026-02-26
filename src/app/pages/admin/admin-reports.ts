@@ -551,6 +551,6 @@ export class AdminReports implements OnInit {
             error: error?.message || 'Unknown error',
             component: 'AdminReports'
         };
-        console.warn('[AdminReports Error]', errorInfo);
+        
     }
 }

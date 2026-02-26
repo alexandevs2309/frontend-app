@@ -85,13 +85,13 @@ export class StatsWidget implements OnInit {
         this.dashboardService.getDashboardStats().subscribe({
             next: (data) => {
                 // ✅ data ya está clonado por el servicio
-                console.log('📊 Dashboard Stats:', data);
+                
                 this.stats.set(data);
                 this.updateMonthRevenue(data);
             },
             error: (error) => {
-                console.error('❌ Error loading stats:', error);
-                console.error('Error details:', error.error);
+                
+                
             }
         });
     }

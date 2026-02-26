@@ -6,6 +6,7 @@ import { BadgeModule } from 'primeng/badge';
 import { AppMenuitem } from './app.menuitem';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { TrialService } from '../../core/services/trial.service';
+import { LocaleService } from '../../core/services/locale/locale.service';
 import { NotificationBadgeService } from '../../core/services/notification/notification-badge.service';
 import { Subscription } from 'rxjs';
 
@@ -27,7 +28,8 @@ export class AppMenu implements OnInit, OnDestroy {
 
     constructor(
         private authService: AuthService,
-        private trialService: TrialService
+        private trialService: TrialService,
+        private localeService: LocaleService
     ) {}
 
     ngOnInit() {
@@ -56,9 +58,17 @@ export class AppMenu implements OnInit, OnDestroy {
                 }
             })
         );
+        
+        // Subscribe to language changes
+        this.subscription.add(
+            this.localeService.languageChanged$.subscribe(() => {
+                const currentUser = this.authService.getCurrentUser();
+                if (currentUser) {
+                    this.updateMenuForUser(currentUser.role);
+                }
+            })
+        );
     }
-
-
 
     private updateMenuForUser(role: string) {
         if (role === 'SUPER_ADMIN') {
@@ -79,17 +89,17 @@ export class AppMenu implements OnInit, OnDestroy {
     getAdminMenu(): MenuItem[] {
         return [
             {
-                label: 'Admin Panel',
+                label: this.localeService.t('menu.admin_panel' as any),
                 items: [
-                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/admin/dashboard'] },
-                    { label: 'Tenants', icon: 'pi pi-fw pi-building', routerLink: ['/admin/tenants'] },
-                    { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/admin/users'] },
-                    { label: 'Subscription Plans', icon: 'pi pi-fw pi-credit-card', routerLink: ['/admin/plans'] },
-                    { label: 'Billing', icon: 'pi pi-fw pi-dollar', routerLink: ['/admin/billing'] },
-                    { label: 'Reports', icon: 'pi pi-fw pi-chart-line', routerLink: ['/admin/reports'] },
-                    { label: 'System Monitor', icon: 'pi pi-fw pi-eye', routerLink: ['/admin/monitor'] },
-                    { label: 'Audit Logs', icon: 'pi pi-fw pi-list', routerLink: ['/admin/audit-logs'] },
-                    { label: 'System Settings', icon: 'pi pi-fw pi-cog', routerLink: ['/admin/settings'] }
+                    { label: this.localeService.t('menu.dashboard' as any), icon: 'pi pi-fw pi-home', routerLink: ['/admin/dashboard'] },
+                    { label: this.localeService.t('menu.tenants' as any), icon: 'pi pi-fw pi-building', routerLink: ['/admin/tenants'] },
+                    { label: this.localeService.t('menu.users' as any), icon: 'pi pi-fw pi-users', routerLink: ['/admin/users'] },
+                    { label: this.localeService.t('menu.subscription_plans' as any), icon: 'pi pi-fw pi-credit-card', routerLink: ['/admin/plans'] },
+                    { label: this.localeService.t('menu.billing' as any), icon: 'pi pi-fw pi-dollar', routerLink: ['/admin/billing'] },
+                    { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/admin/reports'] },
+                    { label: this.localeService.t('menu.system_monitor' as any), icon: 'pi pi-fw pi-eye', routerLink: ['/admin/monitor'] },
+                    { label: this.localeService.t('menu.audit_logs' as any), icon: 'pi pi-fw pi-list', routerLink: ['/admin/audit-logs'] },
+                    { label: this.localeService.t('menu.system_settings' as any), icon: 'pi pi-fw pi-cog', routerLink: ['/admin/settings'] }
                 ]
             }
         ];
@@ -101,49 +111,49 @@ export class AppMenu implements OnInit, OnDestroy {
         const badgeCount = this.notificationService.badgeCount();
         
         const menuItems: MenuItem[] = [
-            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/client/dashboard'] }
+            { label: this.localeService.t('menu.dashboard' as any), icon: 'pi pi-fw pi-home', routerLink: ['/client/dashboard'] }
         ];
 
         if (userRole === 'CLIENT_ADMIN') {
             // CLIENT_ADMIN: All features available
             menuItems.push(
-                { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
-                { label: 'Clientes', icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
+                { label: this.localeService.t('menu.employees' as any), icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
+                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
                 { 
-                    label: 'Citas', 
+                    label: this.localeService.t('menu.appointments' as any), 
                     icon: 'pi pi-fw pi-calendar', 
                     routerLink: ['/client/appointments'],
                     badge: badgeCount > 0 ? badgeCount.toString() : undefined,
                     badgeStyleClass: 'p-badge-danger'
                 },
-                { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
-                { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
-                { label: 'Punto de Venta', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
-                { label: 'Nómina', icon: 'pi pi-fw pi-wallet', routerLink: ['/client/payroll'] },
-                { label: 'Reportes', icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] },
-                { label: 'Configuración', icon: 'pi pi-fw pi-cog', routerLink: ['/client/settings'] }
+                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
+                { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
+                { label: this.localeService.t('menu.pos' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
+                { label: this.localeService.t('menu.payroll' as any), icon: 'pi pi-fw pi-wallet', routerLink: ['/client/payroll'] },
+                { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] },
+                { label: this.localeService.t('menu.settings' as any), icon: 'pi pi-fw pi-cog', routerLink: ['/client/settings'] }
             );
         } else if (userRole === 'CLIENT_STAFF') {
             // CLIENT_STAFF: Limited features
             menuItems.push(
                 { 
-                    label: 'Mis Citas', 
+                    label: this.localeService.t('menu.my_appointments' as any), 
                     icon: 'pi pi-fw pi-calendar', 
                     routerLink: ['/client/appointments'],
                     badge: badgeCount > 0 ? badgeCount.toString() : undefined,
                     badgeStyleClass: 'p-badge-danger'
                 },
-                { label: 'Clientes', icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
-                { label: 'Ventas', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
-                { label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
-                { label: 'Servicios', icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
-                { label: 'Reportes', icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }
+                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
+                { label: this.localeService.t('menu.sales' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
+                { label: this.localeService.t('menu.employees' as any), icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
+                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
+                { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }
             );
         }
 
         return [
             {
-                label: 'Barbershop',
+                label: this.localeService.t('menu.barbershop' as any),
                 items: menuItems
             }
         ];

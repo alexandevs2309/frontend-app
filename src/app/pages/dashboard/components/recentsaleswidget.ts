@@ -46,13 +46,13 @@ export class RecentSalesWidget implements OnInit {
     loadRecentSales() {
         this.dashboardService.getRecentSales(10).subscribe({
             next: (data) => {
-                console.log('📊 Recent Sales:', data);
+                
                 const sales = Array.isArray(data) ? data : (data.results || []);
                 this.sales.set(sales.slice(0, 10));
             },
             error: (error) => {
-                console.error('❌ Error loading recent sales:', error);
-                console.error('Error details:', error.error);
+                
+                
             }
         });
     }

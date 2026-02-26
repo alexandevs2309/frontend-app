@@ -77,7 +77,7 @@ export class EmployeeManagementGuard implements CanActivate {
         return true;
       }),
       catchError((error) => {
-        console.error('Error validando permisos:', error);
+        
         
         // En caso de error, permitir acceso pero mostrar advertencia
         this.messageService.add({

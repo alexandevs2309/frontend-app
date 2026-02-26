@@ -26,26 +26,26 @@ export class LoggerService {
 
   debug(message: string, data?: any): void {
     if (!environment.production) {
-      console.log(`[DEBUG] ${message}`, this.sanitize(data));
+      );
     }
   }
 
   info(message: string, data?: any): void {
     if (!environment.production) {
-      console.info(`[INFO] ${message}`, this.sanitize(data));
+      );
     }
   }
 
   warn(message: string, data?: any): void {
     if (!environment.production) {
-      console.warn(`[WARN] ${message}`, this.sanitize(data));
+      );
     }
     // TODO: Enviar a Sentry en producción
   }
 
   error(message: string, error?: any): void {
     if (!environment.production) {
-      console.error(`[ERROR] ${message}`, error);
+      
     } else {
       // TODO: Enviar a Sentry
       // Sentry.captureException(error, { extra: { message } });

@@ -516,6 +516,6 @@ export class SystemMonitor implements OnInit, OnDestroy {
             component: 'SystemMonitor'
         };
         // Replace console.error with structured logging
-        console.warn('[SystemMonitor Error]', errorInfo);
+        
     }
 }

@@ -23,7 +23,6 @@ import { PeriodsListComponent } from './components/periods-list/periods-list.com
         <app-periods-list></app-periods-list>
       </div>
 
-
     </div>
   `,
   styles: [`

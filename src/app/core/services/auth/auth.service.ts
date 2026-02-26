@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap, catchError, map, of } from 'rxjs';
 import { BaseApiService } from '../base-api.service';
 import { API_CONFIG } from '../../config/api.config';
 import { TrialService } from '../trial.service';
+import { LocaleService } from '../locale/locale.service';
 import { throwError } from 'rxjs';
 
 export interface LoginRequest {
@@ -60,12 +61,13 @@ export class AuthService extends BaseApiService {
   public currentUser$ = this.currentUserSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  constructor(private trialService: TrialService) {
+  constructor(private trialService: TrialService, private localeService: LocaleService) {
     super();
     this.loadStoredAuth();
   }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
+    // ✅ Backend detecta tenant automáticamente por email
     return this.post<LoginResponse>('/auth/cookie-login/', credentials, { withCredentials: true })
       .pipe(
         tap(response => {
@@ -103,13 +105,7 @@ export class AuthService extends BaseApiService {
   }
 
   registerWithPlan(userData: any): Observable<any> {
-    console.log('🚀 [AUTH_SERVICE] Enviando registro con plan:', userData);
-    return this.post('/subscriptions/register/', userData).pipe(
-      tap({
-        next: response => console.log('✅ [AUTH_SERVICE] Registro exitoso:', response),
-        error: error => console.error('❌ [AUTH_SERVICE] Error en registro:', error)
-      })
-    );
+    return this.post('/subscriptions/register/', userData);
   }
 
   // Check if email is already registered
@@ -146,8 +142,7 @@ export class AuthService extends BaseApiService {
       .pipe(
         catchError(error => {
           if (error.status === 402 || error.error?.code === 'UPGRADE_REQUIRED') {
-            // Redirigir a upgrade o mostrar modal
-            console.warn('Upgrade required:', error.error?.message);
+            // Upgrade required - handle in component
           }
           return throwError(() => error);
         })
@@ -238,6 +233,11 @@ export class AuthService extends BaseApiService {
     
     if (normalizedRole !== 'SUPER_ADMIN') {
       this.trialService.loadTrialStatus();
+      // Cargar configuración regional del tenant
+      this.localeService.loadTenantLocaleFromBackend().subscribe({
+        next: (config) => this.localeService['currentLocale'].set(config),
+        error: () => {} // Fallback to default config
+      });
     }
   }
 
@@ -249,8 +249,6 @@ export class AuthService extends BaseApiService {
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
   }
-
-
 
   private loadStoredAuth(): void {
     const userStr = localStorage.getItem('user');

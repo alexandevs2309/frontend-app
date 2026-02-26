@@ -74,7 +74,7 @@ export class EmployeeManagementService {
           }),
           catchError((employeeError) => {
             // Falló la creación del empleado, intentar rollback del usuario
-            console.error('Error creando empleado, intentando rollback del usuario:', employeeError);
+            
             
             return this.authService.deleteUser(createdUser!.id).pipe(
               switchMap(() => {
@@ -89,7 +89,7 @@ export class EmployeeManagementService {
               }),
               catchError((rollbackError) => {
                 // Rollback falló - situación crítica
-                console.error('Error en rollback del usuario:', rollbackError);
+                
                 return throwError(() => ({
                   success: false,
                   error: `Error creando empleado: ${this.getEmployeeErrorMessage(employeeError)}. ATENCIÓN: Se creó el usuario pero no se pudo eliminar. Contacte al administrador.`,
@@ -105,7 +105,7 @@ export class EmployeeManagementService {
       }),
       catchError((userError) => {
         // Falló la creación del usuario
-        console.error('Error creando usuario:', userError);
+        
         return throwError(() => ({
           success: false,
           error: this.getUserErrorMessage(userError),
@@ -137,7 +137,7 @@ export class EmployeeManagementService {
   getAvailableUsers(): Observable<any[]> {
     return this.authService.getUsersAvailableForEmployee().pipe(
       catchError((error) => {
-        console.error('Error obteniendo usuarios disponibles:', error);
+        
         return of([]);
       })
     );

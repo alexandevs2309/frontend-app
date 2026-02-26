@@ -96,12 +96,12 @@
                (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
             
             <!-- Efecto de brillo al hover -->
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500 transform -skew-x-12"></div>
+            <div class="absolute inset-0 bg-linear-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500 transform -skew-x-12"></div>
             
             <!-- Imagen o icono -->
             <div class="relative z-10">
               <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="w-full h-36 object-cover rounded-xl mb-3 shadow-md">
-              <div *ngIf="!item.image" class="w-full h-36 bg-gradient-to-br from-primary-100 via-primary-50 to-primary-100 dark:from-primary-900 dark:via-primary-900 dark:to-primary-900 rounded-xl mb-3 flex items-center justify-center shadow-inner">
+              <div *ngIf="!item.image" class="w-full h-36 bg-linear-to-br from-primary-100 via-primary-50 to-primary-100 dark:from-primary-900 dark:via-primary-900 dark:to-primary-900 rounded-xl mb-3 flex items-center justify-center shadow-inner">
                 <i [class]="tipoActivo === 'services' ? 'pi pi-cut' : 'pi pi-box'" class="text-6xl text-primary-600 dark:text-primary-400 drop-shadow-lg"></i>
               </div>
               

@@ -288,7 +288,7 @@ export class BillingManagement implements OnInit {
                 this.tenantOptions.set(tenants.map((t: any) => ({ name: t.name, id: t.id })));
             },
             error: (error) => {
-                console.error('Error loading tenants:', error);
+                
                 this.tenantOptions.set([]);
             }
         });
@@ -446,6 +446,6 @@ export class BillingManagement implements OnInit {
             error: error?.message || 'Unknown error',
             component: 'BillingManagement'
         };
-        console.warn('[BillingManagement Error]', errorInfo);
+        
     }
 }

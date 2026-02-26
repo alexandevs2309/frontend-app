@@ -9,7 +9,7 @@ export class ErrorHandlerService {
   private messageService = inject(MessageService);
 
   handleError(operation: string, error: any, fallbackAction?: () => void): Observable<any> {
-    console.error(`Error en ${operation}:`, error);
+    
     
     const errorMessage = this.getErrorMessage(error);
     

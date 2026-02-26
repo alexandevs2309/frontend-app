@@ -9,14 +9,14 @@ import { SaasMetricsService, SaasMetrics } from '../../../core/services/saas-met
     template: `
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
             <div class="card mb-0 relative overflow-hidden group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <div class="absolute inset-0 bg-gradient-to-br from-green-400/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="absolute inset-0 bg-linear-to-br from-green-400/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div class="relative">
                     <div class="flex justify-between mb-4">
                         <div>
                             <span class="block text-muted-color font-medium mb-4">MRR</span>
                             <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{(metrics()?.mrr || 0) | currency:'USD':'symbol':'1.0-0'}}</div>
                         </div>
-                        <div class="flex items-center justify-center bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
+                        <div class="flex items-center justify-center bg-linear-to-br from-green-400 to-emerald-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
                             <i class="pi pi-dollar text-white text-2xl"></i>
                         </div>
                     </div>
@@ -30,14 +30,14 @@ import { SaasMetricsService, SaasMetrics } from '../../../core/services/saas-met
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
             <div class="card mb-0 relative overflow-hidden group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="absolute inset-0 bg-linear-to-br from-blue-400/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div class="relative">
                     <div class="flex justify-between mb-4">
                         <div>
                             <span class="block text-muted-color font-medium mb-4">Tenants Activos</span>
                             <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{metrics()?.active_tenants || 0}}</div>
                         </div>
-                        <div class="flex items-center justify-center bg-gradient-to-br from-blue-400 to-indigo-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
+                        <div class="flex items-center justify-center bg-linear-to-br from-blue-400 to-indigo-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
                             <i class="pi pi-users text-white text-2xl"></i>
                         </div>
                     </div>
@@ -50,14 +50,14 @@ import { SaasMetricsService, SaasMetrics } from '../../../core/services/saas-met
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
             <div class="card mb-0 relative overflow-hidden group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <div class="absolute inset-0 bg-gradient-to-br from-orange-400/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="absolute inset-0 bg-linear-to-br from-orange-400/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div class="relative">
                     <div class="flex justify-between mb-4">
                         <div>
                             <span class="block text-muted-color font-medium mb-4">Churn Rate</span>
                             <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{(metrics()?.churn_rate || 0).toFixed(1)}}%</div>
                         </div>
-                        <div class="flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
+                        <div class="flex items-center justify-center bg-linear-to-br from-orange-400 to-red-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
                             <i class="pi pi-chart-line text-white text-2xl"></i>
                         </div>
                     </div>
@@ -70,14 +70,14 @@ import { SaasMetricsService, SaasMetrics } from '../../../core/services/saas-met
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
             <div class="card mb-0 relative overflow-hidden group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                <div class="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="absolute inset-0 bg-linear-to-br from-purple-400/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div class="relative">
                     <div class="flex justify-between mb-4">
                         <div>
                             <span class="block text-muted-color font-medium mb-4">Revenue por Plan</span>
                             <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{getTopPlan()}}</div>
                         </div>
-                        <div class="flex items-center justify-center bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
+                        <div class="flex items-center justify-center bg-linear-to-br from-purple-400 to-pink-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
                             <i class="pi pi-star text-white text-2xl"></i>
                         </div>
                     </div>
@@ -102,7 +102,7 @@ export class SaasStatsWidget implements OnInit {
     loadMetrics() {
         this.saasMetricsService.getSaasMetrics().subscribe({
             next: (data) => this.metrics.set(data),
-            error: (error) => console.error('Error loading SaaS metrics:', error)
+            error: () => this.metrics.set(null)
         });
     }
 

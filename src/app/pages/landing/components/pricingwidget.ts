@@ -97,22 +97,17 @@ export class PricingWidget implements OnInit, OnDestroy {
     }
     
     selectPlan(planName: string, price: number) {
-        console.log('🎩 [PRICING] Plan seleccionado:', { plan: planName, price });
-        console.log('🔄 [PRICING] Navegando a registro con parámetros...');
         this.router.navigate(['/auth/register'], {
             queryParams: { plan: planName.toLowerCase(), price: price }
         });
     }
     
     contactEnterprise() {
-        console.log('🏢 [PRICING] Contacto empresarial solicitado');
         // Scroll to contact section or open contact modal
         const contactSection = document.getElementById('contact');
         if (contactSection) {
-            console.log('📍 [PRICING] Scrolling a sección de contacto');
             contactSection.scrollIntoView({ behavior: 'smooth' });
         } else {
-            console.log('📧 [PRICING] Abriendo email de contacto');
             // Fallback: navigate to contact page or open email
             window.location.href = 'mailto:ventas@auron-suite.com?subject=Consulta Plan Empresarial';
         }

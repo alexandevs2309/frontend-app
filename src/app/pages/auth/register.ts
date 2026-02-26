@@ -128,28 +128,24 @@ export class Register implements OnInit {
   ) {}
 
   ngOnInit() {
-    console.log('🚀 [REGISTER] Iniciando componente de registro');
+    
     
     // A/B Testing: Randomly assign variant
     const variants: ('A' | 'B' | 'C')[] = ['A', 'B', 'C'];
     this.ctaVariant = variants[Math.floor(Math.random() * variants.length)];
-    console.log('🎯 [A/B TEST] Variante CTA:', this.ctaVariant, '-', this.ctaTexts[this.ctaVariant]);
+    
     
     // Load saved data from localStorage
     this.loadSavedData();
     
     this.route.queryParams.subscribe(params => {
-      console.log('📋 [REGISTER] Query params recibidos:', params);
+      
       if (params['plan']) {
         this.planData.selectedPlan = params['plan'];
         this.planData.selectedPrice = +params['price'] || 0;
-        console.log('✅ [REGISTER] Plan seleccionado desde landing:', {
-          plan: this.planData.selectedPlan,
-          price: this.planData.selectedPrice
-        });
-      } else if (!this.planData.selectedPlan) {
+        } else if (!this.planData.selectedPlan) {
         // No hay plan seleccionado - redirigir a landing para elegir plan
-        console.log('⚠️ [REGISTER] No hay plan seleccionado, redirigiendo a landing...');
+        
         this.messageService.add({
           severity: 'info',
           summary: 'Selecciona un Plan',
@@ -188,7 +184,7 @@ export class Register implements OnInit {
           this.ownerData = data.ownerData || this.ownerData;
           this.planData = data.planData || this.planData;
           this.currentStep = data.currentStep || 0;
-          console.log('✅ [REGISTER] Datos recuperados de borrador');
+          
           
           this.messageService.add({
             severity: 'info',
@@ -201,7 +197,7 @@ export class Register implements OnInit {
         }
       }
     } catch (error) {
-      console.error('Error loading saved data:', error);
+      
     }
   }
 
@@ -231,7 +227,7 @@ export class Register implements OnInit {
           this.autoSaveStatus = 'idle';
         }, 2000);
       } catch (error) {
-        console.error('Error saving data:', error);
+        
         this.autoSaveStatus = 'idle';
       }
     }, 500);
@@ -301,7 +297,7 @@ export class Register implements OnInit {
 
   nextStep() {
     if (this.currentStep < 2) {
-      console.log(`➡️ [REGISTER] Avanzando al paso ${this.currentStep + 1}`);
+      
       
       // Analytics: Track step completion
       this.trackEvent('registration_step_completed', {
@@ -365,11 +361,11 @@ export class Register implements OnInit {
 
   onSubmit() {
     if (!this.termsData.acceptTerms) {
-      console.log('❌ [REGISTER] Términos no aceptados');
+      
       return;
     }
 
-    console.log('🔄 [REGISTER] Iniciando proceso de registro...');
+    
     
     // Analytics: Track registration attempt
     this.trackEvent('registration_submitted', {
@@ -392,11 +388,11 @@ export class Register implements OnInit {
       // password: this.ownerData.password // Backend genera contraseña automática
     };
 
-    console.log('📤 [REGISTER] Datos enviados al backend:', registrationData);
+    
 
     this.authService.registerWithPlan(registrationData).subscribe({
       next: (response) => {
-        console.log('✅ [REGISTER] Respuesta exitosa del backend:', response);
+        
         this.isLoading = false;
         
         // Analytics: Track successful registration
@@ -416,7 +412,7 @@ export class Register implements OnInit {
           life: 8000
         });
         
-        console.log('🔄 [REGISTER] Redirigiendo a página de confirmación...');
+        
         setTimeout(() => {
           this.router.navigate(['/auth/registration-success'], {
             queryParams: { 
@@ -429,7 +425,7 @@ export class Register implements OnInit {
         }, 2000);
       },
       error: (error) => {
-        console.error('❌ [REGISTER] Error del backend:', error);
+        
         this.isLoading = false;
         
         // Analytics: Track registration error
@@ -453,7 +449,7 @@ export class Register implements OnInit {
   // Analytics tracking helper
   private trackEvent(eventName: string, properties: any = {}) {
     // Log to console for debugging
-    console.log(`📊 [ANALYTICS] ${eventName}:`, properties);
+    
     
     // TODO: Integrate with your analytics service (Google Analytics, Mixpanel, etc.)
     // Example with Google Analytics:

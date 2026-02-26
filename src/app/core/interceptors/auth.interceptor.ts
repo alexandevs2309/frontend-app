@@ -1,10 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { LocaleService } from '../services/locale/locale.service';
 
 /**
- * AuthInterceptor - httpOnly Cookies
+ * AuthInterceptor - httpOnly Cookies + Accept-Language
  * 
  * SEGURIDAD:
  * - NO inyecta Authorization header manualmente
@@ -12,11 +13,15 @@ import { environment } from '../../../environments/environment';
  * - Tokens NO accesibles desde JavaScript (previene XSS)
  * - withCredentials: true permite envío de cookies cross-origin
  * 
+ * MULTIIDIOMA:
+ * - Inyecta header Accept-Language según preferencia del usuario
+ * 
  * PERFORMANCE:
  * - Skip para rutas públicas (landing, legal, register)
  */
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
+  private localeService = inject(LocaleService);
 
   private readonly publicPaths = [
     '/landing',
@@ -39,7 +44,10 @@ export class AuthInterceptor implements HttpInterceptor {
     // ✅ Solo para requests al backend API autenticado
     if (req.url.startsWith(environment.apiUrl)) {
       const authReq = req.clone({
-        withCredentials: true  // Envía cookies httpOnly automáticamente
+        withCredentials: true,  // Envía cookies httpOnly automáticamente
+        setHeaders: {
+          'Accept-Language': this.localeService.getCurrentLanguage()
+        }
       });
       return next.handle(authReq);
     }

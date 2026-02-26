@@ -86,7 +86,7 @@ export class Dashboard implements OnInit {
                 this.loading.set(false);
             },
             error: (error) => {
-                console.error('Error loading dashboard data:', error);
+                
                 this.loading.set(false);
             }
         });

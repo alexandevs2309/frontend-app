@@ -30,7 +30,7 @@ export class TrialService extends BaseApiService {
         this.trialStatusSubject.next(status);
       },
       error: (error) => {
-        console.warn('Trial status not available, using defaults:', error.status);
+        
         // Establecer status por defecto para desarrollo
         const defaultStatus: TrialStatus = {
           plan: 'trial',

@@ -106,7 +106,7 @@ export class PaymentConfirmationComponent {
         this.processing.set(false);
       },
       error: (error) => {
-        console.error('Payment error:', error);
+        
         // El error se maneja en el componente padre
         this.processing.set(false);
       }

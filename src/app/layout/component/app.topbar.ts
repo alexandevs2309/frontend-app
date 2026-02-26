@@ -12,6 +12,7 @@ import { MessageService } from 'primeng/api';
 import { AppConfigService } from '../../core/services/app-config.service';
 import { BarbershopSettingsService } from '../../shared/services/barbershop-settings.service';
 import { NotificationService } from '../../core/services/notification/notification.service';
+import { LocaleService } from '../../core/services/locale/locale.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -53,6 +54,10 @@ import { Subscription } from 'rxjs';
                 <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
                 </button>
+                <button type="button" class="layout-topbar-action" (click)="languageMenu.toggle($event)" [title]="localeService.getLanguageLabel()">
+                    <i class="pi pi-language"></i>
+                </button>
+                <p-menu #languageMenu [model]="languageMenuItems" [popup]="true"></p-menu>
             </div>
 
             <button class="layout-topbar-menu-button layout-topbar-action" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveToClass="hidden" leaveActiveClass="animate-fadeout" [hideOnOutsideClick]="true">
@@ -62,7 +67,7 @@ import { Subscription } from 'rxjs';
             <div class="layout-topbar-menu hidden lg:block">
                 <button type="button" class="layout-topbar-action" (click)="userMenu.toggle($event)">
                     <i class="pi pi-user"></i>
-                    <span>Profile</span>
+                    <span>{{ localeService.t('topbar.profile') }}</span>
                 </button>
                 <p-menu #userMenu [model]="userMenuItems" [popup]="true"></p-menu>
             </div>
@@ -72,10 +77,12 @@ import { Subscription } from 'rxjs';
 export class AppTopbar implements OnInit, OnDestroy {
     @ViewChild('appointmentMenu') appointmentMenu!: Menu;
     @ViewChild('notificationMenu') notificationMenu!: Menu;
+    @ViewChild('languageMenu') languageMenu!: Menu;
     
     userMenuItems: MenuItem[] = [];
     appointmentMenuItems: MenuItem[] = [];
     notificationMenuItems: MenuItem[] = [];
+    languageMenuItems: MenuItem[] = [];
     private subscription = new Subscription();
 
     constructor(
@@ -83,19 +90,28 @@ export class AppTopbar implements OnInit, OnDestroy {
         public appConfig: AppConfigService,
         public barbershopSettings: BarbershopSettingsService,
         public notificationService: NotificationService,
+        public localeService: LocaleService,
         private authService: AuthService,
         private router: Router,
         private messageService: MessageService
     ) {
         this.initUserMenu();
+        this.initLanguageMenu();
     }
 
     ngOnInit() {
         this.subscription.add(
             this.notificationService.notifications$.subscribe(() => {
-                console.log('🔔 TopBar - appointmentCount:', this.notificationService.appointmentCount());
-                console.log('🔔 TopBar - saleCount:', this.notificationService.saleCount());
-                console.log('🔔 TopBar - total unreadCount:', this.notificationService.unreadCount());
+                this.buildAppointmentMenu();
+                this.buildNotificationMenu();
+            })
+        );
+        
+        // Suscribirse a cambios de idioma
+        this.subscription.add(
+            this.localeService.languageChanged$.subscribe(() => {
+                this.initUserMenu();
+                this.initLanguageMenu();
                 this.buildAppointmentMenu();
                 this.buildNotificationMenu();
             })
@@ -117,12 +133,12 @@ export class AppTopbar implements OnInit, OnDestroy {
     initUserMenu() {
         this.userMenuItems = [
             {
-                label: 'Profile',
+                label: this.localeService.t('topbar.profile'),
                 icon: 'pi pi-user',
                 command: () => this.goToProfile()
             },
             {
-                label: 'Settings',
+                label: this.localeService.t('topbar.settings'),
                 icon: 'pi pi-cog',
                 command: () => this.goToSettings()
             },
@@ -130,11 +146,47 @@ export class AppTopbar implements OnInit, OnDestroy {
                 separator: true
             },
             {
-                label: 'Logout',
+                label: this.localeService.t('topbar.logout'),
                 icon: 'pi pi-sign-out',
                 command: () => this.logout()
             }
         ];
+    }
+
+    initLanguageMenu() {
+        const languages: Array<{code: 'es' | 'en' | 'fr' | 'pt' | 'de', key: string}> = [
+            { code: 'es', key: 'language.spanish' },
+            { code: 'en', key: 'language.english' },
+            { code: 'fr', key: 'language.french' },
+            { code: 'pt', key: 'language.portuguese' },
+            { code: 'de', key: 'language.german' }
+        ];
+
+        this.languageMenuItems = languages.map(lang => ({
+            label: this.localeService.t(lang.key as any),
+            icon: 'pi pi-globe',
+            styleClass: this.localeService.getCurrentLanguage() === lang.code ? 'font-bold' : '',
+            command: () => this.changeLanguage(lang.code)
+        }));
+    }
+
+    changeLanguage(lang: 'es' | 'en' | 'fr' | 'pt' | 'de') {
+        this.localeService.setLanguage(lang);
+        // Los menús se actualizan automáticamente vía languageChanged$
+        
+        const langKeys: Record<string, string> = {
+            es: 'language.changed_to_es',
+            en: 'language.changed_to_en',
+            fr: 'language.changed_to_fr',
+            pt: 'language.changed_to_pt',
+            de: 'language.changed_to_de'
+        };
+        
+        this.messageService.add({ 
+            severity: 'success', 
+            summary: this.localeService.t('language.changed'), 
+            detail: this.localeService.t(langKeys[lang] as any)
+        });
     }
 
     toggleDarkMode() {
@@ -142,11 +194,11 @@ export class AppTopbar implements OnInit, OnDestroy {
     }
 
     goToProfile() {
-        console.log('Navigate to profile');
+        // TODO: Implement profile navigation
     }
 
     goToSettings() {
-        console.log('Navigate to settings');
+        // TODO: Implement settings navigation
     }
 
     goToAppointments() {
@@ -154,10 +206,11 @@ export class AppTopbar implements OnInit, OnDestroy {
     }
 
     goToNotifications() {
+        const count = this.notificationService.unreadCount();
         this.messageService.add({ 
             severity: 'info', 
-            summary: 'Notificaciones', 
-            detail: `Tienes ${this.notificationService.unreadCount()} notificaciones sin leer` 
+            summary: this.localeService.t('topbar.notifications'), 
+            detail: `${count} ${this.localeService.t('topbar.unread_notifications')}` 
         });
     }
 
@@ -174,11 +227,11 @@ export class AppTopbar implements OnInit, OnDestroy {
                     this.router.navigate(['/client/appointments']);
                 }
             }))
-            : [{ label: 'No hay notificaciones de citas', disabled: true }];
+            : [{ label: this.localeService.t('topbar.no_appointments'), disabled: true }];
         
         this.appointmentMenuItems.push(
             { separator: true },
-            { label: 'Ver todas las citas', icon: 'pi pi-calendar', command: () => this.goToAppointments() }
+            { label: this.localeService.t('topbar.view_all'), icon: 'pi pi-calendar', command: () => this.goToAppointments() }
         );
     }
 
@@ -194,29 +247,41 @@ export class AppTopbar implements OnInit, OnDestroy {
                     this.notificationService.markAsRead(notif.id).subscribe();
                 }
             }))
-            : [{ label: 'No hay notificaciones de ventas', disabled: true }];
+            : [{ label: this.localeService.t('topbar.no_sales'), disabled: true }];
         
         this.notificationMenuItems.push(
             { separator: true },
-            { label: 'Marcar todas como leídas', icon: 'pi pi-check-circle', command: () => this.markAllAsRead() }
+            { label: this.localeService.t('topbar.mark_all_read'), icon: 'pi pi-check-circle', command: () => this.markAllAsRead() }
         );
     }
 
     markAllAsRead() {
         this.notificationService.markAllAsRead().subscribe(() => {
-            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Todas las notificaciones marcadas como leídas' });
+            this.messageService.add({ 
+                severity: 'success', 
+                summary: this.localeService.t('common.success'), 
+                detail: this.localeService.t('topbar.mark_all_read') 
+            });
         });
     }
 
     logout() {
         this.authService.logout().subscribe({
             next: () => {
-                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Session cerrada correctamente!' });
+                this.messageService.add({ 
+                    severity: 'success', 
+                    summary: this.localeService.t('common.success'), 
+                    detail: this.localeService.t('auth.logout_success') 
+                });
                 this.router.navigate(['/auth/login']);
             },
             error: () => {
                 this.authService.clearAuthData();
-                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Session cerrada correctamente!' });
+                this.messageService.add({ 
+                    severity: 'success', 
+                    summary: this.localeService.t('common.success'), 
+                    detail: this.localeService.t('auth.logout_success') 
+                });
                 this.router.navigate(['/auth/login']);
             }
         });

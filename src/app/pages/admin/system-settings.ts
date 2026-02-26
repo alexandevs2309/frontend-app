@@ -24,7 +24,6 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
     styleUrl:'./system.scss' ,
     template: `
 
-
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden max-w-full mx-auto min-h-screen py-12 px-4 sm:px-6 lg:px-8">
                     <!-- Header dentro de la card -->
 
@@ -574,7 +573,7 @@ export class SystemSettings implements OnInit {
     private loadSettings() {
         this.settingsService.getSettings().subscribe({
             next: (settings) => {
-                console.log('Settings loaded:', settings);
+                
                 
                 // General form
                 this.generalForm.patchValue({
@@ -980,6 +979,6 @@ export class SystemSettings implements OnInit {
             error: error?.message || 'Unknown error',
             component: 'SystemSettings'
         };
-        console.warn('[SystemSettings Error]', errorInfo);
+        
     }
 }

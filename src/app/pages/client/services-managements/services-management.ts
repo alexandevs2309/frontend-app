@@ -273,7 +273,7 @@ export class ServicesManagement implements OnInit {
             this.categoriasDisponibles = this.normalizeArray<ServiceCategoryDto>(response);
         } catch (error) {
             if (!environment.production) {
-                console.error('Error cargando categorías:', error);
+                
             }
             this.categoriasDisponibles = [];
         }
@@ -291,7 +291,7 @@ export class ServicesManagement implements OnInit {
             this.servicios.set(serviciosNormalizados);
         } catch (error) {
             if (!environment.production) {
-                console.error('Error cargando servicios:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',
@@ -357,7 +357,7 @@ export class ServicesManagement implements OnInit {
             this.cargarServicios();
         } catch (error: any) {
             if (!environment.production) {
-                console.error('Error guardando servicio:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',
@@ -391,7 +391,7 @@ export class ServicesManagement implements OnInit {
             this.cargarServicios();
         } catch (error: any) {
             if (!environment.production) {
-                console.error('Error eliminando servicio:', error);
+                
             }
             this.messageService.add({
                 severity: 'error',

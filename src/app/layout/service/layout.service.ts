@@ -87,10 +87,6 @@ export class LayoutService {
             this.toggleDarkMode(this._config);
         }
 
-
-
-
-
         effect(() => {
             const config = this.layoutConfig();
             if (config) {

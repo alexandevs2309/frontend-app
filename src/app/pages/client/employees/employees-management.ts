@@ -38,8 +38,6 @@ interface PaymentDto {
   paid_at: string;
 }
 
-
-
 @Component({
   selector: 'app-employees-management',
   standalone: true,
@@ -799,9 +797,8 @@ export class EmployeesManagement implements OnInit {
 
   async cargarConfiguracionDefecto() {
     try {
-      const token = localStorage.getItem('access_token');
       const response = await fetch(`${environment.apiUrl}/settings/barbershop/`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (response.ok) {
         const config = await response.json();
@@ -847,7 +844,7 @@ export class EmployeesManagement implements OnInit {
       this.empleados.set(empleadosFusionados);
     } catch (error) {
       if (!environment.production) {
-        console.error('Error cargando datos:', error);
+        
       }
       this.messageService.add({
         severity: 'error',
@@ -919,7 +916,7 @@ export class EmployeesManagement implements OnInit {
             is_active: formData.is_active
           };
 
-          console.log('Updating employee with data:', updateData);
+          
           // Usar PATCH en lugar de PUT para evitar problemas con campos no permitidos
           await this.employeeService.patchEmployee(this.empleadoSeleccionado.id, updateData).toPromise();
         }
@@ -970,8 +967,8 @@ export class EmployeesManagement implements OnInit {
       await this.cargarDatos();
     } catch (error: any) {
       if (!environment.production) {
-        console.error('Error guardando empleado:', error);
-        console.error('Error details:', error.error);
+        
+        
       }
 
       let errorMessage = 'No se pudo guardar el empleado';
@@ -1026,7 +1023,7 @@ export class EmployeesManagement implements OnInit {
       });
     } catch (error) {
       if (!environment.production) {
-        console.error('Error eliminando empleado:', error);
+        
       }
       this.messageService.add({
         severity: 'error',
@@ -1088,7 +1085,7 @@ export class EmployeesManagement implements OnInit {
       }
     } catch (error) {
       if (!environment.production) {
-        console.error('Error cargando configuración:', error);
+        
       }
     }
   }
@@ -1155,7 +1152,7 @@ export class EmployeesManagement implements OnInit {
       this.historialPagos.set(response.payments || []);
     } catch (error) {
       if (!environment.production) {
-        console.error('Error cargando historial:', error);
+        
       }
       this.messageService.add({
         severity: 'error',
@@ -1176,7 +1173,7 @@ export class EmployeesManagement implements OnInit {
       this.paymentStats.set(response);
     } catch (error) {
       if (!environment.production) {
-        console.error('Error cargando estadísticas:', error);
+        
       }
     } finally {
       this.cargandoStats.set(false);
@@ -1206,7 +1203,7 @@ export class EmployeesManagement implements OnInit {
       this.mostrarRecibo = true;
     } catch (error) {
       if (!environment.production) {
-        console.error('Error cargando recibo:', error);
+        
       }
       this.messageService.add({
         severity: 'error',
@@ -1246,7 +1243,7 @@ export class EmployeesManagement implements OnInit {
       this.prestamos.set(response.loans || []);
     } catch (error) {
       if (!environment.production) {
-        console.error('Error cargando préstamos:', error);
+        
       }
       this.messageService.add({
         severity: 'error',
@@ -1267,7 +1264,7 @@ export class EmployeesManagement implements OnInit {
       this.resumenPrestamos.set(response);
     } catch (error) {
       if (!environment.production) {
-        console.error('Error cargando resumen de préstamos:', error);
+        
       }
     } finally {
       this.cargandoResumenPrestamos.set(false);
@@ -1339,7 +1336,7 @@ export class EmployeesManagement implements OnInit {
       ]);
     } catch (error: any) {
       if (!environment.production) {
-        console.error('Error creando préstamo:', error);
+        
       }
       this.messageService.add({
         severity: 'error',
