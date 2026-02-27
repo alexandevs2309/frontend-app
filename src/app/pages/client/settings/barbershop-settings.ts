@@ -19,6 +19,8 @@ interface BarbershopSettings {
   logo?: string;
   currency: string;
   currency_symbol: string;
+  currency_locked?: boolean;
+  currency_lock_reason?: string;
   business_hours: {
     [key: string]: { open: string; close: string; closed: boolean };
   };
@@ -56,6 +58,8 @@ export class BarbershopSettingsComponent implements OnInit {
     name: '',
     currency: 'DOP',
     currency_symbol: 'RD$',
+    currency_locked: false,
+    currency_lock_reason: '',
     business_hours: {
       monday: { open: '08:00', close: '20:00', closed: false },
       tuesday: { open: '08:00', close: '20:00', closed: false },
@@ -86,6 +90,7 @@ export class BarbershopSettingsComponent implements OnInit {
   pendingData = signal<any>(null);
 
   currencies = [
+    { label: 'Peso Colombiano (COP)', value: 'COP', symbol: '$' },
     { label: 'Peso Dominicano (DOP)', value: 'DOP', symbol: 'RD$' },
     { label: 'Dólar Americano (USD)', value: 'USD', symbol: 'USD$' },
     { label: 'Euro (EUR)', value: 'EUR', symbol: '€' }
@@ -119,6 +124,12 @@ export class BarbershopSettingsComponent implements OnInit {
               website: ''
             };
           }
+          if (data.currency_locked === undefined) {
+            data.currency_locked = false;
+          }
+          if (!data.currency_lock_reason) {
+            data.currency_lock_reason = '';
+          }
           this.settings.set(data);
           this.loading.set(false);
         },
@@ -139,7 +150,17 @@ export class BarbershopSettingsComponent implements OnInit {
 
   saveSettings() {
     this.loading.set(true);
-    this.http.post(`${environment.apiUrl}/settings/barbershop/`, this.settings())
+    const current = this.settings();
+    const payload = {
+      name: current.name,
+      currency: current.currency,
+      currency_symbol: current.currency_symbol,
+      business_hours: current.business_hours,
+      contact: current.contact,
+      pos_config: current.pos_config
+    };
+
+    this.http.post(`${environment.apiUrl}/settings/barbershop/`, payload)
       .subscribe({
         next: (response: any) => {
           this.loading.set(false);
@@ -159,10 +180,15 @@ export class BarbershopSettingsComponent implements OnInit {
         },
         error: (error) => {
           this.loading.set(false);
+          const backendDetail =
+            error?.error?.details ||
+            error?.error?.error ||
+            error?.error?.message ||
+            'No se pudo guardar la configuración';
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo guardar la configuración'
+            detail: backendDetail
           });
         }
       });
@@ -215,6 +241,9 @@ export class BarbershopSettingsComponent implements OnInit {
   }
 
   onCurrencyChange(currency: any) {
+    if (this.settings().currency_locked) {
+      return;
+    }
     const selected = this.currencies.find(c => c.value === currency);
     if (selected) {
       this.settings.update(s => ({

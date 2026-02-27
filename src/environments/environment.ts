@@ -7,8 +7,8 @@
  */
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8000/api',
-  wsUrl: 'ws://localhost:8000/ws',
+  apiUrl: 'http://localhost/api',
+  wsUrl: 'ws://localhost/ws',
   appName: 'Auron-Suite',
   appVersion: '1.0.0',
   

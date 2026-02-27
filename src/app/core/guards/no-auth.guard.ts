@@ -29,9 +29,12 @@ export class NoAuthGuard implements CanActivate {
 
   private redirectToDashboard(role: string | null): void {
     switch (role) {
+      case 'SUPER_ADMIN':
       case 'SuperAdmin':
         this.router.navigate(['/admin/dashboard']);
         break;
+      case 'CLIENT_ADMIN':
+      case 'CLIENT_STAFF':
       case 'Client-Admin':
       case 'Client-Staff':
         this.router.navigate(['/client/dashboard']);

@@ -94,8 +94,11 @@ export class Dashboard implements OnInit {
 
     getRoleDisplayName(role: string): string {
         const roleNames: { [key: string]: string } = {
+            'SUPER_ADMIN': 'Super Administrador',
+            'CLIENT_ADMIN': 'Administrador de Peluquería',
+            'CLIENT_STAFF': 'Empleado/Barbero',
             'SuperAdmin': 'Super Administrador',
-            'Client-Admin': 'Administrador de Peluquería', 
+            'Client-Admin': 'Administrador de Peluquería',
             'Client-Staff': 'Empleado/Barbero'
         };
         return roleNames[role] || role;
@@ -103,11 +106,11 @@ export class Dashboard implements OnInit {
 
     isClientAdmin(): boolean {
         const user = this.authService.getCurrentUser();
-        return user?.role === 'Client-Admin';
+        return user?.role === 'CLIENT_ADMIN';
     }
 
     isClientStaff(): boolean {
         const user = this.authService.getCurrentUser();
-        return user?.role === 'Client-Staff';
+        return user?.role === 'CLIENT_STAFF';
     }
 }

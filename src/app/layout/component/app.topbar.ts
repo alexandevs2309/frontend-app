@@ -124,7 +124,7 @@ export class AppTopbar implements OnInit, OnDestroy {
 
     getDashboardRoute(): string {
         const user = this.authService.getCurrentUser();
-        if (user?.role === 'SuperAdmin') {
+        if (user?.role === 'SUPER_ADMIN' || user?.role === 'SuperAdmin') {
             return '/admin/dashboard';
         }
         return '/client/dashboard';

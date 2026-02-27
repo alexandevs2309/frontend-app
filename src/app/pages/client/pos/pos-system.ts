@@ -1863,34 +1863,44 @@ ${this.carrito().map(item =>
 
     // Métodos de validación de permisos
     puedeUsarPOS(): boolean {
-        // Normalizar rol para comparación (convertir guiones bajos a guiones medios)
-        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
-        const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin', 'Client-Staff', 'Estilista', 'Utility'];
-        return rolesPermitidos.includes(rolNormalizado);
+        const rolesPermitidos = ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN', 'CLIENT_STAFF', 'ESTILISTA', 'UTILITY'];
+        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
     }
 
     puedeAbrirCaja(): boolean {
-        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
-        const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin'];
-        return rolesPermitidos.includes(rolNormalizado);
+        const rolesPermitidos = ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
+        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
     }
 
     puedeCerrarCaja(): boolean {
-        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
-        const rolesPermitidos = ['Manager', 'Client-Admin', 'SuperAdmin'];
-        return rolesPermitidos.includes(rolNormalizado);
+        const rolesPermitidos = ['MANAGER', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
+        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
     }
 
     puedeAplicarDescuentoAlto(): boolean {
-        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
-        const rolesPermitidos = ['Manager', 'Client-Admin', 'SuperAdmin'];
-        return rolesPermitidos.includes(rolNormalizado);
+        const rolesPermitidos = ['MANAGER', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
+        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
     }
 
     puedeVerHistorial(): boolean {
-        const rolNormalizado = this.rolUsuarioActual.replace(/_/g, '-');
-        const rolesPermitidos = ['Manager', 'Cajera', 'Client-Admin', 'SuperAdmin'];
-        return rolesPermitidos.includes(rolNormalizado);
+        const rolesPermitidos = ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
+        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
+    }
+
+    private normalizarRolPOS(role: string): string {
+        const normalized = (role || '').trim();
+        const roleMap: Record<string, string> = {
+            'SuperAdmin': 'SUPER_ADMIN',
+            'Super-Admin': 'SUPER_ADMIN',
+            'Client-Admin': 'CLIENT_ADMIN',
+            'Client-Staff': 'CLIENT_STAFF',
+            'Manager': 'MANAGER',
+            'Cajera': 'CAJERA',
+            'Estilista': 'ESTILISTA',
+            'Utility': 'UTILITY'
+        };
+        const mapped = roleMap[normalized] || normalized;
+        return mapped.toUpperCase();
     }
 
     guardarArqueoHistorico(arqueo: any) {

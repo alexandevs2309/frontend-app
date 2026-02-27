@@ -31,48 +31,49 @@ export class LandingPublicService {
       {
         id: 'basic',
         name: 'basic',
-        displayName: 'Basic',
-        price: 49.99,
-        description: 'Para barberías pequeñas',
-        maxEmployees: 5,
+        displayName: 'Professional',
+        price: 29.99,
+        description: 'Para pequeñas peluquerías',
+        maxEmployees: 8,
         popular: false,
         features: [
-          'Hasta 5 empleados',
-          'Gestión de citas',
+          'Hasta 8 empleados',
+          'Agenda completa',
           'Reportes básicos',
-          'Soporte por email'
+          'Control de caja',
+          'Historial clientes'
         ]
       },
       {
         id: 'standard',
         name: 'standard',
-        displayName: 'Standard',
+        displayName: 'Business',
         price: 69.99,
-        description: 'Para barberías en crecimiento',
-        maxEmployees: 10,
+        description: 'Para peluquerías en crecimiento',
+        maxEmployees: 25,
         popular: true,
         features: [
-          'Hasta 10 empleados',
-          'Gestión de citas avanzada',
-          'Reportes completos',
-          'Soporte prioritario',
-          'Multi-ubicación'
+          'Hasta 25 empleados',
+          'Inventario',
+          'Reportes avanzados',
+          'Multi-sucursal',
+          'Permisos por rol'
         ]
       },
       {
         id: 'premium',
         name: 'premium',
-        displayName: 'Premium',
-        price: 99.99,
-        description: 'Para barberías establecidas',
-        maxEmployees: 25,
+        displayName: 'Enterprise',
+        price: 129.99,
+        description: 'Para cadenas grandes',
+        maxEmployees: 0,
         popular: false,
         features: [
-          'Hasta 25 empleados',
-          'Todas las funciones',
-          'Reportes avanzados',
-          'API personalizada',
-          'Soporte dedicado 24/7'
+          'Empleados ilimitados',
+          'API',
+          'Soporte prioritario',
+          'SLA garantizado',
+          'Todas las funciones'
         ]
       }
     ];

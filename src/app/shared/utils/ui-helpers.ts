@@ -10,8 +10,11 @@ export class UIHelpers {
 
   static getRoleSeverity(role: string): 'danger' | 'warn' | 'info' | 'success' | 'secondary' {
     switch (role) {
+      case 'SUPER_ADMIN':
       case 'SuperAdmin': return 'danger';
+      case 'CLIENT_ADMIN':
       case 'Client-Admin': return 'warn';
+      case 'CLIENT_STAFF':
       case 'Client-Staff': return 'info';
       case 'Estilista': return 'info';
       case 'Cajera': return 'success';

@@ -108,9 +108,9 @@ export class Login implements OnInit {
                     localStorage.removeItem('rememberMe');
                 }
 
-                // Redirigir inmediatamente sin mensaje (mejor UX)
-                const currentUser = this.authService.getCurrentUser();
-                const userRole = currentUser?.role || response.user?.role;
+                // Redirigir usando el rol de la respuesta directamente
+                const userRole = response.user?.role || 'CLIENT_ADMIN';
+                console.log('Login exitoso, rol:', userRole);
                 this.redirectUser(userRole);
             },
             error: (error) => {
@@ -127,10 +127,16 @@ export class Login implements OnInit {
     }
 
     private redirectUser(role: string): void {
+        console.log('Redirigiendo usuario con rol:', role);
         if (role === 'SUPER_ADMIN') {
+            console.log('Redirigiendo a admin dashboard');
             this.router.navigate(['/admin/dashboard']);
         } else {
-            this.router.navigate(['/client/dashboard']);
+            console.log('Redirigiendo a client dashboard');
+            this.router.navigate(['/client/dashboard']).then(
+                success => console.log('Navegación exitosa:', success),
+                error => console.error('Error en navegación:', error)
+            );
         }
     }
 }

@@ -294,7 +294,10 @@ export class AuthService extends BaseApiService {
       'Client-Admin': 'CLIENT_ADMIN',
       'Client-Staff': 'CLIENT_STAFF', 
       'SuperAdmin': 'SUPER_ADMIN',
-      'Super-Admin': 'SUPER_ADMIN'
+      'Super-Admin': 'SUPER_ADMIN',
+      'Cajera': 'Cajera',
+      'Estilista': 'Estilista',
+      'Manager': 'Manager'
     };
     return roleMap[role] || role;
   }

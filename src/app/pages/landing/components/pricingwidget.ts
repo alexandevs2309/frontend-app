@@ -33,14 +33,8 @@ export class PricingWidget implements OnInit, OnDestroy {
     }
 
     getPlanDisplayName(name: string): string {
-        const names: { [key: string]: string } = {
-            'free': 'Free',
-            'basic': 'Basic',
-            'standard': 'Standard',
-            'premium': 'Premium',
-            'enterprise': 'Enterprise'
-        };
-        return names[name] || name.charAt(0).toUpperCase() + name.slice(1);
+        const plan = this.plans.find(p => p.name === name);
+        return plan?.displayName || name.charAt(0).toUpperCase() + name.slice(1);
     }
 
     getPlanButtonText(name: string): string {

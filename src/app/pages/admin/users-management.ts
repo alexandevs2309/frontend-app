@@ -192,10 +192,10 @@ interface User {
                         <p-select [(ngModel)]="user.role" inputId="role" [options]="roleOptions()" optionLabel="label" optionValue="value" placeholder="Select Role" fluid />
                     </div>
 
-                    <div *ngIf="user.role === 'Client-Admin' || user.role === 'Client-Staff'">
+                    <div *ngIf="requiresTenant(user.role)">
                         <label for="tenant" class="block font-bold mb-3">Tenant</label>
                         <p-select [(ngModel)]="user.tenant" inputId="tenant" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Select Tenant" fluid />
-                        <small class="text-red-500" *ngIf="submitted && (user.role === 'Client-Admin' || user.role === 'Client-Staff') && !user.tenant">Tenant is required for this role.</small>
+                        <small class="text-red-500" *ngIf="submitted && requiresTenant(user.role) && !user.tenant">Tenant is required for this role.</small>
                     </div>
 
                     <div *ngIf="!user.id">
@@ -255,7 +255,7 @@ export class UsersManagement implements OnInit {
                 const users = Array.isArray(data) ? data : data.results || [];
                 // Filtrar solo usuarios del tenant actual (excluir SuperAdmin)
                 const filteredUsers = users.filter((user: any) => 
-                    user.role && user.role !== 'SuperAdmin'
+                    user.role && user.role !== 'SuperAdmin' && user.role !== 'SUPER_ADMIN'
                 );
                 const mappedUsers = filteredUsers.map((user: any) => ({
                     ...user,
@@ -271,7 +271,7 @@ export class UsersManagement implements OnInit {
     loadTenants() {
         const currentUser = this.authService.getCurrentUser();
         
-        if (currentUser?.role === 'SuperAdmin') {
+        if (this.isSuperAdmin(currentUser?.role)) {
             // SuperAdmin puede ver todos los tenants
             this.tenantService.getTenants().subscribe({
                 next: (data: any) => {
@@ -318,7 +318,7 @@ export class UsersManagement implements OnInit {
     filterByTenant() {
         const currentUser = this.authService.getCurrentUser();
         
-        if (currentUser?.role === 'SuperAdmin') {
+        if (this.isSuperAdmin(currentUser?.role)) {
             if (this.selectedTenantFilter) {
                 this.authService.getUsers({ tenant: this.selectedTenantFilter }).subscribe({
                     next: (data: any) => {
@@ -341,7 +341,7 @@ export class UsersManagement implements OnInit {
     }
 
     openNew() {
-        this.user = { is_active: true, role: 'Client-Staff' };
+        this.user = { is_active: true, role: 'CLIENT_STAFF' };
         this.submitted = false;
         this.userDialog = true;
     }
@@ -504,7 +504,15 @@ export class UsersManagement implements OnInit {
     }
 
     private userNeedsTenant(): boolean {
-        return this.user.role === 'Client-Admin' || this.user.role === 'Client-Staff';
+        return this.requiresTenant(this.user.role);
+    }
+
+    requiresTenant(role?: string): boolean {
+        return role === 'CLIENT_ADMIN' || role === 'CLIENT_STAFF' || role === 'Client-Admin' || role === 'Client-Staff';
+    }
+
+    private isSuperAdmin(role?: string): boolean {
+        return role === 'SUPER_ADMIN' || role === 'SuperAdmin';
     }
 
     private updateUser(): void {

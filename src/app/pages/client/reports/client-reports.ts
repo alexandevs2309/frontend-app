@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -43,7 +44,7 @@ import { environment } from '../../../../environments/environment';
         <form [formGroup]="filtrosForm" class="flex gap-3">
           <p-datePicker formControlName="fechaInicio" placeholder="Fecha inicio" [showIcon]="true" dateFormat="dd/mm/yy" class="w-40"></p-datePicker>
           <p-datePicker formControlName="fechaFin" placeholder="Fecha fin" [showIcon]="true" dateFormat="dd/mm/yy" class="w-40"></p-datePicker>
-          <button pButton label="Filtrar" icon="pi pi-filter" (click)="aplicarFiltros()" class="p-button-primary"></button>
+          <button pButton type="button" label="Filtrar" icon="pi pi-filter" (click)="aplicarFiltros()" class="p-button-primary"></button>
         </form>
       </div>
     </div>
@@ -62,7 +63,7 @@ import { environment } from '../../../../environments/environment';
 
   <!-- Gráfico de Ingresos REALES -->
   <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800 transition-colors">
-    <h5 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Ingresos por Día (Últimos 7 días)</h5>
+    <h5 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Ingresos por Mes (Últimos 6 meses)</h5>
     <div class="h-72">
       <p-chart type="line" [data]="chartIngresos" [options]="chartOptions"></p-chart>
     </div>
@@ -76,6 +77,7 @@ import { environment } from '../../../../environments/environment';
 export class ClientReports implements OnInit {
     private dashboardService = inject(DashboardService);
     private fb = inject(FormBuilder);
+    private http = inject(HttpClient);
 
     activeTab = 'dashboard';
 
@@ -135,10 +137,26 @@ export class ClientReports implements OnInit {
 
     chartIngresos: any;
     chartOptions: any;
+    monthlyRevenueRaw: any[] = [];
+    currencyCode = signal('DOP');
 
     ngOnInit() {
         this.initCharts();
+        this.cargarMoneda();
         this.cargarDatos();
+    }
+
+    cargarMoneda() {
+        this.http.get<any>(`${environment.apiUrl}/settings/barbershop/`).subscribe({
+            next: (settings) => {
+                if (settings?.currency) {
+                    this.currencyCode.set(settings.currency);
+                }
+            },
+            error: () => {
+                // Usar fallback por defecto
+            }
+        });
     }
 
     initCharts() {
@@ -174,28 +192,8 @@ export class ClientReports implements OnInit {
                 console.log('📊 Reports Stats RAW:', JSON.stringify(stats, null, 2));
                 
                 const monthlyRevenue = stats.monthly_revenue || [];
-                const currentMonthRevenue = monthlyRevenue.length > 0 ? 
-                    monthlyRevenue[monthlyRevenue.length - 1].revenue : 0;
-                
-                // Calcular totales desde monthly_revenue ya que el backend no los calcula bien
-                const totalRevenue = monthlyRevenue.reduce((sum: number, item: any) => sum + (item.revenue || 0), 0);
-                const activeMonths = monthlyRevenue.filter((item: any) => item.revenue > 0).length;
-                const averageRevenue = activeMonths > 0 ? totalRevenue / activeMonths : 0;
-                
-                console.log('📆 Ingresos mes actual:', currentMonthRevenue);
-                console.log('💰 Total 6 meses:', totalRevenue);
-                console.log('📊 Promedio mensual:', averageRevenue);
-                
-                this.kpiCards[0].value = this.formatearMoneda(currentMonthRevenue);
-                this.kpiCards[1].value = this.formatearMoneda(totalRevenue);
-                this.kpiCards[2].value = this.formatearMoneda(averageRevenue);
-                this.kpiCards[3].value = activeMonths.toString();
-                
-                console.log('✅ KPI Cards actualizados:', this.kpiCards);
-
-                if (stats.monthly_revenue?.length > 0) {
-                    this.actualizarGraficoIngresos(stats.monthly_revenue);
-                }
+                this.monthlyRevenueRaw = monthlyRevenue;
+                this.actualizarKPIsYGrafico(monthlyRevenue);
             },
             error: (error) => {
                 console.error('❌ Error cargando reportes:', error);
@@ -206,7 +204,7 @@ export class ClientReports implements OnInit {
         });
     }
 
-    actualizarGraficoIngresos(monthlyRevenue: any[]) {
+    actualizarGraficoIngresosMensuales(monthlyRevenue: any[]) {
         const labels = monthlyRevenue.map(item => item.month || 'Mes');
         const data = monthlyRevenue.map(item => item.revenue || 0);
 
@@ -223,16 +221,59 @@ export class ClientReports implements OnInit {
         };
     }
 
+    actualizarKPIsYGrafico(monthlyRevenue: any[]) {
+        const currentMonthRevenue = monthlyRevenue.length > 0 ?
+            monthlyRevenue[monthlyRevenue.length - 1].revenue : 0;
+
+        const totalRevenue = monthlyRevenue.reduce((sum: number, item: any) => sum + (item.revenue || 0), 0);
+        const activeMonths = monthlyRevenue.filter((item: any) => item.revenue > 0).length;
+        const averageRevenue = activeMonths > 0 ? totalRevenue / activeMonths : 0;
+
+        this.kpiCards[0].value = this.formatearMoneda(currentMonthRevenue);
+        this.kpiCards[1].value = this.formatearMoneda(totalRevenue);
+        this.kpiCards[2].value = this.formatearMoneda(averageRevenue);
+        this.kpiCards[3].value = activeMonths.toString();
+
+        this.actualizarGraficoIngresosMensuales(monthlyRevenue);
+    }
+
     aplicarFiltros() {
         const filtros = this.filtrosForm.value;
-        this.cargarDatos();
+        const fechaInicio: Date | null = filtros.fechaInicio ? new Date(filtros.fechaInicio) : null;
+        const fechaFin: Date | null = filtros.fechaFin ? new Date(filtros.fechaFin) : null;
+
+        if (!fechaInicio || !fechaFin || this.monthlyRevenueRaw.length === 0) {
+            this.actualizarKPIsYGrafico(this.monthlyRevenueRaw);
+            return;
+        }
+
+        const fechaInicioMes = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), 1);
+        const fechaFinMes = new Date(fechaFin.getFullYear(), fechaFin.getMonth(), 1);
+
+        const monthsCount = this.monthlyRevenueRaw.length;
+        const baseMonth = new Date(new Date().getFullYear(), new Date().getMonth() - (monthsCount - 1), 1);
+
+        const filtrado = this.monthlyRevenueRaw.filter((_: any, index: number) => {
+            const monthDate = new Date(baseMonth.getFullYear(), baseMonth.getMonth() + index, 1);
+            return monthDate >= fechaInicioMes && monthDate <= fechaFinMes;
+        });
+
+        this.actualizarKPIsYGrafico(filtrado);
     }
 
     formatearMoneda(valor: number): string {
-        return new Intl.NumberFormat('es-DO', {
+        const currency = this.currencyCode();
+        const localeMap: Record<string, string> = {
+            DOP: 'es-DO',
+            COP: 'es-CO',
+            USD: 'en-US',
+            EUR: 'es-ES'
+        };
+        const locale = localeMap[currency] || 'es-DO';
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
-            currency: 'DOP'
+            currency,
+            currencyDisplay: 'symbol'
         }).format(valor);
     }
 }
-

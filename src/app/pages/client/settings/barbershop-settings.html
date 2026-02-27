@@ -45,7 +45,7 @@
         <div>
           <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Logo</label>
           <p-fileUpload mode="basic" name="logo" accept="image/*"
-                        [maxFileSize]="1000000" (onUpload)="onLogoUpload($event)"
+                        [maxFileSize]="1000000" (onSelect)="onLogoUpload($event)"
                         chooseLabel="Seleccionar Logo" class="w-full">
           </p-fileUpload>
           <div *ngIf="settings().logo" class="mt-2">
@@ -60,9 +60,15 @@
           </label>
           <p-select [(ngModel)]="settings().currency" [options]="currencies"
                     optionLabel="label" optionValue="value" class="w-full"
+                    [disabled]="settings().currency_locked"
                     (onChange)="onCurrencyChange($event.value)">
           </p-select>
-          <small class="text-red-600 dark:text-red-400">ADVERTENCIA: No se puede cambiar si existen transacciones</small>
+          <small *ngIf="settings().currency_locked" class="text-red-600 dark:text-red-400">
+            {{ settings().currency_lock_reason || 'No se puede cambiar la moneda porque existen transacciones registradas.' }}
+          </small>
+          <small *ngIf="!settings().currency_locked" class="text-amber-700 dark:text-amber-400">
+            Recomendado: definir moneda antes de registrar ventas o nómina.
+          </small>
         </div>
       </div>
     </div>

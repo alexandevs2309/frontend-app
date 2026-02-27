@@ -7,7 +7,7 @@ export const clientRoutes: Routes = [
     {
         path: 'client',
         canActivate: [AuthGuard, RoleGuard],
-        data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF'] },
+        data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
         component: AppLayout,
         children: [
             {
