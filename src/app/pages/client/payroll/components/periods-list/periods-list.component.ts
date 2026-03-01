@@ -37,7 +37,7 @@ import { PaymentConfirmationComponent } from '../payment-confirmation/payment-co
       </div>
 
       <!-- Tabla de períodos -->
-      <p-card>
+      <p-card id="onb-earnings-periods-table">
         <p-table [value]="periods()" [loading]="loading()" responsiveLayout="scroll">
           <ng-template pTemplate="header">
             <tr>

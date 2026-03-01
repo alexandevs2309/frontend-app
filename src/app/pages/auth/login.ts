@@ -12,6 +12,7 @@ import { MessageService } from 'primeng/api';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
 import { AuthService, LoginResponse } from '../../core/services/auth/auth.service';
 import { AppConfigService } from '../../core/services/app-config.service';
+import { LocaleService } from '../../core/services/locale/locale.service';
 
 @Component({
     selector: 'app-login',
@@ -41,7 +42,8 @@ export class Login implements OnInit {
         private authService: AuthService,
         public appConfig: AppConfigService,
         private router: Router,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private localeService: LocaleService
     ) {}
 
     ngOnInit(): void {
@@ -86,8 +88,8 @@ export class Login implements OnInit {
             this.loginForm.markAllAsTouched();
             this.messageService.add({ 
                 severity: 'warn', 
-                summary: 'Formulario incompleto', 
-                detail: 'Por favor completa todos los campos requeridos' 
+                summary: this.t('auth.login.incomplete_form'), 
+                detail: this.t('auth.login.complete_required_fields') 
             });
             return;
         }
@@ -115,10 +117,10 @@ export class Login implements OnInit {
             },
             error: (error) => {
                 this.isLoading = false;
-                const message = error.error?.detail || error.error?.message || 'Credenciales inválidas';
+                const message = error.error?.detail || error.error?.message || this.t('auth.login.invalid_credentials');
                 this.messageService.add({ 
                     severity: 'error', 
-                    summary: 'Error de autenticación', 
+                    summary: this.t('auth.login.auth_error'), 
                     detail: message,
                     life: 4000
                 });
@@ -138,5 +140,9 @@ export class Login implements OnInit {
                 error => console.error('Error en navegación:', error)
             );
         }
+    }
+
+    t(key: string): string {
+        return this.localeService.t(key as any);
     }
 }

@@ -14,6 +14,7 @@ import { BarbershopSettingsService } from '../../shared/services/barbershop-sett
 import { NotificationService } from '../../core/services/notification/notification.service';
 import { LocaleService } from '../../core/services/locale/locale.service';
 import { Subscription } from 'rxjs';
+import { OnboardingTourService } from '../../shared/onboarding/onboarding-tour.service';
 
 @Component({
     selector: 'app-topbar',
@@ -51,6 +52,9 @@ import { Subscription } from 'rxjs';
             <p-menu #notificationMenu [model]="notificationMenuItems" [popup]="true" [style]="{'width': '350px'}"></p-menu>
 
             <div class="layout-config-menu">
+                <button type="button" class="layout-topbar-action" (click)="startOnboardingTour()" title="Recorrido guiado">
+                    <i class="pi pi-compass"></i>
+                </button>
                 <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
                 </button>
@@ -93,7 +97,8 @@ export class AppTopbar implements OnInit, OnDestroy {
         public localeService: LocaleService,
         private authService: AuthService,
         private router: Router,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private onboardingTourService: OnboardingTourService
     ) {
         this.initUserMenu();
         this.initLanguageMenu();
@@ -141,6 +146,11 @@ export class AppTopbar implements OnInit, OnDestroy {
                 label: this.localeService.t('topbar.settings'),
                 icon: 'pi pi-cog',
                 command: () => this.goToSettings()
+            },
+            {
+                label: 'Recorrido guiado',
+                icon: 'pi pi-compass',
+                command: () => this.startOnboardingTour()
             },
             {
                 separator: true
@@ -263,6 +273,17 @@ export class AppTopbar implements OnInit, OnDestroy {
                 detail: this.localeService.t('topbar.mark_all_read') 
             });
         });
+    }
+
+    async startOnboardingTour() {
+        const started = await this.onboardingTourService.startManualTour();
+        if (!started) {
+            this.messageService.add({
+                severity: 'info',
+                summary: 'Tour no disponible',
+                detail: 'Este módulo no tiene recorrido guiado por ahora.'
+            });
+        }
     }
 
     logout() {

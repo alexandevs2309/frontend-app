@@ -8,6 +8,7 @@ export class NotificationBadgeService {
   private appointments = signal<any[]>([]);
   
   todayAppointments = computed(() => {
+    const now = new Date();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -15,7 +16,7 @@ export class NotificationBadgeService {
 
     return this.appointments().filter(apt => {
       const aptDate = new Date(apt.date_time);
-      return aptDate >= today && aptDate < tomorrow && apt.status === 'scheduled';
+      return aptDate >= now && aptDate < tomorrow && apt.status === 'scheduled';
     });
   });
 
@@ -26,6 +27,14 @@ export class NotificationBadgeService {
     return this.appointments().filter(apt => {
       const aptDate = new Date(apt.date_time);
       return aptDate >= now && aptDate <= in30min && apt.status === 'scheduled';
+    });
+  });
+
+  overdueAppointments = computed(() => {
+    const now = new Date();
+    return this.appointments().filter(apt => {
+      const aptDate = new Date(apt.date_time);
+      return aptDate < now && apt.status === 'scheduled';
     });
   });
 

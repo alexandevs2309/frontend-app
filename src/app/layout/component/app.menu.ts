@@ -24,6 +24,7 @@ import { Subscription } from 'rxjs';
 export class AppMenu implements OnInit, OnDestroy {
     model: MenuItem[] = [];
     private subscription = new Subscription();
+    private refreshIntervalId: ReturnType<typeof setInterval> | null = null;
     notificationService = inject(NotificationBadgeService);
 
     constructor(
@@ -37,11 +38,11 @@ export class AppMenu implements OnInit, OnDestroy {
         const currentUser = this.authService.getCurrentUser();
         if (currentUser) {
             this.updateMenuForUser(currentUser.role);
-            // Load appointments for badge
-            if (currentUser.role !== 'SUPER_ADMIN') {
+            // Load appointments badge only for roles that can access appointments
+            if (this.canLoadAppointments(currentUser.role)) {
                 this.notificationService.loadAppointments();
                 // Refresh every 5 minutes
-                setInterval(() => this.notificationService.refresh(), 5 * 60000);
+                this.refreshIntervalId = setInterval(() => this.notificationService.refresh(), 5 * 60000);
             }
         }
 
@@ -50,7 +51,7 @@ export class AppMenu implements OnInit, OnDestroy {
             this.authService.currentUser$.subscribe(user => {
                 if (user) {
                     this.updateMenuForUser(user.role);
-                    if (user.role !== 'SUPER_ADMIN') {
+                    if (this.canLoadAppointments(user.role)) {
                         this.notificationService.loadAppointments();
                     }
                 } else {
@@ -80,6 +81,10 @@ export class AppMenu implements OnInit, OnDestroy {
 
     ngOnDestroy() {
         this.subscription.unsubscribe();
+        if (this.refreshIntervalId) {
+            clearInterval(this.refreshIntervalId);
+            this.refreshIntervalId = null;
+        }
     }
 
     buildClientMenu() {
@@ -118,6 +123,7 @@ export class AppMenu implements OnInit, OnDestroy {
             // CLIENT_ADMIN: All features available
             menuItems.push(
                 { label: this.localeService.t('menu.employees' as any), icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
+                { label: 'Turnos', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/client/schedules'] },
                 { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
                 { 
                     label: this.localeService.t('menu.appointments' as any), 
@@ -133,7 +139,7 @@ export class AppMenu implements OnInit, OnDestroy {
                 { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] },
                 { label: this.localeService.t('menu.settings' as any), icon: 'pi pi-fw pi-cog', routerLink: ['/client/settings'] }
             );
-        } else if (userRole === 'CLIENT_STAFF') {
+        } else if (userRole === 'CLIENT_STAFF' || userRole === 'Estilista') {
             // CLIENT_STAFF: Limited features
             menuItems.push(
                 { 
@@ -149,6 +155,28 @@ export class AppMenu implements OnInit, OnDestroy {
                 { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
                 { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }
             );
+        } else if (userRole === 'Cajera') {
+            menuItems.push(
+                { 
+                    label: this.localeService.t('menu.appointments' as any), 
+                    icon: 'pi pi-fw pi-calendar', 
+                    routerLink: ['/client/appointments'],
+                    badge: badgeCount > 0 ? badgeCount.toString() : undefined,
+                    badgeStyleClass: 'p-badge-danger'
+                },
+                { label: this.localeService.t('menu.sales' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
+                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] }
+            );
+        } else if (userRole === 'Manager') {
+            menuItems.push(
+                { label: this.localeService.t('menu.employees' as any), icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
+                { label: 'Turnos', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/client/schedules'] },
+                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
+                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
+                { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
+                { label: this.localeService.t('menu.pos' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
+                { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }
+            );
         }
 
         return [
@@ -157,5 +185,9 @@ export class AppMenu implements OnInit, OnDestroy {
                 items: menuItems
             }
         ];
+    }
+
+    private canLoadAppointments(role?: string): boolean {
+        return role === 'CLIENT_ADMIN' || role === 'CLIENT_STAFF' || role === 'Cajera' || role === 'Manager' || role === 'Estilista';
     }
 }

@@ -275,6 +275,10 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         return [];
     }
 
+    private isForbiddenError(error: any): boolean {
+        return error?.status === 403;
+    }
+
     async cargarDatos() {
         if (this.cargandoDatos) return;
         
@@ -296,45 +300,66 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         this.cargandoDatos = true;
 
         try {
-            console.log('🔍 Iniciando carga de datos...');
-            
-            const servicesResponse = await this.servicesService.getServices().toPromise();
-            console.log('📋 Services response:', servicesResponse);
-            const services = this.normalizeArray<any>(servicesResponse);
-            console.log('📋 Services normalized:', services.length, 'items');
-            this.servicios = services.filter((s: any) => s.is_active !== false);
+            let accessLimited = false;
+            try {
+                const servicesResponse = await this.servicesService.getServices().toPromise();
+                const services = this.normalizeArray<any>(servicesResponse);
+                this.servicios = services.filter((s: any) => s.is_active !== false);
+            } catch (error) {
+                this.servicios = [];
+                if (!this.isForbiddenError(error)) {
+                    throw error;
+                }
+                accessLimited = true;
+            }
 
-            const productsResponse = await this.inventoryService.getProducts().toPromise();
-            console.log('📦 Products response:', productsResponse);
-            const products = this.normalizeArray<any>(productsResponse);
-            console.log('📦 Products normalized:', products.length, 'items');
-            this.productos = products.filter(
-                (p: any) => p.is_active && (p.stock > 0 || p.stock === undefined)
-            );
+            try {
+                const productsResponse = await this.inventoryService.getProducts().toPromise();
+                const products = this.normalizeArray<any>(productsResponse);
+                this.productos = products.filter(
+                    (p: any) => p.is_active && (p.stock > 0 || p.stock === undefined)
+                );
+            } catch (error) {
+                this.productos = [];
+                if (!this.isForbiddenError(error)) {
+                    throw error;
+                }
+                accessLimited = true;
+            }
 
-            const clientsResponse = await this.clientsService.getClients().toPromise();
-            console.log('👥 Clients response:', clientsResponse);
-            const clients = this.normalizeArray<any>(clientsResponse);
-            console.log('👥 Clients normalized:', clients.length, 'items');
-            this.clientes = clients.filter((c: any) => c.is_active !== false);
+            try {
+                const clientsResponse = await this.clientsService.getClients().toPromise();
+                const clients = this.normalizeArray<any>(clientsResponse);
+                this.clientes = clients.filter((c: any) => c.is_active !== false);
+            } catch (error) {
+                this.clientes = [];
+                if (!this.isForbiddenError(error)) {
+                    throw error;
+                }
+                accessLimited = true;
+            }
 
             // Clientes frecuentes
             this.clientesFrecuentes = this.clientes.filter(
                 (c: any) => (c.total_purchases || 0) > 5
             );
 
-            const employeesResponse = await this.employeesService.getEmployees().toPromise();
-            console.log('👨‍💼 Employees response:', employeesResponse);
-            const employees = this.normalizeArray<any>(employeesResponse);
-            console.log('👨‍💼 Employees normalized:', employees.length, 'items');
-            this.empleados = employees
-                .filter((emp: any) => emp.is_active && ['Estilista', 'Utility'].includes(emp.user?.role))
-                .map((emp: any) => ({
-                    ...emp,
-                    displayName: `${emp.user?.full_name || emp.full_name || emp.name || `Empleado ${emp.id}`} (${emp.user?.role || 'Sin rol'})`
-                }));
-
-            console.log('✅ Datos cargados - Servicios:', this.servicios.length, 'Productos:', this.productos.length, 'Clientes:', this.clientes.length, 'Empleados:', this.empleados.length);
+            try {
+                const employeesResponse = await this.employeesService.getEmployees().toPromise();
+                const employees = this.normalizeArray<any>(employeesResponse);
+                this.empleados = employees
+                    .filter((emp: any) => emp.is_active && ['Estilista', 'Utility'].includes(emp.user?.role))
+                    .map((emp: any) => ({
+                        ...emp,
+                        displayName: `${emp.user?.full_name || emp.full_name || emp.name || `Empleado ${emp.id}`} (${emp.user?.role || 'Sin rol'})`
+                    }));
+            } catch (error) {
+                this.empleados = [];
+                if (!this.isForbiddenError(error)) {
+                    throw error;
+                }
+                accessLimited = true;
+            }
             
             // Guardar en caché
             this.cache.set(cacheKey, {
@@ -351,8 +376,15 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             this.extraerCategorias();
             this.filtrarItems();
 
-        } catch (error) {
-            console.error('Error cargando datos:', error);
+            if (accessLimited) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Acceso limitado',
+                    detail: 'Algunos catálogos del POS no están disponibles para tu rol'
+                });
+            }
+
+        } catch {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -670,6 +702,22 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             const subtotal = this.calcularSubtotal();
             const descuentoValor = Number(this.descuento()) || 0;
             const descuentoFinal = this.tipoDescuento() === '%' ? (subtotal * descuentoValor / 100) : descuentoValor;
+            const descuentoPercent = subtotal > 0 ? (descuentoFinal / subtotal) * 100 : 0;
+            let discountReason: string | undefined;
+
+            if (descuentoPercent > this.limiteDescuento) {
+                const reason = prompt(`Descuento mayor a ${this.limiteDescuento}%. Indique motivo (mínimo 10 caracteres):`) || '';
+                if (reason.trim().length < 10) {
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Motivo requerido',
+                        detail: 'Debe indicar un motivo válido para descuentos altos'
+                    });
+                    this.procesandoVenta = false;
+                    return;
+                }
+                discountReason = reason.trim();
+            }
             
             // Construir array de pagos
             let payments: any[];
@@ -690,6 +738,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 employee_id: this.empleadoSeleccionado()?.id ?? undefined,
                 payment_method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
                 discount: descuentoFinal,
+                discount_reason: discountReason,
                 total: this.calcularTotal(),
                 paid: this.calcularTotal(),
                 details: this.carrito().map(item => this.mapCartItemToSaleDetail(item)),
@@ -709,7 +758,12 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             this.limpiarCarrito();
             this.resetearPago();
         } catch (error: any) {
-            const errorMsg = error?.error?.detail || error?.error?.message || 'Error al procesar la venta';
+            const errorMsg =
+                error?.error?.detail ||
+                error?.error?.message ||
+                (Array.isArray(error?.error) ? error.error.join(' ') : null) ||
+                (typeof error?.error === 'string' ? error.error : null) ||
+                'Error al procesar la venta';
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -734,8 +788,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     async verificarEstadoCaja() {
         try {
-            const registers = await this.posService.getCashRegisters({ is_open: true }).toPromise();
-            this.cajaAbierta.set(registers?.results?.length > 0 || false);
+            const register = await this.posService.getCurrentCashRegister().toPromise();
+            this.cajaAbierta.set(!!register);
 
             // Cargar pagos no cash al verificar estado de caja
             if (this.cajaAbierta()) {
@@ -766,7 +820,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         }
         try {
             await this.posService.openCashRegister({
-                initial_amount: this.montoInicialCaja
+                initial_cash: this.montoInicialCaja
             }).toPromise();
             this.cajaAbierta.set(true);
             this.mostrarDialogoAbrirCaja = false;
@@ -813,8 +867,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         }
         
         try {
-            const registers = await this.posService.getCashRegisters({ is_open: true }).toPromise();
-            const cajaActual = registers?.results?.[0];
+            const cajaActual = await this.posService.getCurrentCashRegister().toPromise();
 
             if (!cajaActual) {
                 this.messageService.add({
@@ -904,11 +957,10 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         }
 
         try {
-            const registers = await this.posService.getCashRegisters({ is_open: true }).toPromise();
-            const cajaActual = registers?.results?.[0];
+            const cajaActual = await this.posService.getCurrentCashRegister().toPromise();
             if (cajaActual) {
                 await this.posService.closeCashRegister(cajaActual.id, {
-                    final_amount: this.montoFinalCaja
+                    final_cash: this.montoFinalCaja
                 }).toPromise();
 
                 // Generar reporte de cuadre
@@ -1037,7 +1089,11 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             let response;
             try {
                 response = await this.posService.getPromotions().toPromise();
-            } catch {
+            } catch (error: any) {
+                if (this.isForbiddenError(error)) {
+                    this.promociones = [];
+                    return;
+                }
                 // Fallback: promociones de ejemplo si no hay endpoint
                 response = {
                     results: [
@@ -1140,8 +1196,17 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     async reembolsarVenta(ventaId: number) {
         if (!confirm('¿Está seguro de reembolsar esta venta?')) return;
+        const reason = prompt('Motivo del reembolso (mínimo 10 caracteres):') || '';
+        if (reason.trim().length < 10) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Motivo requerido',
+                detail: 'Debe indicar un motivo válido para reembolsar'
+            });
+            return;
+        }
         try {
-            await this.posService.refundSale(ventaId, {}).toPromise();
+            await this.posService.refundSale(ventaId, { reason: reason.trim() }).toPromise();
             this.messageService.add({
                 severity: 'success',
                 summary: 'Venta reembolsada',
@@ -1218,8 +1283,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         }
 
         try {
-            const registers = await this.posService.getCashRegisters({ is_open: true }).toPromise();
-            const cajaActual = registers?.results?.[0];
+            const cajaActual = await this.posService.getCurrentCashRegister().toPromise();
             if (!cajaActual) {
                 this.messageService.add({
                     severity: 'error',
@@ -1298,12 +1362,6 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                     const userData = JSON.parse(userStr);
                     this.nombreUsuarioActual = userData.full_name || userData.email || 'Cajero';
                     this.rolUsuarioActual = userData.role || '';
-                    console.log('POS - Usuario cargado:', {
-                        nombre: this.nombreUsuarioActual,
-                        rol: this.rolUsuarioActual,
-                        puedeUsarPOS: this.puedeUsarPOS(),
-                        puedeCerrarCaja: this.puedeCerrarCaja()
-                    });
                 } catch {
                     this.nombreUsuarioActual = 'Cajero';
                     this.rolUsuarioActual = '';
@@ -1885,6 +1943,23 @@ ${this.carrito().map(item =>
     puedeVerHistorial(): boolean {
         const rolesPermitidos = ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
         return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
+    }
+
+    puedeReembolsarVentas(): boolean {
+        const rolesPermitidos = ['MANAGER', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
+        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
+    }
+
+    canRefundSale(venta: SaleWithDetailsDto): boolean {
+        if (!this.puedeReembolsarVentas()) return false;
+        if (!venta || Number(venta.total) <= 0) return false;
+        if (!Array.isArray(venta.details) || venta.details.length === 0) return false;
+
+        return venta.details.every((detail: any) => {
+            const itemType = String(detail?.item_type || '').toLowerCase();
+            const contentType = String(detail?.content_type || '').toLowerCase();
+            return itemType === 'product' || contentType === 'product';
+        });
     }
 
     private normalizarRolPOS(role: string): string {

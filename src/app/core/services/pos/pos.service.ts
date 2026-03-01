@@ -20,8 +20,8 @@ export interface CashRegister {
   user: any;
   opened_at: string;
   closed_at?: string;
-  initial_amount: number;
-  final_amount?: number;
+  initial_cash: number;
+  final_cash?: number;
   is_open: boolean;
 }
 
@@ -60,12 +60,16 @@ export class PosService extends BaseApiService {
     return this.get(`${API_CONFIG.ENDPOINTS.POS.CASH_REGISTERS}${id}/`);
   }
 
-  openCashRegister(data: { initial_amount: number }): Observable<CashRegister> {
+  openCashRegister(data: { initial_cash: number }): Observable<CashRegister> {
     return this.post(API_CONFIG.ENDPOINTS.POS.CASH_REGISTERS, data);
   }
 
-  closeCashRegister(id: number, data: { final_amount: number }): Observable<CashRegister> {
-    return this.patch(`${API_CONFIG.ENDPOINTS.POS.CASH_REGISTERS}${id}/`, data);
+  getCurrentCashRegister(): Observable<CashRegister> {
+    return this.get(`${API_CONFIG.ENDPOINTS.POS.CASH_REGISTERS}current/`);
+  }
+
+  closeCashRegister(id: number, data: { final_cash: number }): Observable<CashRegister> {
+    return this.post(`${API_CONFIG.ENDPOINTS.POS.CASH_REGISTERS}${id}/close/`, data);
   }
 
   // Dashboard & Stats

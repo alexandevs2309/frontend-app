@@ -12,63 +12,83 @@ export const clientRoutes: Routes = [
         children: [
             {
                 path: 'dashboard',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
                 loadComponent: () => import('../pages/client/dashboard/client-dashboard').then(m => m.ClientDashboard)
             },
             {
                 path: 'payment',
+                canActivate: [RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Manager'] },
                 loadComponent: () => import('../pages/client/payments/payment').then(m => m.PaymentComponent)
             },
 
             {
                 path: 'checkout',
+                canActivate: [RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Manager'] },
                 loadComponent: () => import('../pages/client/checkout/checkout').then(m => m.CheckoutComponent)
             },
 
             {
                 path: 'employees',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Manager'] },
                 loadComponent: () => import('../pages/client/employees/employees-management').then(m => m.EmployeesManagement)
             },
             {
+                path: 'schedules',
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Manager'] },
+                loadComponent: () => import('../pages/client/schedules/schedules-management').then(m => m.SchedulesManagement)
+            },
+            {
                 path: 'appointments',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
                 loadComponent: () => import('../pages/client/appointments-management/appointments-main').then(m => m.AppointmentsMain)
             },
             {
                 path: 'pos',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Cajera', 'Manager'] },
                 loadComponent: () => import('../pages/client/pos/pos-system').then(m => m.PosSystem)
             },
             {
                 path: 'payroll',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Manager'] },
                 loadComponent: () => import('../pages/client/payroll/payroll.component').then(m => m.PayrollComponent),
                 loadChildren: () => import('../pages/client/payroll/payroll.routes').then(m => m.PAYROLL_ROUTES)
             },
             {
                 path: 'services',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Cajera', 'Manager'] },
                 loadComponent: () => import('../pages/client/services-managements/services-management').then(m => m.ServicesManagement)
             },
             {
                 path: 'clients',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
                 loadComponent: () => import('../pages/client/clients-managements/clients-management').then(m => m.ClientsManagement)
             },
             {
                 path: 'products',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Cajera', 'Manager'] },
                 loadComponent: () => import('../pages/client/products/products-management').then(m => m.ProductsManagement)
             },
             {
                 path: 'reports',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Manager'] },
                 loadComponent: () => import('../pages/client/reports/client-reports').then(m => m.ClientReports)
             },
             {
                 path: 'settings',
-                canActivate: [TrialGuard],
+                canActivate: [TrialGuard, RoleGuard],
+                data: { roles: ['CLIENT_ADMIN'] },
                 loadComponent: () => import('../pages/client/settings/barbershop-settings').then(m => m.BarbershopSettingsComponent)
             },
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' }

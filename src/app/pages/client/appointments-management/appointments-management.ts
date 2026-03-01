@@ -16,8 +16,9 @@ import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
 import { AppointmentService, AppointmentWithDetails } from '../../../core/services/appointment/appointment.service';
 import { ServiceService, Service } from '../../../core/services/service/service.service';
-import { AuthService } from '../../../core/services/auth/auth.service';
+import { EmployeeService } from '../../../core/services/employee/employee.service';
 import { ClientService } from '../../../core/services/client/client.service';
+import { AuthService } from '../../../core/services/auth/auth.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -90,7 +91,7 @@ import { environment } from '../../../../environments/environment';
                             <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editarCita(cita)" pTooltip="Editar" [disabled]="cita.status === 'completed'"></button>
                             <button pButton icon="pi pi-check" class="p-button-text p-button-sm p-button-success" (click)="completarCita(cita)" pTooltip="Completar" *ngIf="cita.status === 'scheduled'"></button>
                             <button pButton icon="pi pi-times" class="p-button-text p-button-sm p-button-warning" (click)="cancelarCita(cita)" pTooltip="Cancelar" *ngIf="cita.status === 'scheduled'"></button>
-                            <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmarEliminar(cita)" pTooltip="Eliminar"></button>
+                            <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmarEliminar(cita)" pTooltip="Eliminar" *ngIf="canDeleteAppointments"></button>
                         </div>
                     </div>
                 </ng-container>
@@ -129,7 +130,7 @@ import { environment } from '../../../../environments/environment';
                             <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editarCita(cita)" pTooltip="Editar" [disabled]="cita.status === 'completed'"></button>
                             <button pButton icon="pi pi-check" class="p-button-text p-button-sm p-button-success" (click)="completarCita(cita)" pTooltip="Completar" *ngIf="cita.status === 'scheduled'"></button>
                             <button pButton icon="pi pi-times" class="p-button-text p-button-sm p-button-warning" (click)="cancelarCita(cita)" pTooltip="Cancelar" *ngIf="cita.status === 'scheduled'"></button>
-                            <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmarEliminar(cita)" pTooltip="Eliminar"></button>
+                            <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmarEliminar(cita)" pTooltip="Eliminar" *ngIf="canDeleteAppointments"></button>
                         </td>
                     </tr>
                 </ng-template>
@@ -191,8 +192,9 @@ import { environment } from '../../../../environments/environment';
 export class AppointmentsManagement implements OnInit {
     private appointmentService = inject(AppointmentService);
     private serviceService = inject(ServiceService);
-    private authService = inject(AuthService);
+    private employeeService = inject(EmployeeService);
     private clientService = inject(ClientService);
+    private authService = inject(AuthService);
     private messageService = inject(MessageService);
     private confirmationService = inject(ConfirmationService);
     private fb = inject(FormBuilder);
@@ -203,6 +205,7 @@ export class AppointmentsManagement implements OnInit {
     guardando = signal(false);
     mostrarDialogo = false;
     citaSeleccionada: AppointmentWithDetails | null = null;
+    canDeleteAppointments = false;
     fechaMinima = new Date();
 
     // Filtros
@@ -248,6 +251,7 @@ export class AppointmentsManagement implements OnInit {
     });
 
     ngOnInit() {
+        this.canDeleteAppointments = this.computeCanDeleteAppointments();
         this.cargarDatos();
         // Escuchar evento de edición desde calendario
         window.addEventListener('editAppointment', (e: any) => {
@@ -259,17 +263,24 @@ export class AppointmentsManagement implements OnInit {
         if (this.cargando()) return; // ✅ Prevenir llamadas concurrentes
         this.cargando.set(true);
         try {
-            const [citasRes, serviciosRes, usuariosRes, clientesRes] = await Promise.all([
+            const [citasRes, serviciosRes, empleadosRes, clientesRes] = await Promise.all([
                 this.appointmentService.getAppointments().toPromise(),
                 this.serviceService.getActiveServices().toPromise(),
-                this.authService.getUsers().toPromise(),
+                this.employeeService.getEmployees().toPromise(),
                 this.clientService.getClients().toPromise()
             ]);
 
             // Procesar citas
             const citas = this.normalizeArray<any>(citasRes);
             const servicios = this.normalizeArray<any>(serviciosRes);
-            const usuarios = this.normalizeArray<any>(usuariosRes);
+            const empleados = this.normalizeArray<any>(empleadosRes);
+            const usuarios = empleados
+                .map((e: any) => ({
+                    id: e.user_id_read || e.user?.id,
+                    full_name: e.user?.full_name || e.full_name || e.user?.email,
+                    role: e.user?.role
+                }))
+                .filter((u: any) => !!u.id);
             const clientes = this.normalizeArray<any>(clientesRes);
 
             // Enriquecer citas con información adicional
@@ -446,6 +457,14 @@ export class AppointmentsManagement implements OnInit {
     }
 
     confirmarEliminar(cita: AppointmentWithDetails) {
+        if (!this.canDeleteAppointments) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Acceso restringido',
+                detail: 'Tu rol no puede eliminar citas'
+            });
+            return;
+        }
         this.confirmationService.confirm({
             message: `¿Estás seguro de eliminar la cita del ${new Date(cita.date_time).toLocaleDateString()}?`,
             header: 'Confirmar Eliminación',
@@ -457,6 +476,9 @@ export class AppointmentsManagement implements OnInit {
     }
 
     async eliminarCita(cita: AppointmentWithDetails) {
+        if (!this.canDeleteAppointments) {
+            return;
+        }
         try {
             await this.appointmentService.deleteAppointment(cita.id).toPromise();
             this.messageService.add({
@@ -536,5 +558,10 @@ export class AppointmentsManagement implements OnInit {
         this.mostrarDialogo = false;
         this.citaSeleccionada = null;
         this.formulario.reset();
+    }
+
+    private computeCanDeleteAppointments(): boolean {
+        const role = this.authService.getCurrentUser()?.role;
+        return role === 'CLIENT_ADMIN' || role === 'Manager' || role === 'SUPER_ADMIN';
     }
 }

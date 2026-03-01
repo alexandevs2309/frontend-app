@@ -34,6 +34,7 @@ import { LayoutService } from '../service/layout.service';
                 [replaceUrl]="item.replaceUrl"
                 [state]="item.state"
                 [queryParams]="item.queryParams"
+                [attr.data-tour]="getTourKey(item)"
                 [attr.target]="item.target"
                 tabindex="0"
                 pRipple
@@ -166,5 +167,19 @@ export class AppMenuitem {
         if (this.menuResetSubscription) {
             this.menuResetSubscription.unsubscribe();
         }
+    }
+
+    getTourKey(item: MenuItem): string | null {
+        const link = Array.isArray(item.routerLink) ? item.routerLink[0] : item.routerLink;
+        if (typeof link !== 'string') {
+            return null;
+        }
+        const map: Record<string, string> = {
+            '/client/settings': 'menu-settings',
+            '/client/employees': 'menu-employees',
+            '/client/services': 'menu-services',
+            '/client/pos': 'menu-pos'
+        };
+        return map[link] || null;
     }
 }

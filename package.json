@@ -3,7 +3,7 @@
     "version": "20.0.0",
     "scripts": {
         "ng": "ng",
-        "start": "ng serve --configuration development --no-watch --live-reload=false",
+        "start": "ng serve",
         "start:dev": "ng serve --configuration development --no-watch --live-reload=false",
         "start:watch": "CHOKIDAR_USEPOLLING=false ng serve --configuration development --watch",
         "start:prod": "ng serve --configuration production",

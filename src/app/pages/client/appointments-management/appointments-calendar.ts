@@ -10,8 +10,9 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { AppointmentService, AppointmentWithDetails } from '../../../core/services/appointment/appointment.service';
 import { AppointmentValidationService } from '../../../core/services/appointment/appointment-validation.service';
 import { ServiceService, Service } from '../../../core/services/service/service.service';
-import { AuthService } from '../../../core/services/auth/auth.service';
+import { EmployeeService } from '../../../core/services/employee/employee.service';
 import { ClientService } from '../../../core/services/client/client.service';
+import { AuthService } from '../../../core/services/auth/auth.service';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
@@ -86,7 +87,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
                     <button pButton label="Editar" icon="pi pi-pencil" (click)="abrirEdicion()" 
                             *ngIf="citaSeleccionada?.status === 'scheduled'"></button>
                     <button pButton label="Eliminar" icon="pi pi-trash" severity="danger" (click)="confirmarEliminar()" 
-                            *ngIf="citaSeleccionada"></button>
+                            *ngIf="citaSeleccionada && canDeleteAppointments"></button>
                 </div>
             </ng-template>
         </p-dialog>
@@ -172,8 +173,9 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
     private appointmentService = inject(AppointmentService);
     private validationService = inject(AppointmentValidationService);
     private serviceService = inject(ServiceService);
-    private authService = inject(AuthService);
+    private employeeService = inject(EmployeeService);
     private clientService = inject(ClientService);
+    private authService = inject(AuthService);
     private messageService = inject(MessageService);
     private confirmationService = inject(ConfirmationService);
     private fb = inject(FormBuilder);
@@ -184,6 +186,8 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
     mostrarFormulario = false;
     editando = false;
     citaSeleccionada: AppointmentWithDetails | null = null;
+    private overdueAlertShown = false;
+    canDeleteAppointments = false;
 
     clientesOptions: any[] = [];
     empleadosOptions: any[] = [];
@@ -199,6 +203,7 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
     });
 
     ngOnInit() {
+        this.canDeleteAppointments = this.computeCanDeleteAppointments();
         this.cargarCitas();
         this.cargarOpciones();
         window.addEventListener('appointmentSaved', () => this.loadAppointments());
@@ -245,17 +250,24 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
 
     async cargarCitas() {
         try {
-            const [citasRes, serviciosRes, usuariosRes, clientesRes] = await Promise.all([
+            const [citasRes, serviciosRes, empleadosRes] = await Promise.all([
                 this.appointmentService.getAppointments().toPromise(),
                 this.serviceService.getActiveServices().toPromise(),
-                this.authService.getUsers().toPromise(),
-                this.clientService.getClients().toPromise()
+                this.employeeService.getEmployees().toPromise()
             ]);
+            const clientesRes = await this.cargarClientesSeguro();
 
             const citas = (citasRes as any)?.results || citasRes || [];
             const servicios = (serviciosRes as any)?.results || serviciosRes || [];
-            const usuarios = (usuariosRes as any)?.results || usuariosRes || [];
-            const clientes = (clientesRes as any)?.results || clientesRes || [];
+            const empleados = (empleadosRes as any)?.results || empleadosRes || [];
+            const usuarios = empleados
+                .map((e: any) => ({
+                    id: e.user_id_read || e.user?.id,
+                    full_name: e.user?.full_name || e.full_name || e.user?.email,
+                    role: e.user?.role
+                }))
+                .filter((u: any) => !!u.id);
+            const clientes = clientesRes;
 
             // Enriquecer citas con nombres
             const citasEnriquecidas = citas.map((cita: any) => {
@@ -274,6 +286,7 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
 
             this.citas.set(citasEnriquecidas);
             this.actualizarEventos();
+            this.notifyOverdueAppointments(citasEnriquecidas);
         } catch (error) {
             this.messageService.add({
                 severity: 'error',
@@ -290,7 +303,11 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
     actualizarEventos() {
         if (!this.calendar) return;
 
-        const eventos = this.citas().map(cita => ({
+        const now = new Date();
+        const eventos = this.citas()
+            .filter(cita => cita.status !== 'no_show')
+            .filter(cita => !(cita.status === 'scheduled' && new Date(cita.date_time) < now))
+            .map(cita => ({
             id: cita.id.toString(),
             title: `${cita.client_name} - ${cita.service_name}`,
             start: cita.date_time,
@@ -323,7 +340,8 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
         const labels: any = {
             'scheduled': 'Programada',
             'completed': 'Completada',
-            'cancelled': 'Cancelada'
+            'cancelled': 'Cancelada',
+            'no_show': 'No asistió'
         };
         return labels[status] || status;
     }
@@ -333,6 +351,7 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
             case 'scheduled': return 'info';
             case 'completed': return 'success';
             case 'cancelled': return 'danger';
+            case 'no_show': return 'warn';
             default: return 'secondary';
         }
     }
@@ -345,15 +364,22 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
 
     async cargarOpciones() {
         try {
-            const [servicios, usuarios, clientes] = await Promise.all([
+            const [servicios, empleados] = await Promise.all([
                 this.serviceService.getActiveServices().toPromise(),
-                this.authService.getUsers().toPromise(),
-                this.clientService.getClients().toPromise()
+                this.employeeService.getEmployees().toPromise()
             ]);
+            const clientes = await this.cargarClientesSeguro();
 
             const serviciosArray = (servicios as any)?.results || servicios || [];
-            const usuariosArray = (usuarios as any)?.results || usuarios || [];
-            const clientesArray = (clientes as any)?.results || clientes || [];
+            const empleadosArray = (empleados as any)?.results || empleados || [];
+            const usuariosArray = empleadosArray
+                .map((e: any) => ({
+                    id: e.user_id_read || e.user?.id,
+                    full_name: e.user?.full_name || e.full_name || e.user?.email,
+                    role: e.user?.role
+                }))
+                .filter((u: any) => !!u.id);
+            const clientesArray = clientes;
 
             this.serviciosOptions = serviciosArray.map((s: any) => ({
                 label: `${s.name} - $${s.price}`,
@@ -432,6 +458,14 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
     }
 
     confirmarEliminar() {
+        if (!this.canDeleteAppointments) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Acceso restringido',
+                detail: 'Tu rol no puede eliminar citas'
+            });
+            return;
+        }
         this.confirmationService.confirm({
             message: '¿Eliminar esta cita?',
             header: 'Confirmar',
@@ -443,6 +477,9 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
     }
 
     async eliminarCita() {
+        if (!this.canDeleteAppointments) {
+            return;
+        }
         if (!this.citaSeleccionada) return;
         try {
             await this.appointmentService.deleteAppointment(this.citaSeleccionada.id).toPromise();
@@ -459,5 +496,56 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
         this.formulario.reset();
         this.citaSeleccionada = null;
         this.editando = false;
+    }
+
+    private notifyOverdueAppointments(citas: AppointmentWithDetails[]): void {
+        const now = new Date();
+        const overdue = citas.filter(cita => cita.status === 'scheduled' && new Date(cita.date_time) < now);
+        if (overdue.length === 0 || this.overdueAlertShown) {
+            return;
+        }
+
+        this.overdueAlertShown = true;
+        this.messageService.add({
+            severity: 'warn',
+            summary: 'Citas vencidas',
+            detail: `Hay ${overdue.length} cita${overdue.length > 1 ? 's' : ''} vencida${overdue.length > 1 ? 's' : ''} que no se muestran en el calendario activo.`,
+            life: 9000
+        });
+        this.playNotificationSound();
+    }
+
+    private playNotificationSound(): void {
+        try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(760, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+        } catch {
+            // Ignorar si navegador bloquea audio sin interacción
+        }
+    }
+
+    private async cargarClientesSeguro(): Promise<any[]> {
+        try {
+            const response = await this.clientService.getClients().toPromise();
+            return (response as any)?.results || response || [];
+        } catch {
+            return [];
+        }
+    }
+
+    private computeCanDeleteAppointments(): boolean {
+        const role = this.authService.getCurrentUser()?.role;
+        return role === 'CLIENT_ADMIN' || role === 'Manager' || role === 'SUPER_ADMIN';
     }
 }

@@ -210,6 +210,8 @@ export class TrialBannerComponent implements OnInit, OnDestroy {
 
     this.isGracePeriod = false;
     this.daysRemaining = this.trialStatus.trial_days_remaining || 0;
+    
+    // Mostrar banner si está en trial (con días > 0) O si expiró (días <= 0)
     this.shouldShowBanner = this.trialStatus.is_trial;
   }
 

@@ -54,13 +54,13 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          <label class="text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
             <i class="pi pi-exclamation-triangle text-red-600"></i>
             Moneda
           </label>
           <p-select [(ngModel)]="settings().currency" [options]="currencies"
                     optionLabel="label" optionValue="value" class="w-full"
-                    [disabled]="settings().currency_locked"
+                    [disabled]="settings().currency_locked ?? false"
                     (onChange)="onCurrencyChange($event.value)">
           </p-select>
           <small *ngIf="settings().currency_locked" class="text-red-600 dark:text-red-400">

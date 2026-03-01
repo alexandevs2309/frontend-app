@@ -8,11 +8,13 @@ import { AppTopbar } from './app.topbar';
 import { AppSidebar } from './app.sidebar';
 import { AppFooter } from './app.footer';
 import { LayoutService } from '../service/layout.service';
+import { OnboardingTourModule } from '../../shared/onboarding/onboarding-tour.module';
+import { OnboardingTourService } from '../../shared/onboarding/onboarding-tour.service';
 
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, ToastModule],
+    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, ToastModule, OnboardingTourModule],
     providers: [MessageService],
     template: `<div class="layout-wrapper" [ngClass]="containerClass">
         <app-topbar></app-topbar>
@@ -25,6 +27,7 @@ import { LayoutService } from '../service/layout.service';
         </div>
         <div class="layout-mask animate-fadein"></div>
         <p-toast></p-toast>
+        <app-onboarding-tour-overlay></app-onboarding-tour-overlay>
     </div> `
 })
 export class AppLayout implements OnInit, OnDestroy {
@@ -39,7 +42,8 @@ export class AppLayout implements OnInit, OnDestroy {
     constructor(
         public layoutService: LayoutService,
         public renderer: Renderer2,
-        public router: Router
+        public router: Router,
+        private readonly onboardingTourService: OnboardingTourService
     ) {
         this.overlayMenuOpenSubscription = this.layoutService.overlayOpen$.subscribe(() => {
             if (!this.menuOutsideClickListener) {
@@ -57,10 +61,12 @@ export class AppLayout implements OnInit, OnDestroy {
 
         this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
             this.hideMenu();
+            setTimeout(() => this.onboardingTourService.maybeStartForCurrentRoute(), 300);
         });
     }
 
     ngOnInit() {
+        setTimeout(() => this.onboardingTourService.maybeStartForCurrentRoute(), 500);
         // Cambiar a overlay solo en POS
         this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe((event: NavigationEnd) => {
             if (event.url.includes('/pos')) {

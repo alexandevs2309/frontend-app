@@ -8,6 +8,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { environment } from '../../../environments/environment';
+import { LocaleService } from '../../core/services/locale/locale.service';
 
 @Component({
     selector: 'app-forgot-password',
@@ -26,7 +27,8 @@ export class ForgotPassword {
         private fb: FormBuilder,
         private authService: AuthService,
         private messageService: MessageService,
-        private router: Router
+        private router: Router,
+        private localeService: LocaleService
     ) {
         this.forgotForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]]
@@ -48,15 +50,15 @@ export class ForgotPassword {
                 this.emailSent.set(true);
                 this.messageService.add({
                     severity: 'success',
-                    summary: 'Email enviado',
-                    detail: 'Revisa tu correo para restablecer tu contraseña'
+                    summary: this.t('auth.forgot.email_sent'),
+                    detail: this.t('auth.forgot.check_inbox')
                 });
             },
             error: (error) => {
                 this.messageService.add({
                     severity: 'error',
-                    summary: 'Error',
-                    detail: error.error?.message || 'No se pudo enviar el email'
+                    summary: this.t('common.error'),
+                    detail: error.error?.message || this.t('auth.forgot.could_not_send')
                 });
                 this.isLoading.set(false);
             },
@@ -66,5 +68,9 @@ export class ForgotPassword {
 
     backToLogin() {
         this.router.navigate(['/auth/login']);
+    }
+
+    t(key: string): string {
+        return this.localeService.t(key as any);
     }
 }

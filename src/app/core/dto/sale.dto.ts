@@ -21,6 +21,7 @@ export interface CreateSaleDto {
   employee_id?: number;
   payment_method: 'cash' | 'card' | 'transfer' | 'mixed';
   discount: number;
+  discount_reason?: string;
   total: number;
   paid: number;
   details: any[];

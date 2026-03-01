@@ -74,6 +74,23 @@ export class EmployeeService extends BaseApiService {
     return this.put(`${API_CONFIG.ENDPOINTS.EMPLOYEES.SCHEDULES}${id}/`, schedule);
   }
 
+  deleteSchedule(id: number): Observable<any> {
+    return this.delete(`${API_CONFIG.ENDPOINTS.EMPLOYEES.SCHEDULES}${id}/`);
+  }
+
+  // Attendance
+  getAttendance(params?: any): Observable<any> {
+    return this.get(API_CONFIG.ENDPOINTS.EMPLOYEES.ATTENDANCE, params);
+  }
+
+  checkIn(employee?: number): Observable<any> {
+    return this.post(`${API_CONFIG.ENDPOINTS.EMPLOYEES.ATTENDANCE}check_in/`, employee ? { employee } : {});
+  }
+
+  checkOut(employee?: number): Observable<any> {
+    return this.post(`${API_CONFIG.ENDPOINTS.EMPLOYEES.ATTENDANCE}check_out/`, employee ? { employee } : {});
+  }
+
   // Employee specific actions
   assignServices(employeeId: number, serviceIds: number[]): Observable<any> {
     return this.post(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${employeeId}/assign_services/`, {

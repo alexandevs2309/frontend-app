@@ -54,6 +54,9 @@ export class RoleGuard implements CanActivate {
         break;
       case 'CLIENT_ADMIN':
       case 'CLIENT_STAFF':
+      case 'Cajera':
+      case 'Manager':
+      case 'Estilista':
         this.router.navigate(['/client/dashboard']);
         break;
       default:

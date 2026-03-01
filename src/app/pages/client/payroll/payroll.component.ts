@@ -9,7 +9,7 @@ import { PeriodsListComponent } from './components/periods-list/periods-list.com
   template: `
     <div class="min-h-screen surface-ground">
       <!-- Header Principal -->
-      <div class="surface-card border-b surface-border px-6 py-4">
+      <div id="onb-earnings-header" class="surface-card border-b surface-border px-6 py-4">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold text-color">Nómina</h1>

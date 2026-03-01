@@ -11,7 +11,7 @@ export interface Appointment {
   stylist: number;
   service?: number;
   date_time: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
   description?: string;
   created_at: string;
   updated_at: string;
