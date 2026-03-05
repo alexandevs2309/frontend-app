@@ -155,12 +155,11 @@ import { ServiceDto, ServiceCategoryDto, CreateServiceDto, UpdateServiceDto } fr
                                           placeholder="Seleccionar categorías" 
                                           class="w-full"
                                           [showClear]="true"
-                                          display="chip"
-                                          *ngIf="categoriasDisponibles.length > 0">
+                                          display="chip">
                             </p-multiSelect>
-                            <div *ngIf="categoriasDisponibles.length === 0" class="text-gray-500">
-                                Cargando categorías...
-                            </div>
+                            <small class="text-gray-500" *ngIf="categoriasDisponibles.length === 0">
+                                No hay categorías disponibles
+                            </small>
                         </div>
                         <div>
                             <label class="block font-medium mb-1">Duración (minutos) *</label>
@@ -221,19 +220,27 @@ export class ServicesManagement implements OnInit {
 
     // Adaptador Backend → Frontend DTO
     private mapBackendToServiceDto(backendService: any, categorias: ServiceCategoryDto[]): ServiceDto {
-        const categoryNames = (backendService.categories && Array.isArray(backendService.categories)) 
-            ? backendService.categories.map((catId: number) => {
+        // Manejar tanto categories (array) como category (string legacy)
+        let categoryIds: number[] = [];
+        let categoryNames: string[] = [];
+        
+        if (backendService.categories && Array.isArray(backendService.categories)) {
+            categoryIds = backendService.categories;
+            categoryNames = backendService.categories.map((catId: number) => {
                 const categoria = categorias.find(c => c.id === catId);
                 return categoria?.name;
-            }).filter(Boolean) 
-            : [];
+            }).filter(Boolean);
+        } else if (backendService.category) {
+            // Legacy: category como string
+            categoryNames = [backendService.category];
+        }
 
         return {
             id: backendService.id,
             name: backendService.name,
             description: backendService.description,
-            categories: backendService.categories || [], // ✅ Normalizado array IDs
-            category_names: categoryNames, // ✅ Campo derivado para UI
+            categories: categoryIds,
+            category_names: categoryNames,
             price: backendService.price,
             duration: backendService.duration,
             is_active: backendService.is_active,
@@ -272,9 +279,12 @@ export class ServicesManagement implements OnInit {
             const response: any = await this.serviceService.getServiceCategories().toPromise();
             this.categoriasDisponibles = this.normalizeArray<ServiceCategoryDto>(response);
         } catch (error) {
-            if (!environment.production) {
-                
-            }
+            console.error('Error cargando categorías:', error);
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'No se pudieron cargar las categorías'
+            });
             this.categoriasDisponibles = [];
         }
     }

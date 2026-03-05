@@ -66,6 +66,9 @@ export class BarbershopSettingsService {
     this.http.get<BarbershopSettings>(`${environment.apiUrl}/settings/barbershop/`)
       .subscribe({
         next: (settings) => {
+          if (settings.logo) {
+            settings.logo = this.toAbsoluteUrl(settings.logo);
+          }
           this.settingsSubject.next(settings);
           this.settings.set(settings);
         },
@@ -89,7 +92,9 @@ export class BarbershopSettingsService {
   }
 
   getLogo(): string | null {
-    return this.settings().logo || null;
+    const logo = this.settings().logo || null;
+    if (!logo) return null;
+    return this.toAbsoluteUrl(logo);
   }
 
   updateBusinessHours(day: string, field: 'open' | 'close' | 'closed', value: any) {
@@ -107,5 +112,12 @@ export class BarbershopSettingsService {
 
   getBusinessHour(day: string, field: 'open' | 'close' | 'closed'): any {
     return this.settings().business_hours[day]?.[field];
+  }
+
+  private toAbsoluteUrl(url: string): string {
+    if (!url) return url;
+    if (/^https?:\/\//i.test(url)) return url;
+    const apiOrigin = new URL(environment.apiUrl).origin;
+    return url.startsWith('/') ? `${apiOrigin}${url}` : `${apiOrigin}/${url}`;
   }
 }

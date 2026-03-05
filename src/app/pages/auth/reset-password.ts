@@ -39,6 +39,7 @@ export class ResetPassword implements OnInit {
     ngOnInit() {
         // Backend sends: /reset-password/{uid}/{token}/
         const uid = this.route.snapshot.params['uid'] || '';
+        this.uid = uid;
         this.token = this.route.snapshot.params['token'] || '';
         
         if (!uid || !this.token) {
@@ -86,7 +87,7 @@ export class ResetPassword implements OnInit {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: error.error?.message || 'No se pudo restablecer la contraseña'
+                    detail: error.error?.detail || error.error?.message || 'No se pudo restablecer la contraseña'
                 });
                 this.isLoading.set(false);
             }

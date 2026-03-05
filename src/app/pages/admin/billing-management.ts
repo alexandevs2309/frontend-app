@@ -365,13 +365,27 @@ export class BillingManagement implements OnInit {
     }
 
     downloadInvoice(invoice: Invoice) {
-        this.messageService.add({
-            severity: 'info',
-            summary: 'Download Started',
-            detail: `Downloading invoice #${invoice.id}`,
-            life: 3000
-        });
-        // Aquí iría la lógica real de descarga
+        const html = this.buildInvoicePrintHtml(invoice);
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Popup bloqueado',
+                detail: 'Permite popups para descargar la factura en PDF'
+            });
+            return;
+        }
+
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            try {
+                printWindow.print();
+            } catch {
+                // no-op
+            }
+        }, 300);
     }
 
     markAsPaid(invoice: Invoice) {
@@ -447,5 +461,54 @@ export class BillingManagement implements OnInit {
             component: 'BillingManagement'
         };
         
+    }
+
+    private buildInvoicePrintHtml(invoice: Invoice): string {
+        const tenantName = invoice.tenant_name || invoice.user_name || invoice.user_email || 'N/A';
+        const issued = invoice.issued_at ? new Date(invoice.issued_at).toLocaleDateString() : '-';
+        const due = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : '-';
+        const paid = invoice.paid_at ? new Date(invoice.paid_at).toLocaleDateString() : '-';
+        const amount = Number(invoice.amount || 0).toFixed(2);
+
+        return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Factura #${invoice.id || '-'}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
+    .header { border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 20px; }
+    .muted { color: #6b7280; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+    .amount { font-size: 28px; font-weight: 700; }
+    @media print { @page { margin: 1cm; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2 style="margin:0;">Factura</h2>
+    <p class="muted" style="margin:4px 0 0 0;">Factura #${invoice.id || '-'}</p>
+  </div>
+  <div class="grid">
+    <div class="box"><strong>Cliente/Tenant</strong><div>${this.escapeHtml(tenantName)}</div></div>
+    <div class="box"><strong>Plan</strong><div>${this.escapeHtml(invoice.plan_name || invoice.subscription?.plan?.name || 'N/A')}</div></div>
+    <div class="box"><strong>Emisión</strong><div>${issued}</div></div>
+    <div class="box"><strong>Vencimiento</strong><div>${due}</div></div>
+    <div class="box"><strong>Estado</strong><div>${this.escapeHtml(invoice.status || 'pending')}</div></div>
+    <div class="box"><strong>Pagada</strong><div>${paid}</div></div>
+  </div>
+  <div class="box">
+    <div class="muted">Monto</div>
+    <div class="amount">$${amount}</div>
+  </div>
+</body>
+</html>`;
+    }
+
+    private escapeHtml(text: string): string {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }

@@ -9,6 +9,7 @@ import { TrialService } from '../../core/services/trial.service';
 import { LocaleService } from '../../core/services/locale/locale.service';
 import { NotificationBadgeService } from '../../core/services/notification/notification-badge.service';
 import { Subscription } from 'rxjs';
+import { roleKey } from '../../core/utils/role-normalizer';
 
 @Component({
     selector: 'app-menu',
@@ -72,7 +73,8 @@ export class AppMenu implements OnInit, OnDestroy {
     }
 
     private updateMenuForUser(role: string) {
-        if (role === 'SUPER_ADMIN') {
+        const normalizedRole = roleKey(role);
+        if (normalizedRole === 'SUPER_ADMIN') {
             this.model = this.getAdminMenu();
         } else {
             this.buildClientMenu();
@@ -113,13 +115,14 @@ export class AppMenu implements OnInit, OnDestroy {
     getClientMenu(): MenuItem[] {
         const user = this.authService.getCurrentUser();
         const userRole = user?.role;
+        const userRoleKey = roleKey(userRole);
         const badgeCount = this.notificationService.badgeCount();
         
         const menuItems: MenuItem[] = [
             { label: this.localeService.t('menu.dashboard' as any), icon: 'pi pi-fw pi-home', routerLink: ['/client/dashboard'] }
         ];
 
-        if (userRole === 'CLIENT_ADMIN') {
+        if (userRoleKey === 'CLIENT_ADMIN') {
             // CLIENT_ADMIN: All features available
             menuItems.push(
                 { label: this.localeService.t('menu.employees' as any), icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
@@ -139,8 +142,8 @@ export class AppMenu implements OnInit, OnDestroy {
                 { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] },
                 { label: this.localeService.t('menu.settings' as any), icon: 'pi pi-fw pi-cog', routerLink: ['/client/settings'] }
             );
-        } else if (userRole === 'CLIENT_STAFF' || userRole === 'Estilista') {
-            // CLIENT_STAFF: Limited features
+        } else if (userRoleKey === 'CLIENT_STAFF' || userRoleKey === 'ESTILISTA') {
+            // CLIENT_STAFF / Estilista: only routes allowed by client.routes
             menuItems.push(
                 { 
                     label: this.localeService.t('menu.my_appointments' as any), 
@@ -149,13 +152,9 @@ export class AppMenu implements OnInit, OnDestroy {
                     badge: badgeCount > 0 ? badgeCount.toString() : undefined,
                     badgeStyleClass: 'p-badge-danger'
                 },
-                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
-                { label: this.localeService.t('menu.sales' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
-                { label: this.localeService.t('menu.employees' as any), icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
-                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
-                { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }
+                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] }
             );
-        } else if (userRole === 'Cajera') {
+        } else if (userRoleKey === 'CAJERA') {
             menuItems.push(
                 { 
                     label: this.localeService.t('menu.appointments' as any), 
@@ -165,16 +164,26 @@ export class AppMenu implements OnInit, OnDestroy {
                     badgeStyleClass: 'p-badge-danger'
                 },
                 { label: this.localeService.t('menu.sales' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
-                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] }
+                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
+                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
+                { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] }
             );
-        } else if (userRole === 'Manager') {
+        } else if (userRoleKey === 'MANAGER') {
             menuItems.push(
                 { label: this.localeService.t('menu.employees' as any), icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
                 { label: 'Turnos', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/client/schedules'] },
                 { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
+                { 
+                    label: this.localeService.t('menu.appointments' as any), 
+                    icon: 'pi pi-fw pi-calendar', 
+                    routerLink: ['/client/appointments'],
+                    badge: badgeCount > 0 ? badgeCount.toString() : undefined,
+                    badgeStyleClass: 'p-badge-danger'
+                },
                 { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
                 { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: this.localeService.t('menu.pos' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
+                { label: this.localeService.t('menu.payroll' as any), icon: 'pi pi-fw pi-wallet', routerLink: ['/client/payroll'] },
                 { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }
             );
         }
@@ -188,6 +197,7 @@ export class AppMenu implements OnInit, OnDestroy {
     }
 
     private canLoadAppointments(role?: string): boolean {
-        return role === 'CLIENT_ADMIN' || role === 'CLIENT_STAFF' || role === 'Cajera' || role === 'Manager' || role === 'Estilista';
+        const normalizedRole = roleKey(role);
+        return normalizedRole === 'CLIENT_ADMIN' || normalizedRole === 'CLIENT_STAFF' || normalizedRole === 'CAJERA' || normalizedRole === 'MANAGER' || normalizedRole === 'ESTILISTA';
     }
 }

@@ -19,6 +19,7 @@ import { TenantService } from '../../core/services/tenant/tenant.service';
 import { SubscriptionService } from '../../core/services/subscription/subscription.service';
 import { ActivityLogService } from '../../core/services/activity-log/activity-log.service';
 import { LocaleService } from '../../core/services/locale/locale.service';
+import { SettingsService } from '../../core/services/settings.service';
 import { DatePipe } from '@angular/common';
 
 interface Tenant {
@@ -267,11 +268,13 @@ export class TenantsManagement implements OnInit {
     submitted: boolean = false;
     loading = signal(false);
     saving = signal(false);
+    maxTenants = signal(100);
 
     constructor(
         private tenantService: TenantService,
         private subscriptionService: SubscriptionService,
         private activityLogService: ActivityLogService,
+        private settingsService: SettingsService,
         public localeService: LocaleService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService
@@ -280,6 +283,7 @@ export class TenantsManagement implements OnInit {
     ngOnInit() {
         this.loadTenants();
         this.loadSubscriptionPlans();
+        this.loadSystemSettings();
     }
 
     loadTenants() {
@@ -301,6 +305,21 @@ export class TenantsManagement implements OnInit {
                 this.subscriptionPlans.set(plans);
             },
             error: (error) => this.handlePlansLoadError(error)
+        });
+    }
+
+    loadSystemSettings() {
+        this.settingsService.getSettings().subscribe({
+            next: (settings: any) => {
+                const max = Number(settings?.max_tenants);
+                if (!Number.isNaN(max) && max > 0) {
+                    this.maxTenants.set(max);
+                }
+            },
+            error: () => {
+                // Fallback silencioso al límite por defecto
+                this.maxTenants.set(100);
+            }
         });
     }
 
@@ -407,8 +426,6 @@ export class TenantsManagement implements OnInit {
                             detail: 'Tenant Updated',
                             life: 3000
                         });
-                        // Update subscription if plan changed
-                        this.updateTenantSubscription(updatedTenant);
                         this.tenantDialog = false;
                         this.saving.set(false);
                     },
@@ -418,6 +435,10 @@ export class TenantsManagement implements OnInit {
                     }
                 });
             } else {
+                if (!this.validateTenantLimits(this.tenant.is_active !== false)) {
+                    return;
+                }
+
                 // Create new tenant - prepare data
                 const tenantData = {
                     name: this.tenant.name,
@@ -449,16 +470,11 @@ export class TenantsManagement implements OnInit {
         }
     }
 
-    private updateTenantSubscription(tenant: Tenant): void {
-        if (tenant.subscription_plan && tenant.id) {
-            // TODO: Implement subscription update when backend method is available
-        }
-    }
+    validateTenantLimits(willBeActive: boolean) {
+        if (!willBeActive) return true;
 
-    validateTenantLimits() {
         const activeTenants = this.tenants().filter(t => t.is_active).length;
-        // TODO: Get max tenants from system settings
-        const maxTenants = 100;
+        const maxTenants = this.maxTenants();
 
         if (activeTenants >= maxTenants) {
             this.messageService.add({

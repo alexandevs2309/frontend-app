@@ -151,7 +151,7 @@ interface PaymentDto {
       <p-dialog header="{{empleadoSeleccionado ? 'Editar' : 'Nuevo'}} Empleado"
                 [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '500px'}"
                 [closable]="!guardando()" [closeOnEscape]="!guardando()">
-        <form [formGroup]="formulario" class="grid gap-4">
+        <div [formGroup]="formulario" class="grid gap-4">
           <div>
             <label class="block font-medium mb-1">Nombre Completo *</label>
             <input pInputText formControlName="full_name" class="w-full"
@@ -172,7 +172,7 @@ interface PaymentDto {
 
           <div>
             <label class="block font-medium mb-1">Rol *</label>
-            <select formControlName="role" class="w-full p-2 border border-gray-300 rounded">
+            <select formControlName="role" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
               <option *ngFor="let option of rolesOptions" [value]="option.value">{{option.label}}</option>
             </select>
           </div>
@@ -189,7 +189,7 @@ interface PaymentDto {
 
           <div>
             <label class="block font-medium mb-1">Fecha de Contratación</label>
-            <input type="date" formControlName="hire_date" class="w-full p-2 border border-gray-300 rounded">
+            <input type="date" formControlName="hire_date" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
           </div>
 
           <div class="flex items-center">
@@ -204,7 +204,7 @@ interface PaymentDto {
                     type="button" icon="pi pi-check" [loading]="guardando()"
                     [disabled]="formulario.invalid" (click)="guardarEmpleado()"></button>
           </div>
-        </form>
+        </div>
       </p-dialog>
 
       <!-- Diálogo de Configuración de Nómina -->
@@ -212,10 +212,10 @@ interface PaymentDto {
                 [(visible)]="mostrarConfigNomina" [modal]="true" [style]="{width: '600px'}"
                 [closable]="true">
         <div class="p-4" *ngIf="empleadoDetalle">
-          <form [formGroup]="formularioNomina" class="grid gap-4">
+          <div [formGroup]="formularioNomina" class="grid gap-4">
             <div>
               <label class="block font-medium mb-1">Tipo de Pago</label>
-              <select formControlName="salary_type" class="w-full p-2 border border-gray-300 rounded">
+              <select formControlName="salary_type" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
                 <option value="fixed">Sueldo Fijo</option>
                 <option value="commission">Comisión</option>
                 <option value="mixed">Mixto</option>
@@ -223,7 +223,7 @@ interface PaymentDto {
             </div>
             <div>
               <label class="block font-medium mb-1">Frecuencia de Pago</label>
-              <select formControlName="payment_frequency" class="w-full p-2 border border-gray-300 rounded">
+              <select formControlName="payment_frequency" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
                 <option value="biweekly">Quincenal</option>
                 <option value="monthly">Mensual</option>
                 <option value="weekly">Semanal</option>
@@ -232,12 +232,12 @@ interface PaymentDto {
             <div>
               <label class="block font-medium mb-1">Porcentaje Comisión (%)</label>
               <input type="number" formControlName="commission_percentage" min="0" max="100"
-                     class="w-full p-2 border border-gray-300 rounded">
+                     class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
             </div>
             <div>
               <label class="block font-medium mb-1">Salario Mensual (RD$)</label>
               <input type="number" formControlName="contractual_monthly_salary" min="0"
-                     class="w-full p-2 border border-gray-300 rounded">
+                     class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
             </div>
             <div>
               <label class="block font-medium mb-2">Descuentos Legales</label>
@@ -262,7 +262,7 @@ interface PaymentDto {
               <button pButton label="Guardar Configuración" icon="pi pi-save"
                       [loading]="guardandoNomina()" (click)="guardarConfigNomina()"></button>
             </div>
-          </form>
+          </div>
         </div>
       </p-dialog>
 
@@ -384,7 +384,7 @@ interface PaymentDto {
       <p-dialog header="Nuevo Préstamo - {{empleadoDetalle?.user?.full_name}}"
                 [(visible)]="mostrarNuevoPrestamo" [modal]="true" [style]="{width: '500px'}"
                 [closable]="!guardandoPrestamo()" [closeOnEscape]="!guardandoPrestamo()">
-        <form [formGroup]="formularioPrestamo" class="grid gap-4">
+        <div [formGroup]="formularioPrestamo" class="grid gap-4">
           <div>
             <label class="block font-medium mb-1">Tipo de Préstamo *</label>
             <p-select formControlName="loan_type" [options]="loanTypeOptions"
@@ -438,7 +438,7 @@ interface PaymentDto {
                     [loading]="guardandoPrestamo()" [disabled]="formularioPrestamo.invalid"
                     (click)="crearPrestamo()"></button>
           </div>
-        </form>
+        </div>
       </p-dialog>
 
       <!-- Diálogo de Historial de Pagos -->
@@ -571,26 +571,26 @@ interface PaymentDto {
       <!-- Diálogo de Recibo de Pago -->
       <p-dialog header="Recibo de Pago" [(visible)]="mostrarRecibo" [modal]="true"
                 [style]="{width: '800px'}" [closable]="true">
-        <div class="recibo-container" *ngIf="reciboActual()">
+        <div class="recibo-container rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-4" *ngIf="reciboActual()">
           <!-- Header del recibo -->
-          <div class="text-center mb-6 border-b pb-4">
-            <h2 class="text-2xl font-bold text-gray-800">{{reciboActual()?.company?.name}}</h2>
-            <p class="text-gray-600">{{reciboActual()?.company?.address}}</p>
-            <p class="text-gray-600">{{reciboActual()?.company?.phone}}</p>
-            <h3 class="text-xl font-semibold mt-4 text-blue-600">RECIBO DE PAGO</h3>
+          <div class="text-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{reciboActual()?.company?.name}}</h2>
+            <p class="text-slate-600 dark:text-slate-300">{{reciboActual()?.company?.address}}</p>
+            <p class="text-slate-600 dark:text-slate-300">{{reciboActual()?.company?.phone}}</p>
+            <h3 class="text-xl font-semibold mt-4 text-sky-600 dark:text-sky-400">RECIBO DE PAGO</h3>
           </div>
 
           <!-- Información del empleado y período -->
           <div class="grid grid-cols-2 gap-6 mb-6">
             <div>
-              <h4 class="font-semibold text-gray-700 mb-2">Empleado:</h4>
+              <h4 class="font-semibold text-slate-800 dark:text-slate-200 mb-2">Empleado:</h4>
               <p class="font-medium">{{reciboActual()?.employee?.name}}</p>
-              <p class="text-sm text-gray-600">{{reciboActual()?.employee?.email}}</p>
+              <p class="text-sm text-slate-600 dark:text-slate-300">{{reciboActual()?.employee?.email}}</p>
             </div>
             <div>
-              <h4 class="font-semibold text-gray-700 mb-2">Período:</h4>
+              <h4 class="font-semibold text-slate-800 dark:text-slate-200 mb-2">Período:</h4>
               <p class="font-medium">{{reciboActual()?.period?.display}}</p>
-              <p class="text-sm text-gray-600">
+              <p class="text-sm text-slate-600 dark:text-slate-300">
                 {{reciboActual()?.period?.start_date | date:'dd/MM/yyyy'}} -
                 {{reciboActual()?.period?.end_date | date:'dd/MM/yyyy'}}
               </p>
@@ -598,8 +598,8 @@ interface PaymentDto {
           </div>
 
           <!-- Detalle de montos -->
-          <div class="border rounded-lg p-4 mb-6">
-            <h4 class="font-semibold text-gray-700 mb-4">Detalle de Pago:</h4>
+          <div class="border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-lg p-4 mb-6">
+            <h4 class="font-semibold text-slate-800 dark:text-slate-200 mb-4">Detalle de Pago:</h4>
 
             <div class="space-y-2">
               <div class="flex justify-between">
@@ -610,7 +610,7 @@ interface PaymentDto {
               </div>
 
               <div class="border-t pt-2">
-                <p class="font-medium text-gray-700 mb-2">Descuentos:</p>
+                <p class="font-medium text-slate-700 dark:text-slate-200 mb-2">Descuentos:</p>
                 <div class="ml-4 space-y-1 text-sm">
                   <div class="flex justify-between" *ngIf="reciboActual()?.amounts?.deductions?.afp && (reciboActual()?.amounts?.deductions?.afp ?? 0) > 0">
                     <span>AFP (2.87%):</span>
@@ -635,7 +635,7 @@ interface PaymentDto {
                 </div>
               </div>
 
-              <div class="border-t pt-2 flex justify-between text-lg font-bold text-green-600">
+              <div class="border-t pt-2 flex justify-between text-lg font-bold text-green-700 dark:text-emerald-400">
                 <span>Monto Neto:</span>
                 <span>{{reciboActual()?.amounts?.net_amount | currency:'DOP':'symbol':'1.2-2':'es-DO'}}</span>
               </div>
@@ -645,19 +645,19 @@ interface PaymentDto {
           <!-- Información del pago -->
           <div class="grid grid-cols-2 gap-6 mb-6">
             <div>
-              <h4 class="font-semibold text-gray-700 mb-2">Información del Pago:</h4>
+              <h4 class="font-semibold text-slate-800 dark:text-slate-200 mb-2">Información del Pago:</h4>
               <p><strong>Método:</strong> {{reciboActual()?.payment_info?.method}}</p>
               <p><strong>Referencia:</strong> {{reciboActual()?.payment_info?.reference}}</p>
             </div>
             <div>
-              <h4 class="font-semibold text-gray-700 mb-2">Fecha y Responsable:</h4>
+              <h4 class="font-semibold text-slate-800 dark:text-slate-200 mb-2">Fecha y Responsable:</h4>
               <p><strong>Fecha:</strong> {{reciboActual()?.payment_info?.paid_at | date:'dd/MM/yyyy HH:mm'}}</p>
               <p><strong>Pagado por:</strong> {{reciboActual()?.payment_info?.paid_by}}</p>
             </div>
           </div>
 
           <!-- Footer -->
-          <div class="text-center text-sm text-gray-500 border-t pt-4">
+          <div class="text-center text-sm text-slate-600 dark:text-slate-300 border-t border-slate-200 dark:border-slate-700 pt-4">
             <p>Recibo ID: {{reciboActual()?.payment_id}}</p>
             <p>Este documento es un comprobante de pago de nómina</p>
           </div>
@@ -1021,14 +1021,50 @@ export class EmployeesManagement implements OnInit {
         summary: 'Éxito',
         detail: 'Empleado eliminado correctamente'
       });
-    } catch (error) {
+    } catch (error: any) {
       if (!environment.production) {
         
       }
+
+      // Fallback: si el backend bloquea borrado físico por integridad/relaciones,
+      // desactivar el usuario para no romper la operación.
+      if (error?.status === 400 || error?.status === 409) {
+        try {
+          await this.authService.updateUser(emp.user_id, { is_active: false } as any).toPromise();
+
+          if (emp.id > 0) {
+            await this.employeeService.patchEmployee(emp.id, { is_active: false } as any).toPromise();
+          }
+
+          this.empleados.update(lista =>
+            lista.map(e =>
+              e.user_id === emp.user_id
+                ? { ...e, is_active: false, user: { ...e.user, is_active: false } }
+                : e
+            )
+          );
+
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Empleado desactivado',
+            detail: 'No se pudo eliminar por historial relacionado. Se desactivó el usuario.'
+          });
+          return;
+        } catch {
+          // Si también falla desactivar, mostrar error original
+        }
+      }
+
+      const backendMessage =
+        error?.error?.error ||
+        error?.error?.detail ||
+        error?.error?.message ||
+        'No se pudo eliminar el empleado';
+
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'No se pudo eliminar el empleado'
+        detail: backendMessage
       });
     }
   }

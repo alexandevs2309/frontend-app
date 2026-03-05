@@ -10,6 +10,8 @@ import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ProgressBarModule } from 'primeng/progressbar';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { DashboardService } from '../../../core/services/dashboard/dashboard.service';
 import { environment } from '../../../../environments/environment';
 
@@ -26,8 +28,10 @@ import { environment } from '../../../../environments/environment';
         ButtonModule,
         TableModule,
         TagModule,
-        ProgressBarModule
+        ProgressBarModule,
+        ToastModule
     ],
+    providers: [MessageService],
     template: `
 
 <div class="p-6 space-y-10 transition-colors">
@@ -45,6 +49,7 @@ import { environment } from '../../../../environments/environment';
           <p-datePicker formControlName="fechaInicio" placeholder="Fecha inicio" [showIcon]="true" dateFormat="dd/mm/yy" class="w-40"></p-datePicker>
           <p-datePicker formControlName="fechaFin" placeholder="Fecha fin" [showIcon]="true" dateFormat="dd/mm/yy" class="w-40"></p-datePicker>
           <button pButton type="button" label="Filtrar" icon="pi pi-filter" (click)="aplicarFiltros()" class="p-button-primary"></button>
+          <button pButton type="button" label="Descargar PDF" icon="pi pi-file-pdf" class="p-button-danger" (click)="descargarReportePDF()"></button>
         </form>
       </div>
     </div>
@@ -71,6 +76,7 @@ import { environment } from '../../../../environments/environment';
 
 
 </div>
+<p-toast></p-toast>
 
     `
 })
@@ -78,6 +84,7 @@ export class ClientReports implements OnInit {
     private dashboardService = inject(DashboardService);
     private fb = inject(FormBuilder);
     private http = inject(HttpClient);
+    private messageService = inject(MessageService);
 
     activeTab = 'dashboard';
 
@@ -139,6 +146,10 @@ export class ClientReports implements OnInit {
     chartOptions: any;
     monthlyRevenueRaw: any[] = [];
     currencyCode = signal('DOP');
+    branding = signal<{ businessName: string; logoUrl: string | null }>({
+        businessName: 'Mi Barbería',
+        logoUrl: null
+    });
 
     ngOnInit() {
         this.initCharts();
@@ -152,6 +163,10 @@ export class ClientReports implements OnInit {
                 if (settings?.currency) {
                     this.currencyCode.set(settings.currency);
                 }
+                this.branding.set({
+                    businessName: settings?.name || settings?.pos_config?.business_name || 'Mi Barbería',
+                    logoUrl: this.normalizeLogoUrl(settings?.logo || null)
+                });
             },
             error: () => {
                 // Usar fallback por defecto
@@ -186,11 +201,8 @@ export class ClientReports implements OnInit {
     }
 
     cargarDatos() {
-        console.log('🔍 Iniciando carga de datos de reportes...');
         this.dashboardService.getDashboardStats().subscribe({
             next: (stats: any) => {
-                console.log('📊 Reports Stats RAW:', JSON.stringify(stats, null, 2));
-                
                 const monthlyRevenue = stats.monthly_revenue || [];
                 this.monthlyRevenueRaw = monthlyRevenue;
                 this.actualizarKPIsYGrafico(monthlyRevenue);
@@ -275,5 +287,106 @@ export class ClientReports implements OnInit {
             currency,
             currencyDisplay: 'symbol'
         }).format(valor);
+    }
+
+    descargarReportePDF() {
+        if (!this.monthlyRevenueRaw.length) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin datos',
+                detail: 'No hay datos suficientes para generar el reporte'
+            });
+            return;
+        }
+
+        const html = this.generarHtmlReporteCliente();
+        const ventana = window.open('', '_blank');
+        if (!ventana) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Popup bloqueado',
+                detail: 'Permite popups para descargar el reporte'
+            });
+            return;
+        }
+
+        ventana.document.write(html);
+        ventana.document.close();
+        ventana.focus();
+        setTimeout(() => ventana.print(), 400);
+    }
+
+    private generarHtmlReporteCliente(): string {
+        const branding = this.branding();
+        const logo = branding.logoUrl
+            ? `<img src="${branding.logoUrl}" alt="Logo" style="max-height:56px;max-width:180px;object-fit:contain;margin-bottom:8px;" />`
+            : '';
+        const fecha = new Date().toLocaleDateString();
+        const rows = this.monthlyRevenueRaw.map((r: any) => `
+            <tr>
+                <td>${this.escapeHtml(r.month || 'Mes')}</td>
+                <td>${this.formatearMoneda(Number(r.revenue || 0))}</td>
+            </tr>
+        `).join('');
+
+        return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Reporte de Ingresos</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
+    .header { border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 20px; text-align: center; }
+    .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 18px; }
+    .kpi { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; }
+    .kpi-label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+    .kpi-value { font-size: 18px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+    th { background: #f9fafb; }
+    @media print { @page { margin: 1cm; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    ${logo}
+    <h2 style="margin:0;">${this.escapeHtml(branding.businessName)}</h2>
+    <h3 style="margin:8px 0 4px 0;">Reporte de Ingresos</h3>
+    <div style="color:#6b7280;">Generado el ${fecha}</div>
+  </div>
+  <div class="kpis">
+    ${this.kpiCards.map(card => `
+      <div class="kpi">
+        <div class="kpi-label">${this.escapeHtml(card.label)}</div>
+        <div class="kpi-value">${this.escapeHtml(card.value)}</div>
+      </div>
+    `).join('')}
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Mes</th>
+        <th>Ingresos</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows}
+    </tbody>
+  </table>
+</body>
+</html>`;
+    }
+
+    private normalizeLogoUrl(rawUrl: string | null): string | null {
+        if (!rawUrl) return null;
+        if (/^https?:\/\//i.test(rawUrl)) return rawUrl;
+        const apiOrigin = new URL(environment.apiUrl).origin;
+        return rawUrl.startsWith('/') ? `${apiOrigin}${rawUrl}` : `${apiOrigin}/${rawUrl}`;
+    }
+
+    private escapeHtml(text: string): string {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }

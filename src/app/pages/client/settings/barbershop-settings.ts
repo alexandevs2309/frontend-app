@@ -115,6 +115,9 @@ export class BarbershopSettingsComponent implements OnInit {
     this.http.get<BarbershopSettings>(`${environment.apiUrl}/settings/barbershop/`)
       .subscribe({
         next: (data) => {
+          if (data.logo) {
+            data.logo = this.toAbsoluteUrl(data.logo);
+          }
           if (!data.pos_config) {
             data.pos_config = {
               business_name: '',
@@ -263,7 +266,7 @@ export class BarbershopSettingsComponent implements OnInit {
       this.http.post(`${environment.apiUrl}/settings/barbershop/upload_logo/`, formData)
         .subscribe({
           next: (response: any) => {
-            this.settings.update(s => ({ ...s, logo: response.logo_url }));
+            this.settings.update(s => ({ ...s, logo: this.toAbsoluteUrl(response.logo_url) }));
             this.messageService.add({
               severity: 'success',
               summary: 'Logo',
@@ -323,5 +326,12 @@ export class BarbershopSettingsComponent implements OnInit {
       case 'sensitive': return 'text-orange-600';
       default: return 'text-gray-600';
     }
+  }
+
+  private toAbsoluteUrl(url?: string): string {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    const apiOrigin = new URL(environment.apiUrl).origin;
+    return url.startsWith('/') ? `${apiOrigin}${url}` : `${apiOrigin}/${url}`;
   }
 }

@@ -340,6 +340,15 @@ export class PeriodsListComponent implements OnInit {
   }
 
   approvePeriod(period: Period) {
+    if (period.net_amount <= 0 || period.can_pay === false) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aprobación bloqueada',
+        detail: period.pay_block_reason || 'No se puede aprobar un período con monto neto cero o negativo.'
+      });
+      return;
+    }
+
     this.confirmationService.confirm({
       message: `¿Aprobar período de ${period.employee_name} por ${this.formatCurrency(period.net_amount)}?`,
       header: 'Confirmar Aprobación',

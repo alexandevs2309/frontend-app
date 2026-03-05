@@ -6,39 +6,40 @@ import { StyleClassModule } from 'primeng/styleclass';
 import { MenuModule } from 'primeng/menu';
 import { Menu } from 'primeng/menu';
 import { BadgeModule } from 'primeng/badge';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 import { LayoutService } from '../service/layout.service';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { MessageService } from 'primeng/api';
 import { AppConfigService } from '../../core/services/app-config.service';
-import { BarbershopSettingsService } from '../../shared/services/barbershop-settings.service';
 import { NotificationService } from '../../core/services/notification/notification.service';
+import { NotificationBadgeService } from '../../core/services/notification/notification-badge.service';
 import { LocaleService } from '../../core/services/locale/locale.service';
 import { Subscription } from 'rxjs';
 import { OnboardingTourService } from '../../shared/onboarding/onboarding-tour.service';
+import { environment } from '../../../environments/environment';
+import { roleKey } from '../../core/utils/role-normalizer';
 
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, MenuModule, BadgeModule],
+    imports: [RouterModule, CommonModule, StyleClassModule, MenuModule, BadgeModule, ConfirmDialogModule],
+    providers: [ConfirmationService],
     template: `<div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
                 <i class="pi pi-bars"></i>
             </button>
             <a class="layout-topbar-logo" [routerLink]="getDashboardRoute()" style="cursor: pointer;">
-                @if (barbershopSettings.getLogo()) {
-                    <img [src]="barbershopSettings.getLogo()" alt="Logo" class="h-10 w-auto" />
-                } @else {
-                    <span>{{ appConfig.platformName() }}</span>
-                }
+                <span>{{ appConfig.platformName() }}</span>
             </a>
         </div>
 
         <div class="layout-topbar-actions">
             <button type="button" class="layout-topbar-action p-overlay-badge" (click)="appointmentMenu.toggle($event)">
                 <i class="pi pi-calendar"></i>
-                @if (notificationService.appointmentCount() > 0) {
-                    <p-badge [value]="notificationService.appointmentCount().toString()" severity="info"></p-badge>
+                @if (appointmentBadgeService.badgeCount() > 0) {
+                    <p-badge [value]="appointmentBadgeService.badgeCount().toString()" severity="info"></p-badge>
                 }
             </button>
             <p-menu #appointmentMenu [model]="appointmentMenuItems" [popup]="true" [style]="{'width': '350px'}"></p-menu>
@@ -69,14 +70,51 @@ import { OnboardingTourService } from '../../shared/onboarding/onboarding-tour.s
             </button>
 
             <div class="layout-topbar-menu hidden lg:block">
-                <button type="button" class="layout-topbar-action" (click)="userMenu.toggle($event)">
-                    <i class="pi pi-user"></i>
+                <button type="button" class="layout-topbar-action layout-topbar-user" (click)="userMenu.toggle($event)" [title]="getUserDisplayName()">
+                    <div class="topbar-user-avatar" [class.has-image]="!!getUserAvatarUrl()">
+                        @if (getUserAvatarUrl(); as avatarUrl) {
+                            <img [src]="avatarUrl" alt="Avatar de usuario" />
+                        } @else {
+                            <strong>{{ getUserInitials() }}</strong>
+                        }
+                    </div>
                     <span>{{ localeService.t('topbar.profile') }}</span>
                 </button>
                 <p-menu #userMenu [model]="userMenuItems" [popup]="true"></p-menu>
             </div>
         </div>
-    </div>`
+        <p-confirmDialog [closable]="false" [closeOnEscape]="false" [dismissableMask]="false"></p-confirmDialog>
+    </div>`,
+    styles: [`
+        .layout-topbar-user {
+            overflow: hidden;
+        }
+
+        .topbar-user-avatar {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .topbar-user-avatar.has-image {
+            background: transparent;
+        }
+
+        .topbar-user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    `]
 })
 export class AppTopbar implements OnInit, OnDestroy {
     @ViewChild('appointmentMenu') appointmentMenu!: Menu;
@@ -88,23 +126,40 @@ export class AppTopbar implements OnInit, OnDestroy {
     notificationMenuItems: MenuItem[] = [];
     languageMenuItems: MenuItem[] = [];
     private subscription = new Subscription();
+    private refreshIntervalId: ReturnType<typeof setInterval> | null = null;
+    private dueAlertIntervalId: ReturnType<typeof setInterval> | null = null;
+    private dueAlertActive = false;
 
     constructor(
         public layoutService: LayoutService,
         public appConfig: AppConfigService,
-        public barbershopSettings: BarbershopSettingsService,
         public notificationService: NotificationService,
+        public appointmentBadgeService: NotificationBadgeService,
         public localeService: LocaleService,
         private authService: AuthService,
         private router: Router,
         private messageService: MessageService,
-        private onboardingTourService: OnboardingTourService
+        private onboardingTourService: OnboardingTourService,
+        private confirmationService: ConfirmationService
     ) {
         this.initUserMenu();
         this.initLanguageMenu();
     }
 
     ngOnInit() {
+        this.appointmentBadgeService.loadAppointments();
+        this.buildAppointmentMenu();
+        this.checkDueAppointmentAlerts();
+        this.refreshIntervalId = setInterval(() => {
+            this.appointmentBadgeService.refresh();
+            this.buildAppointmentMenu();
+            this.checkDueAppointmentAlerts();
+        }, 2 * 60000);
+
+        this.dueAlertIntervalId = setInterval(() => {
+            this.checkDueAppointmentAlerts();
+        }, 30 * 1000);
+
         this.subscription.add(
             this.notificationService.notifications$.subscribe(() => {
                 this.buildAppointmentMenu();
@@ -112,7 +167,6 @@ export class AppTopbar implements OnInit, OnDestroy {
             })
         );
         
-        // Suscribirse a cambios de idioma
         this.subscription.add(
             this.localeService.languageChanged$.subscribe(() => {
                 this.initUserMenu();
@@ -125,11 +179,19 @@ export class AppTopbar implements OnInit, OnDestroy {
 
     ngOnDestroy() {
         this.subscription.unsubscribe();
+        if (this.refreshIntervalId) {
+            clearInterval(this.refreshIntervalId);
+            this.refreshIntervalId = null;
+        }
+        if (this.dueAlertIntervalId) {
+            clearInterval(this.dueAlertIntervalId);
+            this.dueAlertIntervalId = null;
+        }
     }
 
     getDashboardRoute(): string {
         const user = this.authService.getCurrentUser();
-        if (user?.role === 'SUPER_ADMIN' || user?.role === 'SuperAdmin') {
+        if (roleKey(user?.role) === 'SUPER_ADMIN') {
             return '/admin/dashboard';
         }
         return '/client/dashboard';
@@ -138,19 +200,19 @@ export class AppTopbar implements OnInit, OnDestroy {
     initUserMenu() {
         this.userMenuItems = [
             {
-                label: this.localeService.t('topbar.profile'),
+                label: 'Mi Cuenta',
                 icon: 'pi pi-user',
                 command: () => this.goToProfile()
             },
             {
-                label: this.localeService.t('topbar.settings'),
-                icon: 'pi pi-cog',
-                command: () => this.goToSettings()
+                label: 'Cambiar Contraseña',
+                icon: 'pi pi-key',
+                command: () => this.goToChangePassword()
             },
             {
-                label: 'Recorrido guiado',
-                icon: 'pi pi-compass',
-                command: () => this.startOnboardingTour()
+                label: 'Ayuda',
+                icon: 'pi pi-question-circle',
+                command: () => this.goToHelp()
             },
             {
                 separator: true
@@ -182,7 +244,6 @@ export class AppTopbar implements OnInit, OnDestroy {
 
     changeLanguage(lang: 'es' | 'en' | 'fr' | 'pt' | 'de') {
         this.localeService.setLanguage(lang);
-        // Los menús se actualizan automáticamente vía languageChanged$
         
         const langKeys: Record<string, string> = {
             es: 'language.changed_to_es',
@@ -204,11 +265,15 @@ export class AppTopbar implements OnInit, OnDestroy {
     }
 
     goToProfile() {
-        // TODO: Implement profile navigation
+        this.router.navigate(['/client/profile']);
     }
 
-    goToSettings() {
-        // TODO: Implement settings navigation
+    goToChangePassword() {
+        this.router.navigate(['/client/change-password']);
+    }
+
+    goToHelp() {
+        this.router.navigate(['/client/help']);
     }
 
     goToAppointments() {
@@ -225,24 +290,41 @@ export class AppTopbar implements OnInit, OnDestroy {
     }
 
     buildAppointmentMenu() {
-        const appointments = this.notificationService.appointmentNotifications();
-        
-        this.appointmentMenuItems = appointments.length > 0 
-            ? appointments.map(notif => ({
-                label: notif.title,
-                icon: notif.is_read ? 'pi pi-check' : 'pi pi-circle-fill',
-                styleClass: notif.is_read ? '' : 'font-bold',
-                command: () => {
-                    this.notificationService.markAsRead(notif.id).subscribe();
-                    this.router.navigate(['/client/appointments']);
-                }
-            }))
-            : [{ label: this.localeService.t('topbar.no_appointments'), disabled: true }];
-        
-        this.appointmentMenuItems.push(
+        const overdue = this.appointmentBadgeService.overdueAppointments();
+        const today = this.appointmentBadgeService.todayAppointments();
+        const items: MenuItem[] = [];
+
+        if (overdue.length > 0) {
+            items.push({
+                label: `Vencidas (${overdue.length})`,
+                icon: 'pi pi-exclamation-triangle',
+                disabled: true
+            });
+            items.push(...overdue.slice(0, 3).map((apt: any) => this.mapAppointmentToMenuItem(apt, true)));
+        }
+
+        if (today.length > 0) {
+            if (items.length > 0) {
+                items.push({ separator: true });
+            }
+            items.push({
+                label: `Hoy (${today.length})`,
+                icon: 'pi pi-calendar',
+                disabled: true
+            });
+            items.push(...today.slice(0, 5).map((apt: any) => this.mapAppointmentToMenuItem(apt, false)));
+        }
+
+        if (items.length === 0) {
+            items.push({ label: this.localeService.t('topbar.no_appointments'), disabled: true });
+        }
+
+        items.push(
             { separator: true },
             { label: this.localeService.t('topbar.view_all'), icon: 'pi pi-calendar', command: () => this.goToAppointments() }
         );
+
+        this.appointmentMenuItems = items;
     }
 
     buildNotificationMenu() {
@@ -306,5 +388,89 @@ export class AppTopbar implements OnInit, OnDestroy {
                 this.router.navigate(['/auth/login']);
             }
         });
+    }
+
+    getUserAvatarUrl(): string | null {
+        const user: any = this.authService.getCurrentUser();
+        const rawUrl = user?.avatar_url || user?.profile_image || user?.photo || null;
+        if (!rawUrl) return null;
+        if (/^https?:\/\//i.test(rawUrl)) return rawUrl;
+
+        const apiOrigin = new URL(environment.apiUrl).origin;
+        return rawUrl.startsWith('/') ? `${apiOrigin}${rawUrl}` : `${apiOrigin}/${rawUrl}`;
+    }
+
+    getUserDisplayName(): string {
+        const user: any = this.authService.getCurrentUser();
+        return user?.full_name || user?.email || this.localeService.t('topbar.profile');
+    }
+
+    getUserInitials(): string {
+        const raw = this.getUserDisplayName();
+        if (!raw) return 'U';
+        const parts = raw.trim().split(/\s+/).filter(Boolean);
+        if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+        return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+    }
+
+    private mapAppointmentToMenuItem(apt: any, overdue: boolean): MenuItem {
+        const time = new Date(apt.date_time).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+        const client = apt.client_name || `Cliente #${apt.client}`;
+        const service = apt.service_name || 'Servicio';
+        return {
+            label: `${time} · ${client} · ${service}`,
+            icon: overdue ? 'pi pi-clock' : 'pi pi-user',
+            command: () => this.goToAppointments()
+        };
+    }
+
+    private checkDueAppointmentAlerts(): void {
+        if (this.dueAlertActive) return;
+        const pending = this.appointmentBadgeService.getPendingDueAlerts();
+        if (!pending.length) return;
+
+        const apt = pending[0];
+        const time = new Date(apt.date_time).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+        const client = apt.client_name || `Cliente #${apt.client}`;
+        const service = apt.service_name || 'Servicio no especificado';
+
+        this.dueAlertActive = true;
+        this.playDueAlertSound();
+
+        this.confirmationService.confirm({
+            header: 'Cita en curso',
+            message: `${time} · ${client} · ${service}\n¿Qué deseas hacer?`,
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Confirmar',
+            rejectLabel: 'Descartar',
+            accept: () => {
+                this.appointmentBadgeService.dismissDueAlert(apt.id);
+                this.dueAlertActive = false;
+                this.goToAppointments();
+            },
+            reject: () => {
+                this.appointmentBadgeService.dismissDueAlert(apt.id);
+                this.dueAlertActive = false;
+            }
+        });
+    }
+
+    private playDueAlertSound(): void {
+        try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(990, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.09, audioContext.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.25);
+        } catch {
+        }
     }
 }

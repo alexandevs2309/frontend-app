@@ -5,6 +5,7 @@ import { API_CONFIG } from '../../config/api.config';
 import { TrialService } from '../trial.service';
 import { LocaleService } from '../locale/locale.service';
 import { throwError } from 'rxjs';
+import { normalizeRole } from '../../utils/role-normalizer';
 
 export interface LoginRequest {
   email: string;
@@ -30,10 +31,12 @@ export interface User {
   full_name: string;
   role: string;
   tenant_id?: number;
+  tenant_name?: string;
   roles: string[];
   phone?: string;
   is_active?: boolean;
   date_joined?: string;
+  avatar_url?: string | null;
 }
 
 export interface CreateUserRequest {
@@ -169,6 +172,18 @@ export class AuthService extends BaseApiService {
     return this.currentUserSubject.value;
   }
 
+  patchCurrentUser(patch: Partial<User>): void {
+    const current = this.currentUserSubject.value;
+    if (!current) return;
+
+    const updated = { ...current, ...patch };
+    if (updated.role) {
+      updated.role = normalizeRole(updated.role);
+    }
+    this.currentUserSubject.next(updated);
+    localStorage.setItem('user', JSON.stringify(updated));
+  }
+
   getCurrentUserRole(): string | null {
     const user = this.getCurrentUser();
     return user?.role || null;
@@ -213,7 +228,7 @@ export class AuthService extends BaseApiService {
     // ✅ NO almacenar tokens - están en httpOnly cookies
     // Solo almacenar datos de usuario (no sensibles)
     
-    const normalizedRole = this.normalizeRole(response.user?.role);
+    const normalizedRole = normalizeRole(response.user?.role);
     
     const userWithTenant = {
       ...response.user,
@@ -256,7 +271,7 @@ export class AuthService extends BaseApiService {
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        user.role = this.normalizeRole(user.role);
+        user.role = normalizeRole(user.role);
         
         // ✅ Validar sesión con backend (cookies httpOnly)
         this.validateSession().subscribe({
@@ -289,16 +304,4 @@ export class AuthService extends BaseApiService {
       );
   }
 
-  private normalizeRole(role: string): string {
-    const roleMap: { [key: string]: string } = {
-      'Client-Admin': 'CLIENT_ADMIN',
-      'Client-Staff': 'CLIENT_STAFF', 
-      'SuperAdmin': 'SUPER_ADMIN',
-      'Super-Admin': 'SUPER_ADMIN',
-      'Cajera': 'Cajera',
-      'Estilista': 'Estilista',
-      'Manager': 'Manager'
-    };
-    return roleMap[role] || role;
-  }
 }

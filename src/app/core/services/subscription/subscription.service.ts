@@ -21,8 +21,11 @@ export class SubscriptionService extends BaseApiService {
     return this.get(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.RENEW);
   }
 
-  renewSubscription(planId: number): Observable<any> {
-    return this.post(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.RENEW, { plan_id: planId });
+  renewSubscription(planId: number, paymentMethodId: string): Observable<any> {
+    return this.post(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.RENEW, {
+      plan_id: planId,
+      payment_method_id: paymentMethodId
+    });
   }
 
   getPlans(): Observable<any> {

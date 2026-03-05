@@ -286,7 +286,6 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         const cacheKey = 'pos_data';
         const cached = this.cache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-            console.log('⚡ Usando datos en caché');
             this.servicios = cached.data.servicios;
             this.productos = cached.data.productos;
             this.clientes = cached.data.clientes;
@@ -888,12 +887,6 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             // 💡 NUEVA FUNCIONALIDAD: Extraer pagos no en efectivo
             this.extraerPagosNoCash(dailySummary);
 
-            console.log('Debug cierre caja (FIXED):', {
-                montoInicialGuardado: montoInicialSesion,
-                ventasEfectivoBackend: ventasEfectivoReales,
-                dailySummary: dailySummary
-            });
-
             this.ventasEfectivoHoy = ventasEfectivoReales;
             this.montoEsperado = montoInicialSesion + ventasEfectivoReales;
             this.montoFinalCaja = 0; // Reset
@@ -1011,7 +1004,6 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
         this.estadisticasDia.set(nuevasEstadisticas);
         this.guardarEstadisticas(nuevasEstadisticas);
-        console.log('Estadísticas actualizadas y guardadas:', nuevasEstadisticas);
 
         // Actualizar pagos no cash después de la venta
         try {
@@ -1350,7 +1342,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                     address: settings.pos_config?.address || 'Dirección no configurada',
                     phone: settings.pos_config?.phone || 'Teléfono no configurado',
                     email: settings.pos_config?.email || '',
-                    website: settings.pos_config?.website || ''
+                    website: settings.pos_config?.website || '',
+                    logo_url: settings.logo ? this.toAbsoluteMediaUrl(settings.logo) : ''
                 };
                 this.limiteDescuento = settings.service_discount_limit || 20;
             }
@@ -1377,7 +1370,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 address: 'Dirección no configurada',
                 phone: 'Teléfono no configurado',
                 email: '',
-                website: ''
+                website: '',
+                logo_url: ''
             };
             this.nombreUsuarioActual = 'Cajero';
             this.rolUsuarioActual = '';
@@ -1533,9 +1527,6 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 window.print();
             }
         } catch {
-            if (!environment.production) {
-                console.log('Usando impresión estándar');
-            }
             window.print();
         }
     }
@@ -1603,7 +1594,7 @@ ${this.carrito().map(item =>
             oscillator.stop(audioContext.currentTime + 0.3);
         } catch (error) {
             if (!environment.production) {
-                console.log('Audio no disponible');
+                console.warn('Audio no disponible', error);
             }
         }
     }
@@ -1658,13 +1649,6 @@ ${this.carrito().map(item =>
 
             // Calcular monto inicial desde el monto esperado
             const montoInicialReal = this.montoEsperado - this.ventasEfectivoHoy;
-
-            console.log('Debug reporte:', {
-                montoEsperado: this.montoEsperado,
-                ventasEfectivo: this.ventasEfectivoHoy,
-                montoInicialCalculado: montoInicialReal,
-                montoInicialGuardado: this.obtenerMontoInicialCaja()
-            });
 
             const reporteData = {
                 fecha: new Date().toLocaleDateString('es-ES'),
@@ -1807,19 +1791,15 @@ ${this.carrito().map(item =>
     cargarEstadisticasGuardadas() {
         try {
             const userId = this.obtenerUserId();
-            console.log('User ID obtenido:', userId);
             const keyEstadisticas = `estadisticas_pos_user_${userId}`;
             const keyFecha = `estadisticas_pos_fecha_user_${userId}`;
-            console.log('Keys a usar:', keyEstadisticas, keyFecha);
             
             // Verificar si cambió el día
             const fechaGuardada = localStorage.getItem(keyFecha);
             const fechaHoy = new Date().toDateString();
-            console.log('Fecha guardada:', fechaGuardada, 'Fecha hoy:', fechaHoy);
             
             if (fechaGuardada !== fechaHoy) {
                 // Es un nuevo día, resetear estadísticas
-                console.log('Nuevo día detectado, reseteando estadísticas');
                 const estadisticasLimpias = { ventas: 0, ingresos: 0, ticketPromedio: 0 };
                 this.estadisticasDia.set(estadisticasLimpias);
                 localStorage.setItem(keyEstadisticas, JSON.stringify(estadisticasLimpias));
@@ -1828,13 +1808,10 @@ ${this.carrito().map(item =>
             }
             
             const estadisticasGuardadas = localStorage.getItem(keyEstadisticas);
-            console.log('Cargando estadísticas desde localStorage:', estadisticasGuardadas);
             if (estadisticasGuardadas) {
                 const estadisticas = JSON.parse(estadisticasGuardadas);
                 this.estadisticasDia.set(estadisticas);
-                console.log('Estadísticas cargadas:', estadisticas);
             } else {
-                console.log('No hay estadísticas guardadas, iniciando en 0');
                 const estadisticasLimpias = { ventas: 0, ingresos: 0, ticketPromedio: 0 };
                 this.estadisticasDia.set(estadisticasLimpias);
                 localStorage.setItem(keyFecha, fechaHoy);
@@ -1852,7 +1829,6 @@ ${this.carrito().map(item =>
             const keyFecha = `estadisticas_pos_fecha_user_${userId}`;
             localStorage.setItem(keyEstadisticas, JSON.stringify(estadisticas));
             localStorage.setItem(keyFecha, new Date().toDateString());
-            console.log('Estadísticas guardadas con fecha:', new Date().toDateString());
         } catch (error) {
             if (!environment.production) {
                 console.error('Error guardando estadísticas:', error);
@@ -1905,6 +1881,18 @@ ${this.carrito().map(item =>
             return 'Barbería';
         }
         return 'Barbería';
+    }
+
+    getBusinessLogo(): string | null {
+        const logo = this.configuracionPos?.logo_url || '';
+        return logo ? this.toAbsoluteMediaUrl(logo) : null;
+    }
+
+    private toAbsoluteMediaUrl(url: string): string {
+        if (!url) return '';
+        if (/^https?:\/\//i.test(url)) return url;
+        const apiOrigin = new URL(environment.apiUrl).origin;
+        return url.startsWith('/') ? `${apiOrigin}${url}` : `${apiOrigin}/${url}`;
     }
 
     obtenerResumenVenta() {

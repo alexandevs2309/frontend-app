@@ -127,7 +127,7 @@ import { environment } from '../../../../environments/environment';
                             </div>
                         </td>
                         <td>
-                            <code class="bg-gray-100 px-2 py-1 rounded text-sm">{{producto.sku}}</code>
+                            <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm text-gray-800 dark:text-gray-200">{{producto.sku}}</code>
                         </td>
                         <td>
                             <p-tag [value]="producto.category || 'Sin categoría'"
@@ -182,8 +182,9 @@ import { environment } from '../../../../environments/environment';
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block font-medium mb-1">SKU *</label>
+                            <label class="block font-medium mb-1">SKU (Auto si vacío)</label>
                             <input pInputText formControlName="sku" class="w-full"
+                                   placeholder="Se genera automáticamente si lo dejas en blanco"
                                    [class.ng-invalid]="formulario.get('sku')?.invalid && formulario.get('sku')?.touched">
                         </div>
                         <div>
@@ -362,7 +363,7 @@ export class ProductsManagement implements OnInit {
 
     formulario: FormGroup = this.fb.group({
         name: ['', [Validators.required, Validators.maxLength(255)]],
-        sku: ['', [Validators.required, Validators.maxLength(100)]],
+        sku: ['', [Validators.maxLength(100)]],
         description: [''],
         category: [''],
         price: [0, [Validators.required, Validators.min(0)]],
@@ -503,6 +504,14 @@ export class ProductsManagement implements OnInit {
                 errorDetail = error.error.image[0];
             } else if (error?.error?.detail) {
                 errorDetail = error.error.detail;
+            } else if (error?.error && typeof error.error === 'object') {
+                const firstField = Object.keys(error.error)[0];
+                const firstFieldErrors = error.error[firstField];
+                if (Array.isArray(firstFieldErrors) && firstFieldErrors.length > 0) {
+                    errorDetail = `${firstField}: ${firstFieldErrors[0]}`;
+                } else if (typeof firstFieldErrors === 'string') {
+                    errorDetail = `${firstField}: ${firstFieldErrors}`;
+                }
             }
             
             this.messageService.add({

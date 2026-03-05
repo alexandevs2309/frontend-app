@@ -37,47 +37,47 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
         <!-- Dialog Detalle -->
         <p-dialog [(visible)]="mostrarDetalle" [modal]="true" [style]="{width: '450px'}" header="Detalle de Cita">
             <div *ngIf="citaSeleccionada" class="space-y-4">
-                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
                     <i class="pi pi-user text-2xl text-blue-600"></i>
                     <div>
-                        <label class="text-xs text-gray-500">Cliente</label>
+                        <label class="text-xs text-surface-500 dark:text-surface-400">Cliente</label>
                         <p class="font-semibold">{{ citaSeleccionada.client_name }}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
                     <i class="pi pi-briefcase text-2xl text-purple-600"></i>
                     <div>
-                        <label class="text-xs text-gray-500">Empleado</label>
+                        <label class="text-xs text-surface-500 dark:text-surface-400">Empleado</label>
                         <p class="font-semibold">{{ citaSeleccionada.stylist_name }}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
                     <i class="pi pi-star text-2xl text-yellow-600"></i>
                     <div>
-                        <label class="text-xs text-gray-500">Servicio</label>
+                        <label class="text-xs text-surface-500 dark:text-surface-400">Servicio</label>
                         <p class="font-semibold">{{ citaSeleccionada.service_name }}</p>
-                        <p class="text-sm text-gray-600">{{ citaSeleccionada.service_duration || 30 }} min</p>
+                        <p class="text-sm text-surface-600 dark:text-surface-400">{{ citaSeleccionada.service_duration || 30 }} min</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
                     <i class="pi pi-clock text-2xl text-green-600"></i>
                     <div>
-                        <label class="text-xs text-gray-500">Fecha y Hora</label>
+                        <label class="text-xs text-surface-500 dark:text-surface-400">Fecha y Hora</label>
                         <p class="font-semibold">{{ citaSeleccionada.date_time | date:'dd/MM/yyyy HH:mm' }}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
                     <i class="pi pi-info-circle text-2xl text-gray-600"></i>
                     <div class="flex-1">
-                        <label class="text-xs text-gray-500">Estado</label>
+                        <label class="text-xs text-surface-500 dark:text-surface-400">Estado</label>
                         <div class="mt-1">
                             <p-tag [value]="getStatusLabel(citaSeleccionada.status)" 
                                    [severity]="getStatusSeverity(citaSeleccionada.status)"></p-tag>
                         </div>
                     </div>
                 </div>
-                <div *ngIf="citaSeleccionada.description" class="p-3 bg-blue-50 rounded">
-                    <label class="text-xs text-gray-500">Notas</label>
+                <div *ngIf="citaSeleccionada.description" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                    <label class="text-xs text-surface-500 dark:text-surface-400">Notas</label>
                     <p class="text-sm mt-1">{{ citaSeleccionada.description }}</p>
                 </div>
             </div>
@@ -149,13 +149,31 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     `,
     styles: [`
         .calendar-wrapper {
-            background: white;
+            background: var(--surface-card);
+            color: var(--text-color);
             padding: 1rem;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid var(--surface-border);
         }
         :host ::ng-deep .fc {
             font-family: inherit;
+            color: var(--text-color);
+        }
+        :host ::ng-deep .fc .fc-scrollgrid,
+        :host ::ng-deep .fc .fc-theme-standard td,
+        :host ::ng-deep .fc .fc-theme-standard th {
+            border-color: var(--surface-border);
+        }
+        :host ::ng-deep .fc .fc-col-header-cell-cushion,
+        :host ::ng-deep .fc .fc-daygrid-day-number,
+        :host ::ng-deep .fc .fc-timegrid-axis-cushion,
+        :host ::ng-deep .fc .fc-timegrid-slot-label-cushion {
+            color: var(--text-color);
+        }
+        :host ::ng-deep .fc .fc-button {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
         }
         :host ::ng-deep .fc-event {
             cursor: pointer;

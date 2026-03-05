@@ -80,13 +80,13 @@ import { environment } from '../../../../environments/environment';
                     <div class="surface-card border-round shadow-md p-4">
                         <div class="flex justify-between items-center mb-2">
                             <div>
-                                <div class="text-sm text-gray-500">{{ cita.date_time | date: 'dd/MM/yyyy HH:mm' }}</div>
+                                <div class="text-sm text-surface-500 dark:text-surface-400">{{ cita.date_time | date: 'dd/MM/yyyy HH:mm' }}</div>
                                 <div class="font-medium">{{ cita.client_name || 'Cliente #' + cita.client }}</div>
-                                <div class="text-gray-600 text-sm">{{ cita.stylist_name || 'Empleado #' + cita.stylist }}</div>
+                                <div class="text-surface-600 dark:text-surface-400 text-sm">{{ cita.stylist_name || 'Empleado #' + cita.stylist }}</div>
                             </div>
                             <p-tag [value]="getEstadoLabel(cita.status)" [severity]="getEstadoSeverity(cita.status)"></p-tag>
                         </div>
-                        <div class="text-gray-700 mb-2">{{ cita.service_name || 'Sin servicio' }}</div>
+                        <div class="text-surface-700 dark:text-surface-300 mb-2">{{ cita.service_name || 'Sin servicio' }}</div>
                         <div class="flex gap-2 flex-wrap">
                             <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editarCita(cita)" pTooltip="Editar" [disabled]="cita.status === 'completed'"></button>
                             <button pButton icon="pi pi-check" class="p-button-text p-button-sm p-button-success" (click)="completarCita(cita)" pTooltip="Completar" *ngIf="cita.status === 'scheduled'"></button>
@@ -100,7 +100,7 @@ import { environment } from '../../../../environments/environment';
             <p-table class="w-full hidden md:block" [value]="citasFiltradas()" [responsiveLayout]="'scroll'" [loading]="cargando()" [globalFilterFields]="['client_name', 'stylist_name', 'service_name']" #dt>
                 <ng-template pTemplate="caption">
                     <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Total: {{ citasFiltradas().length }} citas</span>
+                        <span class="text-sm text-surface-600 dark:text-surface-400">Total: {{ citasFiltradas().length }} citas</span>
                         <span class="p-input-icon-left">
                             <i class="pi pi-search"></i>
                             <input pInputText type="text" placeholder="Buscar citas..." (input)="dt.filterGlobal($any($event.target).value, 'contains')" />

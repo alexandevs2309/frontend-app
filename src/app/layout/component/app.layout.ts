@@ -7,7 +7,7 @@ import { MessageService } from 'primeng/api';
 import { AppTopbar } from './app.topbar';
 import { AppSidebar } from './app.sidebar';
 import { AppFooter } from './app.footer';
-import { LayoutService } from '../service/layout.service';
+import { LayoutService, layoutConfig } from '../service/layout.service';
 import { OnboardingTourModule } from '../../shared/onboarding/onboarding-tour.module';
 import { OnboardingTourService } from '../../shared/onboarding/onboarding-tour.service';
 
@@ -32,6 +32,7 @@ import { OnboardingTourService } from '../../shared/onboarding/onboarding-tour.s
 })
 export class AppLayout implements OnInit, OnDestroy {
     overlayMenuOpenSubscription: Subscription;
+    configSubscription?: Subscription;
 
     menuOutsideClickListener: any;
 
@@ -66,6 +67,21 @@ export class AppLayout implements OnInit, OnDestroy {
     }
 
     ngOnInit() {
+        // Aplicar clase dark al body para overlays de PrimeNG
+        const isDark = this.layoutService.layoutConfig().darkTheme === true;
+        if (isDark) {
+            document.body.classList.add('dark');
+        }
+        
+        // Observar cambios de tema
+        this.configSubscription = this.layoutService.configUpdate$.subscribe((config: layoutConfig) => {
+            if (config.darkTheme === true) {
+                document.body.classList.add('dark');
+            } else {
+                document.body.classList.remove('dark');
+            }
+        });
+        
         setTimeout(() => this.onboardingTourService.maybeStartForCurrentRoute(), 500);
         // Cambiar a overlay solo en POS
         this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe((event: NavigationEnd) => {
@@ -121,6 +137,12 @@ export class AppLayout implements OnInit, OnDestroy {
     }
 
     ngOnDestroy() {
+        document.body.classList.remove('dark');
+
+        if (this.configSubscription) {
+            this.configSubscription.unsubscribe();
+        }
+        
         if (this.overlayMenuOpenSubscription) {
             this.overlayMenuOpenSubscription.unsubscribe();
         }

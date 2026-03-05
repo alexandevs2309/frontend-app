@@ -83,7 +83,7 @@ import { Subscription } from 'rxjs';
     .trial-banner {
       position: sticky;
       top: 0;
-      z-index: 1000;
+      z-index: 100;
       padding: 12px 20px;
       border-bottom: 1px solid #e0e0e0;
       transition: all 0.3s ease;

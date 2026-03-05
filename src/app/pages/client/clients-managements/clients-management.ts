@@ -177,7 +177,7 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
                         <div>
                             <label class="block font-medium mb-1">Fecha de Nacimiento</label>
                             <p-datepicker formControlName="birthday" dateFormat="dd/mm/yy"
-                                        class="w-full" [showClear]="true">
+                                        class="w-full" [showClear]="true" [maxDate]="todayDate">
                             </p-datepicker>
                         </div>
                         <div>
@@ -226,6 +226,7 @@ export class ClientsManagement implements OnInit {
     guardando = signal(false);
     mostrarDialogo = false;
     clienteSeleccionado: ClientDto | null = null;
+    todayDate = new Date();
 
     // Utility function to normalize API responses
     private normalizeArray<T>(response: any): T[] {
@@ -243,7 +244,7 @@ export class ClientsManagement implements OnInit {
             email: backendClient.email,
             phone: backendClient.phone,
             address: backendClient.address,
-            birthday: backendClient.birthday, // ✅ Normalizado desde backend
+            birthday: backendClient.birthday, // formato esperado YYYY-MM-DD
             gender: backendClient.gender,
             notes: backendClient.notes,
             is_active: backendClient.is_active,
@@ -320,10 +321,7 @@ export class ClientsManagement implements OnInit {
             email: cliente.email,
             phone: cliente.phone || '',
             address: cliente.address || '',
-            birthday: (() => { // ✅ Normalizado
-                const fecha = cliente.birthday;
-                return fecha ? new Date(fecha) : null;
-            })(),
+            birthday: this.parseDateOnly(cliente.birthday),
             gender: cliente.gender || '',
             notes: cliente.notes || '',
             is_active: cliente.is_active
@@ -340,7 +338,7 @@ export class ClientsManagement implements OnInit {
 
             // Formatear fecha de nacimiento - el backend espera 'birthday'
             if (clienteData.birthday) {
-                clienteData.birthday = new Date(clienteData.birthday).toISOString().split('T')[0];
+                clienteData.birthday = this.formatDateOnly(clienteData.birthday as any);
             }
 
             if (this.clienteSeleccionado) {
@@ -408,10 +406,10 @@ export class ClientsManagement implements OnInit {
     }
 
     formatearFecha(cliente: any): string {
-        const fecha = cliente.birthday;
+        const fecha = this.parseDateOnly(cliente.birthday);
         if (!fecha) return 'No especificada';
         try {
-            return new Date(fecha).toLocaleDateString('es-ES');
+            return fecha.toLocaleDateString('es-ES');
         } catch {
             return 'No especificada';
         }
@@ -434,23 +432,23 @@ export class ClientsManagement implements OnInit {
 
     // Funciones para sistema de cumpleaños
     esCumpleanosHoy(cliente: any): boolean {
-        if (!cliente.birthday) return false;
+        const cumple = this.parseDateOnly(cliente.birthday);
+        if (!cumple) return false;
         const hoy = new Date();
-        const cumple = new Date(cliente.birthday);
         return hoy.getDate() === cumple.getDate() && hoy.getMonth() === cumple.getMonth();
     }
 
     esCumpleanosEsteMes(cliente: any): boolean {
-        if (!cliente.birthday) return false;
+        const cumple = this.parseDateOnly(cliente.birthday);
+        if (!cumple) return false;
         const hoy = new Date();
-        const cumple = new Date(cliente.birthday);
         return hoy.getMonth() === cumple.getMonth();
     }
 
     calcularEdad(cliente: any): number | null {
-        if (!cliente.birthday) return null;
+        const cumple = this.parseDateOnly(cliente.birthday);
+        if (!cumple) return null;
         const hoy = new Date();
-        const cumple = new Date(cliente.birthday);
         let edad = hoy.getFullYear() - cumple.getFullYear();
         const mesActual = hoy.getMonth();
         const mesCumple = cumple.getMonth();
@@ -459,5 +457,33 @@ export class ClientsManagement implements OnInit {
             edad--;
         }
         return edad;
+    }
+
+    private parseDateOnly(value: unknown): Date | null {
+        if (!value) return null;
+        if (value instanceof Date) return value;
+        if (typeof value === 'string') {
+            const parts = value.split('-');
+            if (parts.length === 3) {
+                const year = Number(parts[0]);
+                const month = Number(parts[1]);
+                const day = Number(parts[2]);
+                if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+                    return new Date(year, month - 1, day);
+                }
+            }
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+        return null;
+    }
+
+    private formatDateOnly(value: Date | string): string {
+        const date = value instanceof Date ? value : this.parseDateOnly(value);
+        if (!date) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 }

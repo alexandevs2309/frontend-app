@@ -22,14 +22,12 @@ export const clientRoutes: Routes = [
                 data: { roles: ['CLIENT_ADMIN', 'Manager'] },
                 loadComponent: () => import('../pages/client/payments/payment').then(m => m.PaymentComponent)
             },
-
             {
                 path: 'checkout',
                 canActivate: [RoleGuard],
                 data: { roles: ['CLIENT_ADMIN', 'Manager'] },
                 loadComponent: () => import('../pages/client/checkout/checkout').then(m => m.CheckoutComponent)
             },
-
             {
                 path: 'employees',
                 canActivate: [TrialGuard, RoleGuard],
@@ -90,6 +88,24 @@ export const clientRoutes: Routes = [
                 canActivate: [TrialGuard, RoleGuard],
                 data: { roles: ['CLIENT_ADMIN'] },
                 loadComponent: () => import('../pages/client/settings/barbershop-settings').then(m => m.BarbershopSettingsComponent)
+            },
+            {
+                path: 'profile',
+                canActivate: [RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
+                loadComponent: () => import('../pages/client/profile/user-profile.component').then(m => m.UserProfileComponent)
+            },
+            {
+                path: 'change-password',
+                canActivate: [RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
+                loadComponent: () => import('../pages/client/profile/change-password.component').then(m => m.ChangePasswordComponent)
+            },
+            {
+                path: 'help',
+                canActivate: [RoleGuard],
+                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
+                loadComponent: () => import('../pages/client/profile/help.component').then(m => m.HelpComponent)
             },
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
         ]

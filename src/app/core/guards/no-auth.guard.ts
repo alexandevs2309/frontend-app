@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
 import { Observable, map } from 'rxjs';
 import { AuthService } from '../services/auth/auth.service';
+import { roleKey } from '../utils/role-normalizer';
 
 @Injectable({
   providedIn: 'root'
@@ -28,15 +29,15 @@ export class NoAuthGuard implements CanActivate {
   }
 
   private redirectToDashboard(role: string | null): void {
-    switch (role) {
+    switch (roleKey(role)) {
       case 'SUPER_ADMIN':
-      case 'SuperAdmin':
         this.router.navigate(['/admin/dashboard']);
         break;
       case 'CLIENT_ADMIN':
       case 'CLIENT_STAFF':
-      case 'Client-Admin':
-      case 'Client-Staff':
+      case 'CAJERA':
+      case 'ESTILISTA':
+      case 'MANAGER':
         this.router.navigate(['/client/dashboard']);
         break;
       default:

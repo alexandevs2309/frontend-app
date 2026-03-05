@@ -13,6 +13,7 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
 import { AuthService, LoginResponse } from '../../core/services/auth/auth.service';
 import { AppConfigService } from '../../core/services/app-config.service';
 import { LocaleService } from '../../core/services/locale/locale.service';
+import { roleKey } from '../../core/utils/role-normalizer';
 
 @Component({
     selector: 'app-login',
@@ -112,12 +113,20 @@ export class Login implements OnInit {
 
                 // Redirigir usando el rol de la respuesta directamente
                 const userRole = response.user?.role || 'CLIENT_ADMIN';
-                console.log('Login exitoso, rol:', userRole);
                 this.redirectUser(userRole);
             },
             error: (error) => {
                 this.isLoading = false;
-                const message = error.error?.detail || error.error?.message || this.t('auth.login.invalid_credentials');
+                let message = error.error?.detail || error.error?.message || this.t('auth.login.invalid_credentials');
+                if (!message && error.error && typeof error.error === 'object') {
+                    const firstKey = Object.keys(error.error)[0];
+                    const firstVal = error.error[firstKey];
+                    if (Array.isArray(firstVal) && firstVal.length > 0) {
+                        message = firstVal[0];
+                    } else if (typeof firstVal === 'string') {
+                        message = firstVal;
+                    }
+                }
                 this.messageService.add({ 
                     severity: 'error', 
                     summary: this.t('auth.login.auth_error'), 
@@ -129,15 +138,19 @@ export class Login implements OnInit {
     }
 
     private redirectUser(role: string): void {
-        console.log('Redirigiendo usuario con rol:', role);
-        if (role === 'SUPER_ADMIN') {
-            console.log('Redirigiendo a admin dashboard');
+        if (roleKey(role) === 'SUPER_ADMIN') {
             this.router.navigate(['/admin/dashboard']);
         } else {
-            console.log('Redirigiendo a client dashboard');
             this.router.navigate(['/client/dashboard']).then(
-                success => console.log('Navegación exitosa:', success),
-                error => console.error('Error en navegación:', error)
+                () => {},
+                () => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: this.t('auth.login.auth_error'),
+                        detail: 'No se pudo completar la navegacion al panel.',
+                        life: 4000
+                    });
+                }
             );
         }
     }

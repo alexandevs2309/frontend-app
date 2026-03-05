@@ -219,6 +219,15 @@ export class CheckoutComponent implements OnInit {
       return;
     }
 
+    if (!this.paymentData.cardName || !this.paymentData.cardNumber || !this.paymentData.expiryDate || !this.paymentData.cvv) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Datos incompletos',
+        detail: 'Completa la información de pago para continuar'
+      });
+      return;
+    }
+
     
     this.processing = true;
 
@@ -231,7 +240,10 @@ export class CheckoutComponent implements OnInit {
     // Simulate payment processing
     setTimeout(() => {
       
-      this.subscriptionService.renewSubscription(this.selectedPlan.id).subscribe({
+      // En desarrollo usamos modo manual para no bloquear el flujo.
+      const paymentMethodId = 'manual_entry';
+
+      this.subscriptionService.renewSubscription(this.selectedPlan.id, paymentMethodId).subscribe({
         next: (response) => {
           
           this.messageService.add({

@@ -91,16 +91,18 @@ export class ClientDashboard implements OnInit, OnDestroy {
     }
 
     showAppointmentNotifications() {
-        const todayCount = this.notificationService.todayAppointments().length;
+        const todayAppointments = this.notificationService.todayAppointments();
+        const todayCount = todayAppointments.length;
         const upcoming = this.notificationService.upcomingAppointments();
         const overdueCount = this.notificationService.overdueAppointments().length;
 
         if (todayCount > 0) {
+            const details = this.buildTodayAppointmentsDetail(todayAppointments);
             this.messageService.add({
                 severity: 'info',
                 summary: this.t('dashboard.notifications.today_appointments'),
-                detail: this.t('dashboard.notifications.today_appointments_detail').replace('{count}', String(todayCount)),
-                life: 5000
+                detail: `${this.t('dashboard.notifications.today_appointments_detail').replace('{count}', String(todayCount))}\n${details}`,
+                life: 9000
             });
         }
 
@@ -181,5 +183,23 @@ export class ClientDashboard implements OnInit, OnDestroy {
 
     t(key: string): string {
         return this.localeService.t(key as any);
+    }
+
+    private buildTodayAppointmentsDetail(appointments: any[]): string {
+        const maxItems = 3;
+        const lines = appointments.slice(0, maxItems).map((apt) => {
+            const time = new Date(apt.date_time).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+            const client = apt.client_name || `Cliente #${apt.client}`;
+            const service = apt.service_name || 'Servicio no especificado';
+            return `• ${time} - ${client} - ${service}`;
+        });
+
+        if (appointments.length > maxItems) {
+            lines.push(`... y ${appointments.length - maxItems} más en /client/appointments`);
+        } else {
+            lines.push('Ver agenda completa en /client/appointments');
+        }
+
+        return lines.join('\n');
     }
 }

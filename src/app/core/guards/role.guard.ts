@@ -3,6 +3,7 @@ import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from
 import { Observable, map } from 'rxjs';
 import { AuthService } from '../services/auth/auth.service';
 import { MessageService } from 'primeng/api';
+import { roleKey } from '../utils/role-normalizer';
 @Injectable({
   providedIn: 'root'
 })
@@ -32,35 +33,37 @@ export class RoleGuard implements CanActivate {
         }
 
         const userRole = user.role;
-        const hasRequiredRole = requiredRoles.includes(userRole);
+        const userRoleKey = roleKey(userRole);
+        const hasRequiredRole = requiredRoles.some((requiredRole) => roleKey(requiredRole) === userRoleKey);
 
         if (hasRequiredRole) {
           return true;
         } else {
-          this.handleUnauthorizedAccess(user.role);
+          this.handleUnauthorizedAccess(userRoleKey);
           return false;
         }
       })
     );
   }
 
-  private handleUnauthorizedAccess(userRole: string): void {
+  private handleUnauthorizedAccess(userRoleKey: string): void {
     this.messageService.add({ severity: 'error', summary: 'Acceso Denegado', detail: 'No tienes permiso para acceder a esta página.' });
 
     // Redirecionar al dashboard correspondiente según el rol del usuario
-    switch (userRole) {
+    switch (userRoleKey) {
       case 'SUPER_ADMIN':
         this.router.navigate(['/admin/dashboard']);
         break;
       case 'CLIENT_ADMIN':
       case 'CLIENT_STAFF':
-      case 'Cajera':
-      case 'Manager':
-      case 'Estilista':
+      case 'CAJERA':
+      case 'MANAGER':
+      case 'ESTILISTA':
         this.router.navigate(['/client/dashboard']);
         break;
       default:
         this.router.navigate(['/auth/login']);
     }
   }
+
 }

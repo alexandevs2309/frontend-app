@@ -64,11 +64,11 @@ export class InventoryService extends BaseApiService {
   }
 
   updateProduct(id: number, product: Partial<Product>): Observable<Product> {
-    return this.put(`${API_CONFIG.ENDPOINTS.INVENTORY.PRODUCTS}${id}/`, product);
+    return this.patch(`${API_CONFIG.ENDPOINTS.INVENTORY.PRODUCTS}${id}/`, product);
   }
 
   updateProductWithImage(id: number, formData: FormData): Observable<Product> {
-    return this.putFormData(`${API_CONFIG.ENDPOINTS.INVENTORY.PRODUCTS}${id}/`, formData);
+    return this.patch(`${API_CONFIG.ENDPOINTS.INVENTORY.PRODUCTS}${id}/`, formData);
   }
 
   deleteProduct(id: number): Observable<any> {
