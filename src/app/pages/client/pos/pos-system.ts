@@ -23,6 +23,22 @@ import { SaleDetailDto, CartItemDto } from '../../../core/dto/sale-detail.dto';
 import { PaymentDto, PaymentMethodDto } from '../../../core/dto/payment.dto';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { calculateCartSubtotal, calculateMixedPaymentsTotal, calculateTotalFromDiscount, getMixedPaymentMessage, isMixedPaymentBalanced } from './pos-calculations';
+import { buildCreateSalePayload, buildSalePayments, getDiscountContext, getSaleValidationMessage } from './pos-sale-builder';
+import { POS_ROLE_GROUPS, canRefundSaleByContent, hasRolePermission, normalizePosRole } from './pos-permissions';
+import {
+    buildCashCountEntries,calculateArqueoTotal,calculateCashDifference,calculateExpectedCash,getCloseCashSuccessMessage,    getCloseCashValidationMessage,getDenominationsWithTotals,getDifferenceToConfirm,getInitialCashFromStorage,    getOpenCashSuccessMessage,getOpenCashValidationMessage,getResetDenominations,saveInitialCashToStorage,shouldConfirmCartLoss
+} from './pos-cash-workflow';
+import { getUserIdFromStorage, loadArqueoHistory, loadDailyStats, saveArqueoHistory, saveDailyStats } from './pos-storage';
+import {
+    buildEscPosTicketText, buildTicketSaleData, clearSignatureCanvas, drawSignatureStroke, drawSimpleSaleQr, getSignatureDataUrl,startSignatureStroke,supportsSerialPrinting
+} from './pos-ticket-utils';
+import { buildCashCloseReportData, extractCashSalesTotal, extractNonCashPayments, printCashCloseReport } from './pos-cash-reporting';
+import { buildDefaultPosConfig, buildPosConfigFromSettings, getBusinessNameFromTenantStorage, getCurrentUserIdentity, toAbsoluteMediaUrl } from './pos-config';
+import {
+    extractCatalogCategories,filterCatalogItems,getCachedPosCatalog,isForbiddenStatus,loadPosCatalogData,normalizeArrayResponse,setCachedPosCatalog
+} from './pos-catalog';
+import { getDefaultPromotions, mapSaleForTicketPreview, mapSalesHistory } from './pos-sales-history';
 
 
 interface CartItem {
@@ -58,12 +74,13 @@ export class PosSystem implements OnInit, OnDestroy {
     pagosNoCash = signal<PaymentMethodDto[]>([]);
 
     // Computed signals para cálculos automáticos
-    subtotal = computed(() => this.carrito().reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0));
+    subtotal = computed(() => calculateCartSubtotal(this.carrito()));
     total = computed(() => {
-        const subtotal = this.subtotal();
-        const descuentoValor = Number(this.descuento()) || 0;
-        const descuentoFinal = this.tipoDescuento() === '%' ? (subtotal * descuentoValor / 100) : descuentoValor;
-        return Math.max(0, subtotal - descuentoFinal);
+        return calculateTotalFromDiscount(
+            this.subtotal(),
+            Number(this.descuento()) || 0,
+            this.tipoDescuento()
+        );
     });
     puedeVenderComputed = computed(() => {
         const carrito = this.carrito();
@@ -267,115 +284,50 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         this.categorySubject.next(value);
     }
 
-    // Utility function to normalize API responses
-    private normalizeArray<T>(response: any): T[] {
-        if (!response) return [];
-        if (Array.isArray(response)) return response;
-        if (response.results && Array.isArray(response.results)) return response.results;
-        return [];
-    }
-
-    private isForbiddenError(error: any): boolean {
-        return error?.status === 403;
-    }
-
     async cargarDatos() {
         if (this.cargandoDatos) return;
-        
-        // Verificar caché
+
         const cacheKey = 'pos_data';
-        const cached = this.cache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-            this.servicios = cached.data.servicios;
-            this.productos = cached.data.productos;
-            this.clientes = cached.data.clientes;
-            this.empleados = cached.data.empleados;
-            this.clientesFrecuentes = cached.data.clientesFrecuentes;
+        const cached = getCachedPosCatalog(this.cache, cacheKey, this.CACHE_DURATION);
+        if (cached) {
+            this.servicios = cached.servicios;
+            this.productos = cached.productos;
+            this.clientes = cached.clientes;
+            this.empleados = cached.empleados;
+            this.clientesFrecuentes = cached.clientesFrecuentes;
             this.extraerCategorias();
             this.filtrarItems();
             return;
         }
-        
+
         this.cargandoDatos = true;
 
         try {
-            let accessLimited = false;
-            try {
-                const servicesResponse = await this.servicesService.getServices().toPromise();
-                const services = this.normalizeArray<any>(servicesResponse);
-                this.servicios = services.filter((s: any) => s.is_active !== false);
-            } catch (error) {
-                this.servicios = [];
-                if (!this.isForbiddenError(error)) {
-                    throw error;
-                }
-                accessLimited = true;
-            }
-
-            try {
-                const productsResponse = await this.inventoryService.getProducts().toPromise();
-                const products = this.normalizeArray<any>(productsResponse);
-                this.productos = products.filter(
-                    (p: any) => p.is_active && (p.stock > 0 || p.stock === undefined)
-                );
-            } catch (error) {
-                this.productos = [];
-                if (!this.isForbiddenError(error)) {
-                    throw error;
-                }
-                accessLimited = true;
-            }
-
-            try {
-                const clientsResponse = await this.clientsService.getClients().toPromise();
-                const clients = this.normalizeArray<any>(clientsResponse);
-                this.clientes = clients.filter((c: any) => c.is_active !== false);
-            } catch (error) {
-                this.clientes = [];
-                if (!this.isForbiddenError(error)) {
-                    throw error;
-                }
-                accessLimited = true;
-            }
-
-            // Clientes frecuentes
-            this.clientesFrecuentes = this.clientes.filter(
-                (c: any) => (c.total_purchases || 0) > 5
-            );
-
-            try {
-                const employeesResponse = await this.employeesService.getEmployees().toPromise();
-                const employees = this.normalizeArray<any>(employeesResponse);
-                this.empleados = employees
-                    .filter((emp: any) => emp.is_active && ['Estilista', 'Utility'].includes(emp.user?.role))
-                    .map((emp: any) => ({
-                        ...emp,
-                        displayName: `${emp.user?.full_name || emp.full_name || emp.name || `Empleado ${emp.id}`} (${emp.user?.role || 'Sin rol'})`
-                    }));
-            } catch (error) {
-                this.empleados = [];
-                if (!this.isForbiddenError(error)) {
-                    throw error;
-                }
-                accessLimited = true;
-            }
-            
-            // Guardar en caché
-            this.cache.set(cacheKey, {
-                data: {
-                    servicios: this.servicios,
-                    productos: this.productos,
-                    clientes: this.clientes,
-                    empleados: this.empleados,
-                    clientesFrecuentes: this.clientesFrecuentes
-                },
-                timestamp: Date.now()
+            const loadedCatalog = await loadPosCatalogData({
+                getServices: async () => this.servicesService.getServices().toPromise(),
+                getProducts: async () => this.inventoryService.getProducts().toPromise(),
+                getClients: async () => this.clientsService.getClients().toPromise(),
+                getEmployees: async () => this.employeesService.getEmployees().toPromise()
             });
-            
+
+            this.servicios = loadedCatalog.servicios;
+            this.productos = loadedCatalog.productos;
+            this.clientes = loadedCatalog.clientes;
+            this.empleados = loadedCatalog.empleados;
+            this.clientesFrecuentes = loadedCatalog.clientesFrecuentes;
+
+            setCachedPosCatalog(this.cache, cacheKey, {
+                servicios: this.servicios,
+                productos: this.productos,
+                clientes: this.clientes,
+                empleados: this.empleados,
+                clientesFrecuentes: this.clientesFrecuentes
+            });
+
             this.extraerCategorias();
             this.filtrarItems();
 
-            if (accessLimited) {
+            if (loadedCatalog.accessLimited) {
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'Acceso limitado',
@@ -396,11 +348,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     private extraerCategorias() {
         const items = this.tipoActivo === 'services' ? this.servicios : this.productos;
-        const categoriasUnicas = [...new Set(items.map(item => item.category).filter(Boolean))];
-        this.categorias = [
-            { name: 'Todas', value: '' },
-            ...categoriasUnicas.map(cat => ({ name: cat, value: cat }))
-        ];
+        this.categorias = extractCatalogCategories(items);
     }
 
 
@@ -409,28 +357,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
 
     filtrarItems() {
-        let items = this.tipoActivo === 'services' ? this.servicios : this.productos;
-
-        if (this.categoriaSeleccionada) {
-            items = items.filter(item => {
-                const itemCategory = item.category || 'General';
-                return itemCategory === this.categoriaSeleccionada;
-            });
-        }
-
-        if (this.busqueda.trim()) {
-            const searchTerm = this.busqueda.toLowerCase().trim();
-            items = items.filter(item =>
-                item.name.toLowerCase().includes(searchTerm) ||
-                (item.description && item.description.toLowerCase().includes(searchTerm))
-            );
-        }
-
-        if (this.tipoActivo === 'products') {
-            items = items.filter(item => item.stock > 0);
-        }
-
-        this.itemsFiltrados = items;
+        const items = this.tipoActivo === 'services' ? this.servicios : this.productos;
+        this.itemsFiltrados = filterCatalogItems(items, this.tipoActivo, this.categoriaSeleccionada, this.busqueda);
     }
 
     async agregarAlCarrito(item: any) {
@@ -610,12 +538,14 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     obtenerMensajeValidacion(): string {
-        if (this.carrito().length === 0) return 'Agregue items al carrito';
-        if (!this.cajaAbierta()) return 'Debe abrir la caja registradora';
-        if (!this.metodoPagoSeleccionado()) return 'Seleccione un método de pago';
-        if (this.tieneServicios() && !this.empleadoSeleccionado()) return 'Seleccione un empleado para los servicios';
-        if (this.calcularTotal() <= 0) return 'El total debe ser mayor a cero';
-        return '';
+        return getSaleValidationMessage({
+            cartLength: this.carrito().length,
+            isCashRegisterOpen: this.cajaAbierta(),
+            paymentMethod: this.metodoPagoSeleccionado(),
+            hasServices: this.tieneServicios(),
+            selectedEmployeeId: this.empleadoSeleccionado()?.id,
+            total: this.calcularTotal()
+        });
     }
 
     async procesarVenta() {
@@ -700,11 +630,15 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             // 2. Procesar venta si stock es válido
             const subtotal = this.calcularSubtotal();
             const descuentoValor = Number(this.descuento()) || 0;
-            const descuentoFinal = this.tipoDescuento() === '%' ? (subtotal * descuentoValor / 100) : descuentoValor;
-            const descuentoPercent = subtotal > 0 ? (descuentoFinal / subtotal) * 100 : 0;
+            const discountContext = getDiscountContext({
+                subtotal,
+                discountValue: descuentoValor,
+                discountType: this.tipoDescuento(),
+                discountLimit: this.limiteDescuento
+            });
             let discountReason: string | undefined;
 
-            if (descuentoPercent > this.limiteDescuento) {
+            if (discountContext.requiresReason) {
                 const reason = prompt(`Descuento mayor a ${this.limiteDescuento}%. Indique motivo (mínimo 10 caracteres):`) || '';
                 if (reason.trim().length < 10) {
                     this.messageService.add({
@@ -718,31 +652,20 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 discountReason = reason.trim();
             }
             
-            // Construir array de pagos
-            let payments: any[];
-            if (this.metodoPagoSeleccionado() === 'mixed' && this.pagosMixtos.length > 0) {
-                payments = this.pagosMixtos.map(p => ({
-                    method: p.metodo,
-                    amount: Number(p.monto)
-                }));
-            } else {
-                payments = [{
-                    method: this.metodoPagoSeleccionado(),
-                    amount: this.calcularTotal()
-                }];
-            }
+            const totalVenta = this.calcularTotal();
+            const paymentMethod = this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed';
+            const payments = buildSalePayments(paymentMethod, totalVenta, this.pagosMixtos);
             
-            const ventaData: CreateSaleDto = {
-                client: this.clienteSeleccionado?.id || undefined,
-                employee_id: this.empleadoSeleccionado()?.id ?? undefined,
-                payment_method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
-                discount: descuentoFinal,
-                discount_reason: discountReason,
-                total: this.calcularTotal(),
-                paid: this.calcularTotal(),
+            const ventaData: CreateSaleDto = buildCreateSalePayload({
+                clientId: this.clienteSeleccionado?.id,
+                employeeId: this.empleadoSeleccionado()?.id ?? undefined,
+                paymentMethod,
+                discountAmount: discountContext.discountAmount,
+                discountReason,
+                total: totalVenta,
                 details: this.carrito().map(item => this.mapCartItemToSaleDetail(item)),
-                payments: payments
-            };
+                payments
+            });
             const venta = await this.posService.createSale(ventaData).toPromise();
 
             this.reproducirSonidoVenta();
@@ -801,19 +724,12 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     async abrirCaja() {
-        if (!this.puedeAbrirCaja()) {
+        const openValidationError = getOpenCashValidationMessage(this.puedeAbrirCaja(), this.montoInicialCaja);
+        if (openValidationError) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Sin permisos',
-                detail: 'No tiene permisos para abrir la caja'
-            });
-            return;
-        }
-        if (this.montoInicialCaja < 0) {
-            this.messageService.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'El monto no puede ser negativo'
+                detail: openValidationError
             });
             return;
         }
@@ -830,12 +746,10 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
             // Guardar monto inicial para cálculos posteriores
             const montoParaGuardar = this.montoInicialCaja;
-            localStorage.setItem('monto_inicial_caja', montoParaGuardar.toString());
+            saveInitialCashToStorage(montoParaGuardar);
             this.montoInicialCaja = 0; // Reset solo la variable del formulario
 
-            const mensaje = montoParaGuardar === 0 ?
-                'Caja abierta sin efectivo inicial' :
-                `Caja abierta con $${montoParaGuardar}`;
+            const mensaje = getOpenCashSuccessMessage(montoParaGuardar);
 
             this.messageService.add({
                 severity: 'success',
@@ -888,7 +802,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             this.extraerPagosNoCash(dailySummary);
 
             this.ventasEfectivoHoy = ventasEfectivoReales;
-            this.montoEsperado = montoInicialSesion + ventasEfectivoReales;
+            this.montoEsperado = calculateExpectedCash(montoInicialSesion, ventasEfectivoReales);
             this.montoFinalCaja = 0; // Reset
             this.diferenciaCaja = 0; // Reset
 
@@ -913,38 +827,29 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     calcularDiferencia() {
-        this.diferenciaCaja = (Number(this.montoFinalCaja) || 0) - (Number(this.montoEsperado) || 0);
+        this.diferenciaCaja = calculateCashDifference(this.montoFinalCaja, this.montoEsperado);
     }
 
     async cerrarCaja() {
-        if (!this.puedeCerrarCaja()) {
+        const closeValidationError = getCloseCashValidationMessage(this.puedeCerrarCaja(), this.montoFinalCaja);
+        if (closeValidationError) {
             this.messageService.add({
                 severity: 'error',
-                summary: 'Sin permisos',
-                detail: 'No tiene permisos para cerrar la caja'
+                summary: closeValidationError.includes('permisos') ? 'Sin permisos' : 'Error',
+                detail: closeValidationError
             });
             return;
         }
         // Validar que no haya items en el carrito
-        if (this.carrito().length > 0) {
+        if (shouldConfirmCartLoss(this.carrito().length)) {
             const confirmar = confirm('Hay items en el carrito. ¿Está seguro de cerrar la caja? Se perderán los items.');
             if (!confirmar) return;
             this.limpiarCarrito();
         }
-        
-        // Validar que se haya ingresado el monto final
-        if (!this.montoFinalCaja || this.montoFinalCaja < 0) {
-            this.messageService.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'Debe ingresar el monto final contado en caja'
-            });
-            return;
-        }
 
-        const diferencia = Math.abs(this.diferenciaCaja);
+        const diferencia = getDifferenceToConfirm(this.diferenciaCaja);
 
-        if (diferencia > 5) {
+        if (diferencia > 0) {
             const confirmar = confirm(`Hay una diferencia de $${diferencia.toFixed(2)}. ¿Está seguro de cerrar la caja?`);
             if (!confirmar) return;
         }
@@ -971,7 +876,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             this.messageService.add({
                 severity: 'success',
                 summary: 'Caja cerrada',
-                detail: `Caja cerrada correctamente. Diferencia: $${this.diferenciaCaja.toFixed(2)}`
+                detail: getCloseCashSuccessMessage(diferencia)
             });
 
             // NO limpiar estadísticas - se mantienen hasta que se abra nueva caja
@@ -1082,33 +987,11 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             try {
                 response = await this.posService.getPromotions().toPromise();
             } catch (error: any) {
-                if (this.isForbiddenError(error)) {
+                if (isForbiddenStatus(error)) {
                     this.promociones = [];
                     return;
                 }
-                // Fallback: promociones de ejemplo si no hay endpoint
-                response = {
-                    results: [
-                        {
-                            id: 1,
-                            name: '10% Descuento Cliente VIP',
-                            description: 'Descuento especial para clientes frecuentes',
-                            type: 'percentage',
-                            discount_value: 10,
-                            min_amount: 0,
-                            is_active: true
-                        },
-                        {
-                            id: 2,
-                            name: '$5 Descuento en compras +$50',
-                            description: 'Descuento fijo en compras mayores a $50',
-                            type: 'fixed',
-                            discount_value: 5,
-                            min_amount: 50,
-                            is_active: true
-                        }
-                    ]
-                };
+                response = { results: getDefaultPromotions() };
             }
             this.promociones = response?.results || [];
         } catch (error) {
@@ -1128,13 +1011,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         this.cargandoHistorial = true;
         try {
             const response = await this.posService.getSales().toPromise();
-
-            const ventas = this.normalizeArray<any>(response);
-            this.historialVentas = ventas
-                .map((venta: any) => this.mapBackendSaleToDto(venta))
-                .sort((a: SaleWithDetailsDto, b: SaleWithDetailsDto) =>
-                    new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
-                .slice(0, 20);
+            this.historialVentas = mapSalesHistory(response, (venta) => this.mapBackendSaleToDto(venta));
         } catch (error) {
             if (!environment.production) {
                 console.error('Error cargando historial:', error);
@@ -1146,19 +1023,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     visualizarVenta(venta: SaleWithDetailsDto) {
-        // Recrear estructura de venta para mostrar en ticket usando DTO
-        this.ventaActual = {
-            ...venta,
-            details: venta.details?.map((detail: SaleDetailDto) => ({
-                id: detail.id,
-                content_type: detail.content_type,
-                object_id: detail.object_id,
-                name: detail.name,
-                quantity: detail.quantity,
-                price: detail.price,
-                subtotal: detail.quantity * detail.price
-            })) || []
-        };
+        this.ventaActual = mapSaleForTicketPreview(venta);
         this.mostrarDialogoTicket = true;
         setTimeout(() => this.generarQR(), 100);
     }
@@ -1215,34 +1080,23 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     calcularTotalArqueo(): number {
-        return this.denominaciones.reduce((total, denom) => {
-            denom.total = denom.valor * denom.cantidad;
-            return total + denom.total;
-        }, 0);
+        this.denominaciones = getDenominationsWithTotals(this.denominaciones);
+        return calculateArqueoTotal(this.denominaciones);
     }
 
     calcularDiferenciaArqueo(): number {
         const totalContado = this.calcularTotalArqueo();
         const montoInicial = this.obtenerMontoInicialCaja();
-        const efectivoEsperado = montoInicial + this.ventasEfectivoHoy;
-        return totalContado - efectivoEsperado;
+        const efectivoEsperado = calculateExpectedCash(montoInicial, this.ventasEfectivoHoy);
+        return calculateCashDifference(totalContado, efectivoEsperado);
     }
 
     obtenerMontoInicialCaja(): number {
-        // Obtener del localStorage el monto con el que se abrió la caja
-        try {
-            const montoGuardado = localStorage.getItem('monto_inicial_caja');
-            return montoGuardado ? Number(montoGuardado) : 0;
-        } catch {
-            return 0;
-        }
+        return getInitialCashFromStorage();
     }
 
     limpiarArqueo() {
-        this.denominaciones.forEach(d => {
-            d.cantidad = 0;
-            d.total = 0;
-        });
+        this.denominaciones = getResetDenominations(this.denominaciones);
     }
 
     async cargarDatosArqueo() {
@@ -1285,18 +1139,13 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 return;
             }
 
-            const counts = this.denominaciones
-                .filter(d => d.cantidad > 0)
-                .map(d => ({
-                    denomination: d.valor,
-                    count: d.cantidad
-                }));
+            const counts = buildCashCountEntries(this.denominaciones);
 
             await this.posService.cashCount(cajaActual.id, counts).toPromise();
 
             // Calcular diferencia con efectivo esperado
-            const efectivoEsperado = (Number(cajaActual.initial_cash) || 0) + this.ventasEfectivoHoy;
-            const diferencia = totalContado - efectivoEsperado;
+            const efectivoEsperado = calculateExpectedCash(cajaActual.initial_cash, this.ventasEfectivoHoy);
+            const diferencia = calculateCashDifference(totalContado, efectivoEsperado);
 
             // Guardar arqueo en localStorage
             this.guardarArqueoHistorico({
@@ -1309,10 +1158,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             });
 
             // Limpiar denominaciones después del arqueo
-            this.denominaciones.forEach(d => {
-                d.cantidad = 0;
-                d.total = 0;
-            });
+            this.denominaciones = getResetDenominations(this.denominaciones);
 
             this.messageService.add({
                 severity: diferencia === 0 ? 'success' : 'warn',
@@ -1330,6 +1176,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     async cargarConfiguracion() {
+        const businessName = getBusinessNameFromTenantStorage();
         try {
             const response = await fetch(`${environment.apiUrl}/settings/barbershop/`, {
                 credentials: 'include'
@@ -1337,44 +1184,19 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             
             if (response.ok) {
                 const settings = await response.json();
-                this.configuracionPos = {
-                    business_name: settings.pos_config?.business_name || this.obtenerNombreNegocio(),
-                    address: settings.pos_config?.address || 'Dirección no configurada',
-                    phone: settings.pos_config?.phone || 'Teléfono no configurado',
-                    email: settings.pos_config?.email || '',
-                    website: settings.pos_config?.website || '',
-                    logo_url: settings.logo ? this.toAbsoluteMediaUrl(settings.logo) : ''
-                };
+                this.configuracionPos = buildPosConfigFromSettings(settings, businessName, environment.apiUrl);
                 this.limiteDescuento = settings.service_discount_limit || 20;
             }
-            
-            // Obtener datos del usuario actual desde localStorage
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
-                try {
-                    const userData = JSON.parse(userStr);
-                    this.nombreUsuarioActual = userData.full_name || userData.email || 'Cajero';
-                    this.rolUsuarioActual = userData.role || '';
-                } catch {
-                    this.nombreUsuarioActual = 'Cajero';
-                    this.rolUsuarioActual = '';
-                }
-            } else {
-                this.nombreUsuarioActual = 'Cajero';
-                this.rolUsuarioActual = '';
-            }
+
+            const userIdentity = getCurrentUserIdentity();
+            this.nombreUsuarioActual = userIdentity.nombreUsuarioActual;
+            this.rolUsuarioActual = userIdentity.rolUsuarioActual;
         } catch (error) {
             console.error('Error cargando configuración:', error);
-            this.configuracionPos = {
-                business_name: this.obtenerNombreNegocio(),
-                address: 'Dirección no configurada',
-                phone: 'Teléfono no configurado',
-                email: '',
-                website: '',
-                logo_url: ''
-            };
-            this.nombreUsuarioActual = 'Cajero';
-            this.rolUsuarioActual = '';
+            this.configuracionPos = buildDefaultPosConfig(businessName);
+            const userIdentity = getCurrentUserIdentity();
+            this.nombreUsuarioActual = userIdentity.nombreUsuarioActual;
+            this.rolUsuarioActual = userIdentity.rolUsuarioActual;
         }
     }
 
@@ -1421,7 +1243,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     setupKeyboardShortcuts() {}
 
     calcularTotalPagosMixtos(): number {
-        return this.pagosMixtos.reduce((sum, pago) => sum + (Number(pago.monto) || 0), 0);
+        return calculateMixedPaymentsTotal(this.pagosMixtos);
     }
 
     trackByDenominacion(index: number, item: any): any {
@@ -1439,20 +1261,13 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     validarPagoMixto(): boolean {
         const totalPagos = this.calcularTotalPagosMixtos();
         const totalVenta = this.calcularTotal();
-        return Math.abs(totalPagos - totalVenta) < 0.01; // Exacto con tolerancia de 1 centavo
+        return isMixedPaymentBalanced(totalPagos, totalVenta);
     }
 
     obtenerMensajePagoMixto(): string {
         const totalPagos = this.calcularTotalPagosMixtos();
         const totalVenta = this.calcularTotal();
-        const diferencia = totalVenta - totalPagos;
-        
-        if (diferencia > 0.01) {
-            return `Falta agregar $${diferencia.toFixed(2)}`;
-        } else if (diferencia < -0.01) {
-            return `Sobra $${Math.abs(diferencia).toFixed(2)}`;
-        }
-        return 'Total correcto';
+        return getMixedPaymentMessage(totalPagos, totalVenta);
     }
 
     formatearMoneda(valor: any): string {
@@ -1464,63 +1279,31 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     mostrarTicket(venta: any) {
         // Guardar datos de la venta actual antes de limpiar el carrito
-        const payments = this.metodoPagoSeleccionado() === 'mixed' && this.pagosMixtos.length > 0
-            ? this.pagosMixtos.map(p => ({
-                method: p.metodo as 'cash' | 'card' | 'transfer' | 'mixed',
-                amount: Number(p.monto)
-            }))
-            : [{
-                method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
-                amount: this.calcularTotal()
-            }];
-
-        this.ventaActual = {
-            id: venta.id,
-            client: this.clienteSeleccionado?.id,
-            employee_id: this.empleadoSeleccionado()?.id,
-            payment_method: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
+        this.ventaActual = buildTicketSaleData({
+            saleId: venta.id,
+            clientId: this.clienteSeleccionado?.id,
+            employeeId: this.empleadoSeleccionado()?.id,
+            paymentMethod: this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed',
             discount: this.descuento(),
             total: this.calcularTotal(),
-            paid: this.calcularTotal(),
-            date_time: new Date().toISOString(),
             details: this.carrito().map(item => this.mapCartItemToSaleDetail(item)),
-            payments: payments,
-            client_name: this.clienteSeleccionado?.full_name,
-            employee_name: this.empleadoSeleccionado()?.display_name
-        };
+            mixedPayments: this.pagosMixtos,
+            clientName: this.clienteSeleccionado?.full_name,
+            employeeName: this.empleadoSeleccionado()?.display_name
+        });
         this.mostrarDialogoTicket = true;
         setTimeout(() => this.generarQR(), 100);
     }
 
     generarQR() {
         if (!this.qrCanvas?.nativeElement || !this.ventaActual) return;
-
-        const canvas = this.qrCanvas.nativeElement;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        // QR simple con datos de la venta
-        const qrData = `VENTA:${this.ventaActual.id}|TOTAL:${this.calcularTotal()}|FECHA:${new Date().toISOString()}`;
-
-        // Generar QR básico (patrón simple)
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, 80, 80);
-        ctx.fillStyle = '#fff';
-
-        // Patrón QR simplificado
-        for (let i = 0; i < 8; i++) {
-            for (let j = 0; j < 8; j++) {
-                if ((i + j + this.ventaActual.id) % 3 === 0) {
-                    ctx.fillRect(i * 10, j * 10, 8, 8);
-                }
-            }
-        }
+        drawSimpleSaleQr(this.qrCanvas.nativeElement, this.ventaActual.id, this.calcularTotal());
     }
 
     async imprimirTicket() {
         try {
             // Intentar impresión térmica si está disponible
-            if ('serial' in navigator) {
+            if (supportsSerialPrinting()) {
                 await this.imprimirTermica();
             } else {
                 // Fallback a impresión normal
@@ -1539,21 +1322,16 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             const writer = port.writable.getWriter();
             const encoder = new TextEncoder();
 
-            // Comandos ESC/POS básicos
-            const ticket = `
-\x1B\x40  // Inicializar
-\x1B\x61\x01  // Centrar
-BARBERÍA APP\n
-\x1B\x61\x00  // Izquierda
-Ticket: ${this.ventaActual?.id}\n
-Fecha: ${new Date().toLocaleString()}\n
-${this.carrito().map(item =>
-  `${item.item.name}\n${item.quantity} x $${item.price} = $${item.subtotal}\n`
-).join('')}
-\nTOTAL: $${this.calcularTotal()}\n
-\x1B\x61\x01  // Centrar
-¡Gracias por su compra!\n\n\n\x1D\x56\x00  // Cortar papel
-`;
+            const ticket = buildEscPosTicketText(
+                this.ventaActual?.id,
+                this.carrito().map(item => ({
+                    name: item.item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    subtotal: item.subtotal
+                })),
+                this.calcularTotal()
+            );
 
             await writer.write(encoder.encode(ticket));
             writer.releaseLock();
@@ -1604,24 +1382,12 @@ ${this.carrito().map(item =>
 
     iniciarFirma(event: any) {
         this.firmando = true;
-        const canvas = this.firmaCanvas.nativeElement;
-        const rect = canvas.getBoundingClientRect();
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        ctx.beginPath();
-        ctx.moveTo(event.clientX - rect.left, event.clientY - rect.top);
+        startSignatureStroke(this.firmaCanvas.nativeElement, event);
     }
 
     dibujarFirma(event: any) {
         if (!this.firmando) return;
-        const canvas = this.firmaCanvas.nativeElement;
-        const rect = canvas.getBoundingClientRect();
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        ctx.lineTo(event.clientX - rect.left, event.clientY - rect.top);
-        ctx.stroke();
+        drawSignatureStroke(this.firmaCanvas.nativeElement, event);
     }
 
     terminarFirma() {
@@ -1629,40 +1395,26 @@ ${this.carrito().map(item =>
     }
 
     limpiarFirma() {
-        const canvas = this.firmaCanvas.nativeElement;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        clearSignatureCanvas(this.firmaCanvas.nativeElement);
     }
 
     confirmarFirma() {
-        const canvas = this.firmaCanvas.nativeElement;
-        this.firmaCliente = canvas.toDataURL();
+        this.firmaCliente = getSignatureDataUrl(this.firmaCanvas.nativeElement);
         this.mostrarDialogoFirma = false;
         this.confirmarVenta();
     }
 
     async generarReporteCuadre(caja: any) {
         try {
-            // Obtener usuario actual del localStorage o token
-            const usuarioActual = this.obtenerUsuarioActual();
-
-            // Calcular monto inicial desde el monto esperado
-            const montoInicialReal = this.montoEsperado - this.ventasEfectivoHoy;
-
-            const reporteData = {
-                fecha: new Date().toLocaleDateString('es-ES'),
-                hora: new Date().toLocaleTimeString('es-ES'),
-                usuario: usuarioActual,
-                montoInicial: Math.max(0, montoInicialReal), // Asegurar que no sea negativo
-                ventasEfectivo: this.ventasEfectivoHoy,
+            const reporteData = buildCashCloseReportData({
+                usuario: this.obtenerUsuarioActual(),
                 montoEsperado: this.montoEsperado,
-                montoContado: this.montoFinalCaja,
-                diferencia: this.diferenciaCaja,
+                ventasEfectivoHoy: this.ventasEfectivoHoy,
+                montoFinalCaja: this.montoFinalCaja,
+                diferenciaCaja: this.diferenciaCaja,
                 estadisticas: this.estadisticasDia()
-            };
-
-            this.generarPDFCuadre(reporteData);
+            });
+            printCashCloseReport(reporteData);
 
             this.messageService.add({
                 severity: 'info',
@@ -1674,88 +1426,12 @@ ${this.carrito().map(item =>
         }
     }
 
-    generarPDFCuadre(data: any) {
-        // Crear contenido HTML para el reporte
-        const contenidoHTML = `
-            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
-                <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
-                    <h1 style="color: #333; margin: 0;">BARBERÍA APP</h1>
-                    <h2 style="color: #666; margin: 5px 0;">REPORTE DE CUADRE DE CAJA</h2>
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <p><strong>Fecha:</strong> ${data.fecha}</p>
-                    <p><strong>Hora:</strong> ${data.hora}</p>
-                    <p><strong>Usuario:</strong> ${data.usuario}</p>
-                </div>
-
-                <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; background-color: #f9f9f9;">
-                    <h3 style="color: #333; margin-top: 0;">MOVIMIENTOS DE CAJA</h3>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr><td style="padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Monto inicial:</strong></td><td style="text-align: right;">$${data.montoInicial.toFixed(2)}</td></tr>
-                        <tr><td style="padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Ventas en efectivo:</strong></td><td style="text-align: right;">$${data.ventasEfectivo.toFixed(2)}</td></tr>
-                        <tr><td style="padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Monto esperado:</strong></td><td style="text-align: right;">$${data.montoEsperado.toFixed(2)}</td></tr>
-                        <tr><td style="padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Monto contado:</strong></td><td style="text-align: right;">$${data.montoContado.toFixed(2)}</td></tr>
-                        <tr style="background-color: ${data.diferencia === 0 ? '#d4edda' : '#f8d7da'};">
-                            <td style="padding: 8px 0; font-weight: bold;"><strong>Diferencia:</strong></td>
-                            <td style="text-align: right; font-weight: bold; color: ${data.diferencia === 0 ? '#155724' : '#721c24'};">$${data.diferencia.toFixed(2)}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <div style="border: 1px solid #ddd; padding: 15px; background-color: #f9f9f9;">
-                    <h3 style="color: #333; margin-top: 0;">ESTADÍSTICAS DEL DÍA</h3>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr><td style="padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Total ventas:</strong></td><td style="text-align: right;">${data.estadisticas.ventas}</td></tr>
-                        <tr><td style="padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Ingresos totales:</strong></td><td style="text-align: right;">$${data.estadisticas.ingresos.toFixed(2)}</td></tr>
-                        <tr><td style="padding: 5px 0;"><strong>Ticket promedio:</strong></td><td style="text-align: right;">$${data.estadisticas.ticketPromedio.toFixed(2)}</td></tr>
-                    </table>
-                </div>
-
-                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
-                    <p>Reporte generado automáticamente - ${new Date().toLocaleString('es-ES')}</p>
-                </div>
-            </div>
-        `;
-
-        // Crear ventana para imprimir
-        const ventanaImpresion = window.open('', '_blank');
-        if (ventanaImpresion) {
-            ventanaImpresion.document.write(`
-                <html>
-                    <head>
-                        <title>Cuadre de Caja - ${data.fecha}</title>
-                        <style>
-                            @media print {
-                                body { margin: 0; }
-                                @page { margin: 1cm; }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${contenidoHTML}
-                        <script>
-                            window.onload = function() {
-                                window.print();
-                                setTimeout(() => window.close(), 1000);
-                            }
-                        </script>
-                    </body>
-                </html>
-            `);
-            ventanaImpresion.document.close();
-        }
-    }
-
     // Variable para trackear ventas en efectivo de la sesión
     ventasEfectivoSesionActual = 0;
 
     extraerVentasEfectivo(dailySummary: any): number {
         try {
-            // Buscar en by_method el total de ventas en efectivo
-            const byMethod = dailySummary?.by_method || [];
-            const cashSales = byMethod.find((method: any) => method.payment_method === 'cash');
-            return Number(cashSales?.total || 0);
+            return extractCashSalesTotal(dailySummary);
         } catch (error) {
             if (!environment.production) {
                 console.error('Error extrayendo ventas en efectivo:', error);
@@ -1766,16 +1442,7 @@ ${this.carrito().map(item =>
 
     extraerPagosNoCash(dailySummary: any): void {
         try {
-            const byMethod = dailySummary?.by_method || [];
-            const pagosNoCash = byMethod
-                .filter((method: any) => method.payment_method !== 'cash')
-                .map((method: any): PaymentMethodDto => ({
-                    payment_method: method.payment_method,
-                    total: Number(method.total || 0)
-                }))
-                .filter((pago: PaymentMethodDto) => pago.total > 0);
-
-            this.pagosNoCash.set(pagosNoCash);
+            this.pagosNoCash.set(extractNonCashPayments(dailySummary));
         } catch (error) {
             if (!environment.production) {
                 console.error('Error extrayendo pagos no cash:', error);
@@ -1791,31 +1458,7 @@ ${this.carrito().map(item =>
     cargarEstadisticasGuardadas() {
         try {
             const userId = this.obtenerUserId();
-            const keyEstadisticas = `estadisticas_pos_user_${userId}`;
-            const keyFecha = `estadisticas_pos_fecha_user_${userId}`;
-            
-            // Verificar si cambió el día
-            const fechaGuardada = localStorage.getItem(keyFecha);
-            const fechaHoy = new Date().toDateString();
-            
-            if (fechaGuardada !== fechaHoy) {
-                // Es un nuevo día, resetear estadísticas
-                const estadisticasLimpias = { ventas: 0, ingresos: 0, ticketPromedio: 0 };
-                this.estadisticasDia.set(estadisticasLimpias);
-                localStorage.setItem(keyEstadisticas, JSON.stringify(estadisticasLimpias));
-                localStorage.setItem(keyFecha, fechaHoy);
-                return;
-            }
-            
-            const estadisticasGuardadas = localStorage.getItem(keyEstadisticas);
-            if (estadisticasGuardadas) {
-                const estadisticas = JSON.parse(estadisticasGuardadas);
-                this.estadisticasDia.set(estadisticas);
-            } else {
-                const estadisticasLimpias = { ventas: 0, ingresos: 0, ticketPromedio: 0 };
-                this.estadisticasDia.set(estadisticasLimpias);
-                localStorage.setItem(keyFecha, fechaHoy);
-            }
+            this.estadisticasDia.set(loadDailyStats(userId));
         } catch (error) {
             console.error('Error cargando estadísticas:', error);
             this.estadisticasDia.set({ ventas: 0, ingresos: 0, ticketPromedio: 0 });
@@ -1825,10 +1468,7 @@ ${this.carrito().map(item =>
     guardarEstadisticas(estadisticas: any) {
         try {
             const userId = this.obtenerUserId();
-            const keyEstadisticas = `estadisticas_pos_user_${userId}`;
-            const keyFecha = `estadisticas_pos_fecha_user_${userId}`;
-            localStorage.setItem(keyEstadisticas, JSON.stringify(estadisticas));
-            localStorage.setItem(keyFecha, new Date().toDateString());
+            saveDailyStats(userId, estadisticas);
         } catch (error) {
             if (!environment.production) {
                 console.error('Error guardando estadísticas:', error);
@@ -1837,16 +1477,7 @@ ${this.carrito().map(item =>
     }
 
     obtenerUserId(): number {
-        try {
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
-                const user = JSON.parse(userStr);
-                return user.id || 0;
-            }
-        } catch {
-            return 0;
-        }
-        return 0;
+        return getUserIdFromStorage();
     }
 
     obtenerUsuarioActual(): string {
@@ -1855,6 +1486,10 @@ ${this.carrito().map(item =>
 
     esClienteFrecuente(cliente: any): boolean {
         return this.clientesFrecuentes.some(c => c.id === cliente.id);
+    }
+
+    obtenerNombreNegocio(): string {
+        return getBusinessNameFromTenantStorage();
     }
 
     aplicarDescuentoClienteFrecuente() {
@@ -1870,29 +1505,9 @@ ${this.carrito().map(item =>
     }
 
 
-    obtenerNombreNegocio(): string {
-        try {
-            const tenantStr = localStorage.getItem('tenant');
-            if (tenantStr) {
-                const tenant = JSON.parse(tenantStr);
-                return tenant.name || 'Barbería';
-            }
-        } catch {
-            return 'Barbería';
-        }
-        return 'Barbería';
-    }
-
     getBusinessLogo(): string | null {
         const logo = this.configuracionPos?.logo_url || '';
-        return logo ? this.toAbsoluteMediaUrl(logo) : null;
-    }
-
-    private toAbsoluteMediaUrl(url: string): string {
-        if (!url) return '';
-        if (/^https?:\/\//i.test(url)) return url;
-        const apiOrigin = new URL(environment.apiUrl).origin;
-        return url.startsWith('/') ? `${apiOrigin}${url}` : `${apiOrigin}/${url}`;
+        return logo ? toAbsoluteMediaUrl(environment.apiUrl, logo) : null;
     }
 
     obtenerResumenVenta() {
@@ -1909,77 +1524,42 @@ ${this.carrito().map(item =>
 
     // Métodos de validación de permisos
     puedeUsarPOS(): boolean {
-        const rolesPermitidos = ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN', 'CLIENT_STAFF', 'ESTILISTA', 'UTILITY'];
-        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
+        return hasRolePermission(this.rolUsuarioActual, POS_ROLE_GROUPS.usePos);
     }
 
     puedeAbrirCaja(): boolean {
-        const rolesPermitidos = ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
-        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
+        return hasRolePermission(this.rolUsuarioActual, POS_ROLE_GROUPS.openCash);
     }
 
     puedeCerrarCaja(): boolean {
-        const rolesPermitidos = ['MANAGER', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
-        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
+        return hasRolePermission(this.rolUsuarioActual, POS_ROLE_GROUPS.closeCash);
     }
 
     puedeAplicarDescuentoAlto(): boolean {
-        const rolesPermitidos = ['MANAGER', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
-        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
+        return hasRolePermission(this.rolUsuarioActual, POS_ROLE_GROUPS.highDiscount);
     }
 
     puedeVerHistorial(): boolean {
-        const rolesPermitidos = ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
-        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
+        return hasRolePermission(this.rolUsuarioActual, POS_ROLE_GROUPS.history);
     }
 
     puedeReembolsarVentas(): boolean {
-        const rolesPermitidos = ['MANAGER', 'CLIENT_ADMIN', 'SUPER_ADMIN'];
-        return rolesPermitidos.includes(this.normalizarRolPOS(this.rolUsuarioActual));
+        return hasRolePermission(this.rolUsuarioActual, POS_ROLE_GROUPS.refund);
     }
 
     canRefundSale(venta: SaleWithDetailsDto): boolean {
         if (!this.puedeReembolsarVentas()) return false;
-        if (!venta || Number(venta.total) <= 0) return false;
-        if (!Array.isArray(venta.details) || venta.details.length === 0) return false;
-
-        return venta.details.every((detail: any) => {
-            const itemType = String(detail?.item_type || '').toLowerCase();
-            const contentType = String(detail?.content_type || '').toLowerCase();
-            return itemType === 'product' || contentType === 'product';
-        });
+        return canRefundSaleByContent(venta);
     }
 
     private normalizarRolPOS(role: string): string {
-        const normalized = (role || '').trim();
-        const roleMap: Record<string, string> = {
-            'SuperAdmin': 'SUPER_ADMIN',
-            'Super-Admin': 'SUPER_ADMIN',
-            'Client-Admin': 'CLIENT_ADMIN',
-            'Client-Staff': 'CLIENT_STAFF',
-            'Manager': 'MANAGER',
-            'Cajera': 'CAJERA',
-            'Estilista': 'ESTILISTA',
-            'Utility': 'UTILITY'
-        };
-        const mapped = roleMap[normalized] || normalized;
-        return mapped.toUpperCase();
+        return normalizePosRole(role);
     }
 
     guardarArqueoHistorico(arqueo: any) {
         try {
             const userId = this.obtenerUserId();
-            const key = `arqueos_historicos_user_${userId}`;
-            const arqueosGuardados = localStorage.getItem(key);
-            let arqueos = arqueosGuardados ? JSON.parse(arqueosGuardados) : [];
-            
-            // Agregar nuevo arqueo al inicio
-            arqueos.unshift(arqueo);
-            
-            // Mantener solo últimos 50 arqueos
-            if (arqueos.length > 50) arqueos = arqueos.slice(0, 50);
-            
-            localStorage.setItem(key, JSON.stringify(arqueos));
+            saveArqueoHistory(userId, arqueo, 50);
         } catch (error) {
             console.error('Error guardando arqueo histórico:', error);
         }
@@ -1988,9 +1568,7 @@ ${this.carrito().map(item =>
     cargarHistorialArqueos() {
         try {
             const userId = this.obtenerUserId();
-            const key = `arqueos_historicos_user_${userId}`;
-            const arqueosGuardados = localStorage.getItem(key);
-            this.historialArqueos = arqueosGuardados ? JSON.parse(arqueosGuardados) : [];
+            this.historialArqueos = loadArqueoHistory(userId);
         } catch (error) {
             console.error('Error cargando historial de arqueos:', error);
             this.historialArqueos = [];
