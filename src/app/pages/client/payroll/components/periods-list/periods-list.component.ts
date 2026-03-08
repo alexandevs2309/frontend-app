@@ -179,6 +179,14 @@ export class PeriodsListComponent implements OnInit {
   }
 
   openPaymentDialog(period: Period) {
+    if (period.status !== 'approved' || !period.can_pay) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Pago bloqueado',
+        detail: period.pay_block_reason || 'El período debe estar aprobado y listo para pago.'
+      });
+      return;
+    }
     this.selectedPeriod.set(period);
     this.showPaymentDialog = true;
   }
@@ -313,6 +321,15 @@ export class PeriodsListComponent implements OnInit {
   }
 
   submitForApproval(period: Period) {
+    if (period.status !== 'open') {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Envío bloqueado',
+        detail: 'Solo se pueden enviar períodos abiertos.'
+      });
+      return;
+    }
+
     this.confirmationService.confirm({
       message: `¿Enviar período de ${period.employee_name} para aprobación?`,
       header: 'Confirmar Envío',
@@ -340,11 +357,20 @@ export class PeriodsListComponent implements OnInit {
   }
 
   approvePeriod(period: Period) {
-    if (period.net_amount <= 0 || period.can_pay === false) {
+    if (period.status !== 'pending_approval') {
       this.messageService.add({
         severity: 'warn',
         summary: 'Aprobación bloqueada',
-        detail: period.pay_block_reason || 'No se puede aprobar un período con monto neto cero o negativo.'
+        detail: 'Solo se pueden aprobar períodos en estado pendiente.'
+      });
+      return;
+    }
+
+    if (period.net_amount <= 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Aprobación bloqueada',
+        detail: 'No se puede aprobar un período con monto neto cero o negativo.'
       });
       return;
     }
@@ -390,6 +416,15 @@ export class PeriodsListComponent implements OnInit {
   confirmReject() {
     const period = this.selectedPeriod();
     if (!period || !this.rejectionReason) return;
+    if (period.status !== 'pending_approval') {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Rechazo bloqueado',
+        detail: 'Solo se pueden rechazar períodos pendientes.'
+      });
+      this.closeRejectDialog();
+      return;
+    }
 
     this.payrollService.rejectPeriod(period.id, this.rejectionReason).subscribe({
       next: () => {

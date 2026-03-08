@@ -2,7 +2,7 @@ export interface Period {
   id: number;
   employee_name: string;
   period_display: string;
-  status: 'open' | 'ready' | 'paid';
+  status: 'open' | 'pending_approval' | 'approved' | 'paid' | 'rejected' | 'ready';
   gross_amount: number;
   net_amount: number;
   deductions_total: number;
