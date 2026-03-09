@@ -14,6 +14,7 @@ import { AuthService, LoginResponse } from '../../core/services/auth/auth.servic
 import { AppConfigService } from '../../core/services/app-config.service';
 import { LocaleService } from '../../core/services/locale/locale.service';
 import { roleKey } from '../../core/utils/role-normalizer';
+import { getHttpErrorMessage } from '../../core/utils/http-error-message';
 
 @Component({
     selector: 'app-login',
@@ -96,15 +97,16 @@ export class Login implements OnInit {
         }
 
         const { email, password, rememberMe } = this.loginForm.value;
+        const normalizedEmail = (email || '').trim().toLowerCase();
         this.isLoading = true;
 
-        this.authService.loginSecure({ email, password }).subscribe({
+        this.authService.loginSecure({ email: normalizedEmail, password }).subscribe({
             next: (response: LoginResponse | any) => {
                 this.isLoading = false;
                 
                 // Guardar email si RememberMe está activo
                 if (rememberMe) {
-                    localStorage.setItem('rememberedEmail', email);
+                    localStorage.setItem('rememberedEmail', normalizedEmail);
                     localStorage.setItem('rememberMe', 'true');
                 } else {
                     localStorage.removeItem('rememberedEmail');
@@ -117,7 +119,7 @@ export class Login implements OnInit {
             },
             error: (error) => {
                 this.isLoading = false;
-                let message = error.error?.detail || error.error?.message || this.t('auth.login.invalid_credentials');
+                let message = getHttpErrorMessage(error, this.t('auth.login.invalid_credentials'));
                 if (!message && error.error && typeof error.error === 'object') {
                     const firstKey = Object.keys(error.error)[0];
                     const firstVal = error.error[firstKey];

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 import { BaseApiService } from '../../../../core/services/base-api.service';
 import { Period, PaymentRequest, PaymentResponse } from '../interfaces/payroll.interface';
 
@@ -19,7 +20,11 @@ export class PayrollService extends BaseApiService {
    * Registrar pago de período
    */
   registerPayment(payment: PaymentRequest): Observable<PaymentResponse> {
-    return this.post('/employees/payroll/client/payroll/register_payment/', payment);
+    // Refresh preventivo para evitar 401 por access_token expirado
+    return this.post<any>('/auth/cookie-refresh/', {}, { withCredentials: true }).pipe(
+      catchError(() => of(null)),
+      switchMap(() => this.post<PaymentResponse>('/employees/payroll/client/payroll/register_payment/', payment))
+    );
   }
 
   /**

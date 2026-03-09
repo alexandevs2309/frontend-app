@@ -23,5 +23,13 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Setup Chrome
+      uses: browser-actions/setup-chrome@v1
+
+    - name: Test
+      env:
+        CHROME_BIN: /usr/bin/google-chrome
+      run: npm run test -- --watch=false --browsers=ChromeHeadless
+
     - name: Build
       run: npm run build

@@ -92,6 +92,8 @@ export class PaymentConfirmationComponent {
     if (!this.period || !this.paymentMethod) return;
 
     this.processing.set(true);
+    // Abrir ventana desde gesto de usuario para evitar bloqueo de popup
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
 
     const paymentData: PaymentRequest = {
       period_id: this.period.id,
@@ -101,11 +103,14 @@ export class PaymentConfirmationComponent {
 
     this.payrollService.registerPayment(paymentData).subscribe({
       next: (response) => {
-        this.confirmed.emit(response);
+        this.confirmed.emit({ ...response, printWindow });
         this.resetForm();
         this.processing.set(false);
       },
       error: (error) => {
+        if (printWindow && !printWindow.closed) {
+          printWindow.close();
+        }
         
         // El error se maneja en el componente padre
         this.processing.set(false);

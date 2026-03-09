@@ -12,6 +12,28 @@ export interface ReportParams {
   format?: 'json' | 'csv' | 'pdf';
 }
 
+export interface AdminReportResponse {
+  period: string;
+  total_revenue: number;
+  pending_payments: number;
+  overdue_invoices: number;
+  revenue_trend: Array<{
+    label?: string;
+    month?: string;
+    revenue: number;
+  }>;
+  top_tenants: Array<{
+    tenant_name: string;
+    revenue: number;
+    plan: string;
+  }>;
+  summary: {
+    total_invoices: number;
+    paid_invoices: number;
+    average_invoice: number;
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -28,11 +50,11 @@ export class ReportService extends BaseApiService {
   }
 
   getDailySalesReport(date: string): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.SALES}daily/`, { date });
+    return this.get(API_CONFIG.ENDPOINTS.REPORTS.SALES, { date });
   }
 
   getMonthlySalesReport(year: number, month: number): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.SALES}monthly/`, { year, month });
+    return this.get(API_CONFIG.ENDPOINTS.REPORTS.SALES, { year, month });
   }
 
   // Employee reports
@@ -41,52 +63,52 @@ export class ReportService extends BaseApiService {
   }
 
   getEmployeePerformanceReport(employeeId: number, params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.EMPLOYEES}${employeeId}/performance/`, params);
+    return this.get(API_CONFIG.ENDPOINTS.REPORTS.EMPLOYEES, { ...params, employee_id: employeeId });
   }
 
   // Appointment reports
   getAppointmentReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}appointments/`, params);
+    return this.get(API_CONFIG.ENDPOINTS.REPORTS.BY_TYPE, { ...params, type: 'appointments' });
   }
 
   getAppointmentStatusReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}appointments/status/`, params);
+    return this.get(API_CONFIG.ENDPOINTS.REPORTS.BY_TYPE, { ...params, type: 'appointments', group_by: 'status' });
   }
 
   // Client reports
   getClientReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}clients/`, params);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.BASE}client-analytics/`, params);
   }
 
   getClientRetentionReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}clients/retention/`, params);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.BASE}client-analytics/`, { ...params, mode: 'retention' });
   }
 
   // Service reports
   getServiceReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}services/`, params);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.BASE}services-performance/`, params);
   }
 
   getPopularServicesReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}services/popular/`, params);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.BASE}services-performance/`, { ...params, sort: 'popular' });
   }
 
   // Inventory reports
   getInventoryReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}inventory/`, params);
+    return this.get(API_CONFIG.ENDPOINTS.INVENTORY.PRODUCTS, params);
   }
 
   getLowStockReport(): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}inventory/low-stock/`);
+    return this.get(API_CONFIG.ENDPOINTS.INVENTORY.LOW_STOCK_PRODUCTS);
   }
 
   // Financial reports
   getFinancialReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}financial/`, params);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.BASE}kpi/`, params);
   }
 
   getProfitLossReport(params: ReportParams): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS}financial/profit-loss/`, params);
+    return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.BASE}kpi/`, { ...params, mode: 'profit_loss' });
   }
 
   // Dashboard reports
@@ -96,6 +118,11 @@ export class ReportService extends BaseApiService {
 
   getKPIReport(): Observable<any> {
     return this.get(`${API_CONFIG.ENDPOINTS.REPORTS.BASE}kpi/`);
+  }
+
+  // SuperAdmin reports
+  getAdminReport(params?: { period?: string; start_date?: string; end_date?: string }): Observable<AdminReportResponse> {
+    return this.get<AdminReportResponse>(API_CONFIG.ENDPOINTS.REPORTS.ADMIN, params);
   }
 
   // Export functions

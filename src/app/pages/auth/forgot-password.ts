@@ -9,6 +9,7 @@ import { MessageService } from 'primeng/api';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { environment } from '../../../environments/environment';
 import { LocaleService } from '../../core/services/locale/locale.service';
+import { getHttpErrorMessage } from '../../core/utils/http-error-message';
 
 @Component({
     selector: 'app-forgot-password',
@@ -58,7 +59,7 @@ export class ForgotPassword {
                 this.messageService.add({
                     severity: 'error',
                     summary: this.t('common.error'),
-                    detail: error.error?.message || this.t('auth.forgot.could_not_send')
+                    detail: getHttpErrorMessage(error, this.t('auth.forgot.could_not_send'))
                 });
                 this.isLoading.set(false);
             },

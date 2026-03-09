@@ -17,6 +17,22 @@
             <div class="plan-name">{{ selectedPlan.get_name_display || selectedPlan.name }}</div>
             <div class="plan-price">${{ selectedPlan.price }}/mes</div>
           </div>
+          <div class="form-group">
+            <label for="months">Meses a pagar por adelantado</label>
+            <select id="months" class="w-full p-2 border-round border-1 surface-border" [(ngModel)]="selectedMonths" name="selectedMonths" [disabled]="enableAutoRenew">
+              <option *ngFor="let option of monthOptions" [ngValue]="option">{{ option }} mes(es)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="flex align-items-center gap-2">
+              <input type="checkbox" [(ngModel)]="enableAutoRenew" name="enableAutoRenew" />
+              Activar cobro automatico mensual (Stripe)
+            </label>
+          </div>
+          <div class="plan-details">
+            <div class="plan-name">Total</div>
+            <div class="plan-price">${{ getTotalAmount() }}</div>
+          </div>
           <div class="plan-features">
             <div *ngFor="let feature of selectedPlan.features" class="feature-item">
               <i class="pi pi-check text-green-500"></i>
@@ -94,7 +110,7 @@
               <button
                 pButton
                 type="submit"
-                label="Pagar ${{ selectedPlan?.price }}"
+                label="Pagar ${{ getTotalAmount() }}"
                 class="p-button-success"
                 [loading]="processing"
                 [disabled]="!paymentForm.valid">

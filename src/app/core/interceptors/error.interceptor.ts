@@ -1,26 +1,53 @@
 import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
+import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse, HttpBackend, HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { environment } from '../../../environments/environment';
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
+  private httpWithoutInterceptors: HttpClient;
 
   constructor(
     private router: Router,
-    private messageService: MessageService
-  ) {}
+    private messageService: MessageService,
+    httpBackend: HttpBackend
+  ) {
+    this.httpWithoutInterceptors = new HttpClient(httpBackend);
+  }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
+        if (error.status === 401 && this.shouldAttemptRefresh(req.url)) {
+          return this.tryRefreshAndRetry(req, next, error);
+        }
+
         this.handleError(error);
         return throwError(() => error);
       })
     );
+  }
+
+  private shouldAttemptRefresh(url: string): boolean {
+    return !url.includes('/auth/cookie-refresh/') && !url.includes('/auth/cookie-login/');
+  }
+
+  private tryRefreshAndRetry(req: HttpRequest<any>, next: HttpHandler, originalError: HttpErrorResponse): Observable<HttpEvent<any>> {
+    return this.httpWithoutInterceptors
+      .post(`${environment.apiUrl}/auth/cookie-refresh/`, {}, { withCredentials: true })
+      .pipe(
+        switchMap(() => {
+          const retryReq = req.clone({ withCredentials: true });
+          return next.handle(retryReq);
+        }),
+        catchError(() => {
+          this.handle401Error();
+          return throwError(() => originalError);
+        })
+      );
   }
 
   private handleError(error: HttpErrorResponse): void {

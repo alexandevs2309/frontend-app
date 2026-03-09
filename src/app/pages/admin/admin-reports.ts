@@ -11,7 +11,8 @@ import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { TagModule } from 'primeng/tag';
 import { SaasMetricsService, SaasMetrics } from '../../core/services/saas-metrics.service';
-import { ReportService } from '../../core/services/report/report.service';
+import { ReportService, AdminReportResponse } from '../../core/services/report/report.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
     selector: 'app-admin-reports',
@@ -76,6 +77,8 @@ import { ReportService } from '../../core/services/report/report.service';
                         <div class="text-3xl font-bold text-blue-600">{{metrics()?.active_tenants || 0}}</div>
                         <div class="text-sm text-gray-600">Tenants Activos</div>
                         <div class="text-xs text-gray-500 mt-1">de {{metrics()?.total_tenants || 0}} total</div>
+                        <div class="text-xs text-amber-600 mt-1">Trials activos: {{metrics()?.trial_tenants || 0}}</div>
+                        <div class="text-xs text-rose-600">Trials expiran (7d): {{metrics()?.expiring_trials_7d || 0}}</div>
                     </div>
                 </p-card>
             </div>
@@ -96,6 +99,36 @@ import { ReportService } from '../../core/services/report/report.service';
                         <div class="text-3xl font-bold text-purple-600">{{getARR() | currency:'USD':'symbol':'1.0-0'}}</div>
                         <div class="text-sm text-gray-600">ARR (Annual Recurring Revenue)</div>
                         <div class="text-xs text-purple-500 mt-1">MRR × 12</div>
+                    </div>
+                </p-card>
+            </div>
+
+            <div class="col-span-12 md:col-span-4">
+                <p-card>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-orange-600">{{ (adminReport()?.pending_payments || 0) | currency:'USD':'symbol':'1.0-0' }}</div>
+                        <div class="text-sm text-gray-600">Pagos Pendientes</div>
+                        <div class="text-xs text-orange-500 mt-1">Riesgo de cobranza</div>
+                    </div>
+                </p-card>
+            </div>
+
+            <div class="col-span-12 md:col-span-4">
+                <p-card>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-red-600">{{ adminReport()?.overdue_invoices || 0 }}</div>
+                        <div class="text-sm text-gray-600">Facturas Vencidas</div>
+                        <div class="text-xs text-red-500 mt-1">Clientes con mora activa</div>
+                    </div>
+                </p-card>
+            </div>
+
+            <div class="col-span-12 md:col-span-4">
+                <p-card>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-indigo-600">{{ getCollectionRate() | number:'1.0-1' }}%</div>
+                        <div class="text-sm text-gray-600">Tasa de Cobro</div>
+                        <div class="text-xs text-indigo-500 mt-1">Facturas pagadas / total</div>
                     </div>
                 </p-card>
             </div>
@@ -186,6 +219,7 @@ import { ReportService } from '../../core/services/report/report.service';
 })
 export class AdminReports implements OnInit {
     metrics = signal<SaasMetrics | null>(null);
+    adminReport = signal<AdminReportResponse | null>(null);
     loading = signal(false);
 
     selectedPeriod = 'last_30_days';
@@ -214,47 +248,46 @@ export class AdminReports implements OnInit {
     }
 
     ngOnInit() {
-        this.loadMetrics();
+        this.generateReport(false);
     }
 
-    loadMetrics() {
+    generateReport(showToast = true) {
+        if (this.selectedPeriod === 'custom' && (!this.startDate || !this.endDate)) {
+            this.showErrorMessage('Selecciona fecha inicio y fin para período personalizado');
+            return;
+        }
+
+        const params = this.buildAdminReportParams();
         this.loading.set(true);
-        this.saasMetricsService.getSaasMetrics().subscribe({
-            next: (data) => {
-                this.metrics.set(data);
-                this.updateCharts();
+
+        forkJoin({
+            metrics: this.saasMetricsService.getSaasMetrics(),
+            adminReport: this.reportService.getAdminReport(params)
+        }).subscribe({
+            next: ({ metrics, adminReport }) => {
+                this.metrics.set(metrics);
+                this.adminReport.set(adminReport);
+                this.updateCharts(metrics, adminReport);
                 this.loading.set(false);
+                if (showToast) {
+                    this.showSuccessMessage('Reporte Generado', 'Reporte actualizado correctamente');
+                }
             },
             error: (error) => this.handleLoadError(error)
         });
     }
 
-    generateReport() {
-        this.loadMetrics();
-        this.messageService.add({
-            severity: 'success',
-            summary: 'Reporte Generado',
-            detail: 'Reporte actualizado correctamente'
-        });
-    }
+    updateCharts(metrics: SaasMetrics, adminReport: AdminReportResponse) {
+        const trend = adminReport?.revenue_trend || [];
+        const labels = trend.map((item) => item.label || item.month || '');
+        const values = trend.map((item) => item.revenue || 0);
 
-    updateCharts() {
-        const metrics = this.metrics();
-        if (!metrics) return;
-
-        // MRR Trend Chart (mock data for demo)
+        // Revenue trend chart from real backend data
         this.mrrChartData = {
-            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+            labels,
             datasets: [{
-                label: 'MRR',
-                data: [
-                    metrics.mrr * 0.7,
-                    metrics.mrr * 0.8,
-                    metrics.mrr * 0.85,
-                    metrics.mrr * 0.9,
-                    metrics.mrr * 0.95,
-                    metrics.mrr
-                ],
+                label: 'Revenue',
+                data: values,
                 borderColor: '#10B981',
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 tension: 0.4
@@ -269,6 +302,26 @@ export class AdminReports implements OnInit {
                 backgroundColor: ['#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444', '#10B981']
             }]
         };
+    }
+
+    private buildAdminReportParams(): { period: string; start_date?: string; end_date?: string } {
+        const params: { period: string; start_date?: string; end_date?: string } = {
+            period: this.selectedPeriod
+        };
+
+        if (this.selectedPeriod === 'custom' && this.startDate && this.endDate) {
+            params.start_date = this.formatDateYmd(this.startDate);
+            params.end_date = this.formatDateYmd(this.endDate);
+        }
+
+        return params;
+    }
+
+    private formatDateYmd(date: Date): string {
+        const y = date.getFullYear();
+        const m = `${date.getMonth() + 1}`.padStart(2, '0');
+        const d = `${date.getDate()}`.padStart(2, '0');
+        return `${y}-${m}-${d}`;
     }
 
     initChartOptions() {
@@ -307,6 +360,12 @@ export class AdminReports implements OnInit {
         return plan.tenant_count > 0 ? plan.revenue / plan.tenant_count : 0;
     }
 
+    getCollectionRate(): number {
+        const summary = this.adminReport()?.summary;
+        if (!summary?.total_invoices) return 0;
+        return (summary.paid_invoices / summary.total_invoices) * 100;
+    }
+
     getPlanSeverity(plan: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
         const severityMap: { [key: string]: 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' } = {
             'FREE': 'secondary',
@@ -338,8 +397,21 @@ export class AdminReports implements OnInit {
         csvContent += `ARR,"$${this.getARR().toLocaleString()}"\n`;
         csvContent += `Total Tenants,${metrics.total_tenants}\n`;
         csvContent += `Tenants Activos,${metrics.active_tenants}\n`;
+        csvContent += `Trials Activos,${metrics.trial_tenants || 0}\n`;
+        csvContent += `Trials por Vencer (7d),${metrics.expiring_trials_7d || 0}\n`;
         csvContent += `Churn Rate,${metrics.churn_rate.toFixed(1)}%\n`;
         csvContent += `Growth Rate,${metrics.growth_rate}%\n\n`;
+
+        const adminReport = this.adminReport();
+        if (adminReport) {
+            csvContent += 'Cobranza\n';
+            csvContent += 'Métrica,Valor\n';
+            csvContent += `Pagos Pendientes,"$${Number(adminReport.pending_payments || 0).toLocaleString()}"\n`;
+            csvContent += `Facturas Vencidas,${adminReport.overdue_invoices || 0}\n`;
+            csvContent += `Facturas Pagadas,${adminReport.summary?.paid_invoices || 0}\n`;
+            csvContent += `Facturas Totales,${adminReport.summary?.total_invoices || 0}\n`;
+            csvContent += `Tasa de Cobro,${this.getCollectionRate().toFixed(1)}%\n\n`;
+        }
         
         // Revenue por plan
         csvContent += 'Revenue por Plan\n';
@@ -440,6 +512,10 @@ export class AdminReports implements OnInit {
         <div class="metric-card">
             <div class="metric-value">${metrics.active_tenants}</div>
             <div class="metric-label">Tenants Activos</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">${metrics.trial_tenants || 0}</div>
+            <div class="metric-label">Trials Activos</div>
         </div>
         <div class="metric-card">
             <div class="metric-value">${metrics.churn_rate.toFixed(1)}%</div>

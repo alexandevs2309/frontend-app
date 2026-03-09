@@ -21,15 +21,37 @@ export class SubscriptionService extends BaseApiService {
     return this.get(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.RENEW);
   }
 
-  renewSubscription(planId: number, paymentMethodId: string): Observable<any> {
+  renewSubscription(planId: number, paymentMethodId: string, months: number = 1, autoRenew: boolean = false): Observable<any> {
     return this.post(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.RENEW, {
       plan_id: planId,
-      payment_method_id: paymentMethodId
+      payment_method_id: paymentMethodId,
+      months,
+      auto_renew: autoRenew
     });
   }
 
   getPlans(): Observable<any> {
     return this.get(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.PLANS);
+  }
+
+  getUserSubscriptions(params?: any): Observable<any> {
+    return this.get(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.USER_SUBSCRIPTIONS, params);
+  }
+
+  getSubscriptionAuditLogs(params?: any): Observable<any> {
+    return this.get(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.AUDIT_LOGS, params);
+  }
+
+  updateUserSubscription(id: number, data: any): Observable<any> {
+    return this.patch(`${API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.USER_SUBSCRIPTIONS}${id}/`, data);
+  }
+
+  cancelUserSubscription(id: number): Observable<any> {
+    return this.patch(`${API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.USER_SUBSCRIPTIONS}${id}/`, { is_active: false });
+  }
+
+  reactivateUserSubscription(id: number): Observable<any> {
+    return this.patch(`${API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.USER_SUBSCRIPTIONS}${id}/`, { is_active: true });
   }
 
   updatePlan(planId: number, planData: any): Observable<any> {

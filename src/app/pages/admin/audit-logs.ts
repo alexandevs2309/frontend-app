@@ -44,6 +44,25 @@ import { ToastModule } from 'primeng/toast';
             </ng-template>
         </p-toolbar>
 
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <div class="text-sm text-gray-500">Total Logs</div>
+                <div class="text-2xl font-bold">{{ summary().total }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <div class="text-sm text-gray-500">Errores</div>
+                <div class="text-2xl font-bold text-red-600">{{ summary().errors }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <div class="text-sm text-gray-500">Warnings</div>
+                <div class="text-2xl font-bold text-yellow-600">{{ summary().warnings }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <div class="text-sm text-gray-500">Últimas 24h</div>
+                <div class="text-2xl font-bold text-blue-600">{{ summary().last_24h }}</div>
+            </div>
+        </div>
+
         <p-table
             [value]="filteredLogs()"
             [rows]="20"
@@ -124,6 +143,12 @@ import { ToastModule } from 'primeng/toast';
 export class AuditLogs implements OnInit {
     logs = signal<AuditLog[]>([]);
     filteredLogs = signal<AuditLog[]>([]);
+    summary = signal<{ total: number; errors: number; warnings: number; last_24h: number }>({
+        total: 0,
+        errors: 0,
+        warnings: 0,
+        last_24h: 0
+    });
     loading = signal(false);
     selectedAction: string | null = null;
     selectedSource: string | null = null;
@@ -157,7 +182,24 @@ export class AuditLogs implements OnInit {
 
     ngOnInit() {
         this.loadActions();
+        this.loadSummary();
         this.loadLogs();
+    }
+
+    loadSummary() {
+        this.activityLogService.getSummary().subscribe({
+            next: (data: any) => {
+                this.summary.set({
+                    total: Number(data?.total_logs ?? data?.total ?? 0),
+                    errors: Number(data?.error_logs ?? data?.errors ?? 0),
+                    warnings: Number(data?.warning_logs ?? data?.warnings ?? 0),
+                    last_24h: Number(data?.last_24h ?? data?.recent ?? 0)
+                });
+            },
+            error: () => {
+                // Keep defaults if summary endpoint is unavailable.
+            }
+        });
     }
 
     loadActions() {

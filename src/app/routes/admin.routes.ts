@@ -7,6 +7,7 @@ export const adminRoutes: Routes = [
     {
         path: 'admin',
         canActivate: [AuthGuard, SuperAdminGuard],
+        canActivateChild: [AuthGuard, SuperAdminGuard],
         data: { roles: ['SUPER_ADMIN'] },
         component: AppLayout,
         children: [
@@ -17,6 +18,10 @@ export const adminRoutes: Routes = [
             { 
                 path: 'tenants', 
                 loadComponent: () => import('../pages/admin/tenants-management').then(m => m.TenantsManagement)
+            },
+            {
+                path: 'tenants/:id',
+                loadComponent: () => import('../pages/admin/tenant-detail').then(m => m.TenantDetail)
             },
             { 
                 path: 'users', 
@@ -41,6 +46,10 @@ export const adminRoutes: Routes = [
             { 
                 path: 'reports', 
                 loadComponent: () => import('../pages/admin/admin-reports').then(m => m.AdminReports)
+            },
+            {
+                path: 'support',
+                loadComponent: () => import('../pages/admin/admin-support').then(m => m.AdminSupport)
             },
             { 
                 path: 'monitor', 

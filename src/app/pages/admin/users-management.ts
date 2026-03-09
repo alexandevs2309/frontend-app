@@ -19,6 +19,7 @@ import { TenantService } from '../../core/services/tenant/tenant.service';
 import { RoleService } from '../../core/services/role/role.service';
 import { UIHelpers } from '../../shared/utils/ui-helpers';
 import { DatePipe } from '@angular/common';
+import { roleKey } from '../../core/utils/role-normalizer';
 
 interface User {
     id?: number;
@@ -341,7 +342,7 @@ export class UsersManagement implements OnInit {
     }
 
     openNew() {
-        this.user = { is_active: true, role: 'CLIENT_STAFF' };
+        this.user = { is_active: true, role: 'Client-Staff' };
         this.submitted = false;
         this.userDialog = true;
     }
@@ -466,7 +467,7 @@ export class UsersManagement implements OnInit {
         const userData = {
             email: this.user.email!,
             full_name: this.user.full_name!,
-            role: this.user.role,
+            role: this.toBackendRole(this.user.role),
             tenant: this.user.tenant || undefined,
             is_active: this.user.is_active ?? true,
             password: this.user.password!
@@ -508,18 +509,19 @@ export class UsersManagement implements OnInit {
     }
 
     requiresTenant(role?: string): boolean {
-        return role === 'CLIENT_ADMIN' || role === 'CLIENT_STAFF' || role === 'Client-Admin' || role === 'Client-Staff';
+        const key = roleKey(role);
+        return !!key && key !== 'SUPER_ADMIN';
     }
 
     private isSuperAdmin(role?: string): boolean {
-        return role === 'SUPER_ADMIN' || role === 'SuperAdmin';
+        return roleKey(role) === 'SUPER_ADMIN';
     }
 
     private updateUser(): void {
         const updateData: any = {
             email: this.user.email,
             full_name: this.user.full_name,
-            role: this.user.role,
+            role: this.toBackendRole(this.user.role),
             tenant: this.user.tenant || undefined,
             is_active: this.user.is_active ?? true
         };
@@ -606,6 +608,21 @@ export class UsersManagement implements OnInit {
             component: 'UsersManagement'
         };
         
+    }
+
+    private toBackendRole(role?: string): string | undefined {
+        const key = roleKey(role);
+        const map: Record<string, string> = {
+            SUPER_ADMIN: 'SuperAdmin',
+            CLIENT_ADMIN: 'Client-Admin',
+            CLIENT_STAFF: 'Client-Staff',
+            ESTILISTA: 'Estilista',
+            CAJERA: 'Cajera',
+            MANAGER: 'Manager',
+            UTILITY: 'Utility'
+        };
+
+        return map[key] || role;
     }
 
     UIHelpers = UIHelpers;

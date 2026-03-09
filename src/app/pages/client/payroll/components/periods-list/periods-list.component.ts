@@ -204,11 +204,9 @@ export class PeriodsListComponent implements OnInit {
     });
     this.closePaymentDialog();
     this.loadPeriods();
-    
-    // Mostrar recibo automáticamente
-    setTimeout(() => {
-      this.verReciboDirecto(response.payment_id);
-    }, 500);
+
+    // Mostrar recibo automáticamente usando ventana abierta por gesto de usuario
+    this.verReciboDirecto(response.payment_id, response.printWindow);
   }
 
   getStatusLabel(status: string): string {
@@ -237,23 +235,37 @@ export class PeriodsListComponent implements OnInit {
     return `$${amount?.toFixed(2) || '0.00'}`;
   }
 
-  async verReciboDirecto(paymentId: string) {
+  async verReciboDirecto(paymentId: string, targetWindow?: Window | null) {
     try {
       const response = await this.payrollService.getPaymentReceipt(paymentId).toPromise();
       // Abrir recibo en nueva ventana para imprimir
-      this.abrirReciboEnVentana(response);
-    } catch (error) {
-      
+      this.abrirReciboEnVentana(response, targetWindow);
+    } catch {
+      if (targetWindow && !targetWindow.closed) {
+        targetWindow.close();
+      }
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Recibo no disponible',
+        detail: 'El pago se registró, pero no se pudo abrir el recibo automáticamente.'
+      });
     }
   }
 
-  abrirReciboEnVentana(recibo: any) {
+  abrirReciboEnVentana(recibo: any, existingWindow?: Window | null) {
     const reciboHtml = this.generarHtmlRecibo(recibo);
-    const ventana = window.open('', '_blank', 'width=800,height=600');
+    const ventana = existingWindow || window.open('', '_blank', 'width=800,height=600');
     if (ventana) {
       ventana.document.write(reciboHtml);
       ventana.document.close();
       ventana.focus();
+      setTimeout(() => ventana.print(), 300);
+    } else {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Popup bloqueado',
+        detail: 'Permite ventanas emergentes para imprimir el recibo automáticamente.'
+      });
     }
   }
 

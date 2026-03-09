@@ -1,18 +1,14 @@
 import { Component, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth/auth.service';
-import { StatsWidget } from '../dashboard/components/statswidget';
 import { SaasStatsWidget } from '../dashboard/components/saas-stats-widget';
 import { NotificationsWidget } from '../dashboard/components/notificationswidget';
-import { RecentSalesWidget } from '../dashboard/components/recentsaleswidget';
-import { BestSellingWidget } from '../dashboard/components/bestsellingwidget';
-import { RevenueStreamWidget } from '../dashboard/components/revenuestreamwidget';
 import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-admin-dashboard',
     standalone: true,
-    imports: [CommonModule, StatsWidget, SaasStatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget],
+    imports: [CommonModule, SaasStatsWidget, NotificationsWidget],
     template: `
         @if (currentUser(); as user) {
             <!-- Hero Header con Gradiente -->
@@ -52,22 +48,10 @@ import { Subscription } from 'rxjs';
             </div>
             
             <div class="grid grid-cols-12 gap-8">
-                @if (isSuperAdmin(user)) {
-                    <app-saas-stats-widget class="contents" />
-                    <div class="col-span-12 xl:col-span-6">
-                        <app-notifications-widget />
-                    </div>
-                } @else {
-                    <app-stats-widget class="contents" />
-                    <div class="col-span-12 xl:col-span-6">
-                        <app-recent-sales-widget />
-                        <app-best-selling-widget />
-                    </div>
-                    <div class="col-span-12 xl:col-span-6">
-                        <app-revenue-stream-widget />
-                        <app-notifications-widget />
-                    </div>
-                }
+                <app-saas-stats-widget class="contents" />
+                <div class="col-span-12 xl:col-span-6">
+                    <app-notifications-widget />
+                </div>
             </div>
         }
     `
@@ -98,10 +82,6 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
     getRoleDisplayName(role: string): string {
         return this.roleNames[role as keyof typeof this.roleNames] || role;
-    }
-
-    isSuperAdmin(user: any): boolean {
-        return user?.role === 'SUPER_ADMIN';
     }
 
     getCurrentDate(): string {

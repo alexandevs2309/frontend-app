@@ -295,16 +295,29 @@ export class BillingManagement implements OnInit {
     }
 
     loadStats() {
-        const invoices = this.invoices();
-        const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + (+(i.amount ?? 0)), 0);
-        const pendingPayments = invoices.filter(i => i.status === 'pending').reduce((sum, i) => sum + (+(i.amount ?? 0)), 0);
-        const overdueInvoices = invoices.filter(i => new Date(i.due_date || '') < new Date() && i.status === 'pending').length;
+        this.billingService.getAdminStats().subscribe({
+            next: (stats: any) => {
+                this.stats.set({
+                    total_revenue: Number(stats?.total_revenue ?? 0),
+                    pending_payments: Number(stats?.pending_payments ?? 0),
+                    overdue_invoices: Number(stats?.overdue_invoices ?? 0),
+                    active_subscriptions: Number(stats?.active_subscriptions ?? 0)
+                });
+            },
+            error: () => {
+                // Fallback local calculation
+                const invoices = this.invoices();
+                const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + (+(i.amount ?? 0)), 0);
+                const pendingPayments = invoices.filter(i => i.status === 'pending').reduce((sum, i) => sum + (+(i.amount ?? 0)), 0);
+                const overdueInvoices = invoices.filter(i => new Date(i.due_date || '') < new Date() && i.status === 'pending').length;
 
-        this.stats.set({
-            total_revenue: totalRevenue,
-            pending_payments: pendingPayments,
-            overdue_invoices: overdueInvoices,
-            active_subscriptions: invoices.length
+                this.stats.set({
+                    total_revenue: totalRevenue,
+                    pending_payments: pendingPayments,
+                    overdue_invoices: overdueInvoices,
+                    active_subscriptions: invoices.length
+                });
+            }
         });
     }
 

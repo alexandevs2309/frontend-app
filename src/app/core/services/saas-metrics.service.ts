@@ -7,6 +7,9 @@ export interface SaasMetrics {
   mrr: number;
   total_tenants: number;
   active_tenants: number;
+  trial_tenants?: number;
+  expiring_trials_7d?: number;
+  trial_conversion_rate?: number;
   churn_rate: number;
   growth_rate: number;
   revenue_by_plan: {

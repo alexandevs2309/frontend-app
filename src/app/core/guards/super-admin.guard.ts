@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
+import { CanActivate, CanActivateChild, Router } from '@angular/router';
 import { Observable, map } from 'rxjs';
 import { AuthService } from '../services/auth/auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class SuperAdminGuard implements CanActivate {
+export class SuperAdminGuard implements CanActivate, CanActivateChild {
 
   constructor(
     private authService: AuthService,
@@ -24,5 +24,9 @@ export class SuperAdminGuard implements CanActivate {
         }
       })
     );
+  }
+
+  canActivateChild(): Observable<boolean> | boolean {
+    return this.canActivate();
   }
 }

@@ -157,6 +157,9 @@ import { MessageService } from 'primeng/api';
 export class CheckoutComponent implements OnInit {
   selectedPlan: any = null;
   processing = false;
+  selectedMonths = 1;
+  monthOptions = [1, 3, 6, 12];
+  enableAutoRenew = false;
 
   paymentData = {
     cardNumber: '',
@@ -243,13 +246,14 @@ export class CheckoutComponent implements OnInit {
       // En desarrollo usamos modo manual para no bloquear el flujo.
       const paymentMethodId = 'manual_entry';
 
-      this.subscriptionService.renewSubscription(this.selectedPlan.id, paymentMethodId).subscribe({
+      const months = this.enableAutoRenew ? 1 : this.selectedMonths;
+      this.subscriptionService.renewSubscription(this.selectedPlan.id, paymentMethodId, months, this.enableAutoRenew).subscribe({
         next: (response) => {
           
           this.messageService.add({
             severity: 'success',
-            summary: 'Pago exitoso',
-            detail: 'Tu suscripción ha sido activada'
+            summary: this.enableAutoRenew ? 'Suscripcion automatica activada' : 'Pago exitoso',
+            detail: `Tu suscripción ha sido activada hasta ${new Date(response?.access_until || Date.now()).toLocaleDateString('es-DO')}`
           });
 
           setTimeout(() => {
@@ -272,5 +276,11 @@ export class CheckoutComponent implements OnInit {
 
   goBack() {
     this.router.navigate(['/client/payment']);
+  }
+
+  getTotalAmount(): number {
+    const planPrice = Number(this.selectedPlan?.price || 0);
+    const months = this.enableAutoRenew ? 1 : this.selectedMonths;
+    return Number((planPrice * months).toFixed(2));
   }
 }

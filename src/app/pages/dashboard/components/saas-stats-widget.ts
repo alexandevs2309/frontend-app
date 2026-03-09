@@ -45,6 +45,10 @@ import { SaasMetricsService, SaasMetrics } from '../../../core/services/saas-met
                         <span class="text-blue-500 font-bold text-lg">{{metrics()?.total_tenants || 0}}</span>
                         <span class="text-muted-color text-sm">total</span>
                     </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-amber-500 font-bold text-sm">{{metrics()?.trial_tenants || 0}}</span>
+                        <span class="text-muted-color text-xs">en trial</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -74,16 +78,16 @@ import { SaasMetricsService, SaasMetrics } from '../../../core/services/saas-met
                 <div class="relative">
                     <div class="flex justify-between mb-4">
                         <div>
-                            <span class="block text-muted-color font-medium mb-4">Revenue por Plan</span>
-                            <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{getTopPlan()}}</div>
+                            <span class="block text-muted-color font-medium mb-4">Trials Activos</span>
+                            <div class="text-surface-900 dark:text-surface-0 font-bold text-2xl">{{metrics()?.trial_tenants || 0}}</div>
                         </div>
                         <div class="flex items-center justify-center bg-linear-to-br from-purple-400 to-pink-500 rounded-2xl shadow-lg" style="width: 3rem; height: 3rem">
-                            <i class="pi pi-star text-white text-2xl"></i>
+                            <i class="pi pi-clock text-white text-2xl"></i>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="text-purple-500 font-bold text-lg">{{getTopPlanRevenue() | currency:'USD':'symbol':'1.0-0'}}</span>
-                        <span class="text-muted-color text-sm">top plan</span>
+                        <span class="text-purple-500 font-bold text-lg">{{metrics()?.expiring_trials_7d || 0}}</span>
+                        <span class="text-muted-color text-sm">expiran en 7 días</span>
                     </div>
                 </div>
             </div>
@@ -106,17 +110,4 @@ export class SaasStatsWidget implements OnInit {
         });
     }
 
-    getTopPlan(): string {
-        const plans = this.metrics()?.revenue_by_plan || [];
-        if (plans.length === 0) return 'N/A';
-        const topPlan = plans.reduce((max, plan) => plan.revenue > max.revenue ? plan : max);
-        return topPlan.plan_name;
-    }
-
-    getTopPlanRevenue(): number {
-        const plans = this.metrics()?.revenue_by_plan || [];
-        if (plans.length === 0) return 0;
-        const topPlan = plans.reduce((max, plan) => plan.revenue > max.revenue ? plan : max);
-        return topPlan.revenue;
-    }
 }

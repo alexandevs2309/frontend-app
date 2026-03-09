@@ -8,6 +8,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { environment } from '../../../environments/environment';
+import { getHttpErrorMessage } from '../../core/utils/http-error-message';
 
 @Component({
     selector: 'app-reset-password',
@@ -87,7 +88,7 @@ export class ResetPassword implements OnInit {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: error.error?.detail || error.error?.message || 'No se pudo restablecer la contraseña'
+                    detail: getHttpErrorMessage(error, 'No se pudo restablecer la contrasena')
                 });
                 this.isLoading.set(false);
             }

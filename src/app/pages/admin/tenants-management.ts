@@ -21,6 +21,7 @@ import { ActivityLogService } from '../../core/services/activity-log/activity-lo
 import { LocaleService } from '../../core/services/locale/locale.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
 
 interface Tenant {
     id?: number;
@@ -188,6 +189,14 @@ interface Tenant {
                     <td>{{ tenant.created_at | date:'dd/MM/yyyy' }}</td>
                     <td>
                         <div class="flex gap-2">
+                            <p-button
+                                icon="pi pi-eye"
+                                [rounded]="true"
+                                [outlined]="true"
+                                severity="secondary"
+                                styleClass="hover:scale-110 transition-transform"
+                                (click)="viewTenantDetails(tenant)"
+                            />
                             <p-button 
                                 icon="pi pi-pencil" 
                                 [rounded]="true" 
@@ -203,6 +212,22 @@ interface Tenant {
                                 [outlined]="true" 
                                 styleClass="hover:scale-110 transition-transform"
                                 (click)="deleteTenant(tenant)" 
+                            />
+                            <p-button
+                                [icon]="tenant.is_active ? 'pi pi-power-off' : 'pi pi-power-off'"
+                                [rounded]="true"
+                                [outlined]="true"
+                                [severity]="tenant.is_active ? 'danger' : 'success'"
+                                styleClass="hover:scale-110 transition-transform"
+                                (click)="toggleTenantActive(tenant)"
+                            />
+                            <p-button
+                                [icon]="tenant.subscription_status === 'suspended' ? 'pi pi-play' : 'pi pi-pause'"
+                                [rounded]="true"
+                                [outlined]="true"
+                                [severity]="tenant.subscription_status === 'suspended' ? 'success' : 'warn'"
+                                styleClass="hover:scale-110 transition-transform"
+                                (click)="toggleTenantSuspension(tenant)"
                             />
                         </div>
                     </td>
@@ -275,6 +300,7 @@ export class TenantsManagement implements OnInit {
         private subscriptionService: SubscriptionService,
         private activityLogService: ActivityLogService,
         private settingsService: SettingsService,
+        private router: Router,
         public localeService: LocaleService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService
@@ -491,6 +517,51 @@ export class TenantsManagement implements OnInit {
         return tenant.id || index;
     }
 
+    viewTenantDetails(tenant: Tenant) {
+        if (!tenant.id) return;
+        this.router.navigate(['/admin/tenants', tenant.id]);
+    }
+
+    toggleTenantActive(tenant: Tenant) {
+        if (!tenant.id) return;
+
+        const action$ = tenant.is_active
+            ? this.tenantService.deactivateTenant(tenant.id)
+            : this.tenantService.activateTenant(tenant.id);
+
+        action$.subscribe({
+            next: () => {
+                this.showSuccessMessage(tenant.is_active ? 'Tenant desactivado' : 'Tenant activado');
+                this.loadTenants();
+            },
+            error: (error) => this.showErrorMessage('No se pudo cambiar estado activo del tenant', error)
+        });
+    }
+
+    toggleTenantSuspension(tenant: Tenant) {
+        if (!tenant.id) return;
+
+        if (tenant.subscription_status === 'suspended') {
+            this.tenantService.resumeTenant(tenant.id).subscribe({
+                next: () => {
+                    this.showSuccessMessage('Tenant reanudado');
+                    this.loadTenants();
+                },
+                error: (error) => this.showErrorMessage('No se pudo reanudar tenant', error)
+            });
+            return;
+        }
+
+        const reason = window.prompt('Razón de suspensión del tenant:') || 'Suspensión administrativa';
+        this.tenantService.suspendTenant(tenant.id, reason).subscribe({
+            next: () => {
+                this.showSuccessMessage('Tenant suspendido');
+                this.loadTenants();
+            },
+            error: (error) => this.showErrorMessage('No se pudo suspender tenant', error)
+        });
+    }
+
     private handleLoadError(error: any): void {
         this.logError('Failed to load tenants', error);
         this.tenants.set([]);
@@ -520,6 +591,15 @@ export class TenantsManagement implements OnInit {
             severity: 'error',
             summary: 'Error',
             detail: this.sanitizeErrorMessage(error, message)
+        });
+    }
+
+    private showSuccessMessage(detail: string): void {
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Exitoso',
+            detail,
+            life: 3000
         });
     }
 

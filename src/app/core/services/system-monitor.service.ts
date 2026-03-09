@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { Observable, interval, combineLatest, map, catchError, of } from 'rxjs';
+import { Observable, interval, combineLatest, map, catchError, of, Subscription } from 'rxjs';
 import { BaseApiService } from './base-api.service';
 import { SettingsService } from './settings.service';
 import { SaasMetricsService } from './saas-metrics.service';
@@ -55,6 +55,8 @@ export class SystemMonitorService extends BaseApiService {
   systemHealth = signal<SystemHealth | null>(null);
   revenueAlerts = signal<RevenueAlert[]>([]);
   isMonitoring = signal(false);
+  private healthMonitoringSub?: Subscription;
+  private revenueMonitoringSub?: Subscription;
 
   constructor(
     private settingsService: SettingsService,
@@ -64,15 +66,21 @@ export class SystemMonitorService extends BaseApiService {
   }
 
   startMonitoring() {
+    if (this.isMonitoring()) {
+      return;
+    }
+
     this.isMonitoring.set(true);
     
     // Check system health every 5 minutes
-    interval(300000).subscribe(() => {
+    this.healthMonitoringSub = interval(300000).subscribe(() => {
+      if (!this.isMonitoring()) return;
       this.checkSystemHealth();
     });
 
     // Check revenue alerts every 15 minutes
-    interval(900000).subscribe(() => {
+    this.revenueMonitoringSub = interval(900000).subscribe(() => {
+      if (!this.isMonitoring()) return;
       this.checkRevenueAlerts();
     });
 
@@ -83,6 +91,10 @@ export class SystemMonitorService extends BaseApiService {
 
   stopMonitoring() {
     this.isMonitoring.set(false);
+    this.healthMonitoringSub?.unsubscribe();
+    this.revenueMonitoringSub?.unsubscribe();
+    this.healthMonitoringSub = undefined;
+    this.revenueMonitoringSub = undefined;
   }
 
   checkSystemHealth(): Observable<SystemHealth> {

@@ -12,6 +12,7 @@ import { CardModule } from 'primeng/card';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '../../core/services/auth/auth.service';
+import { getHttpErrorMessage } from '../../core/utils/http-error-message';
 
 @Component({
   selector: 'app-register',
@@ -435,7 +436,7 @@ export class Register implements OnInit {
           cta_variant: this.ctaVariant
         });
         
-        const message = error.error?.error || 'Error al crear la cuenta. Inténtalo de nuevo.';
+        const message = getHttpErrorMessage(error, 'Error al crear la cuenta. Intentalo de nuevo.');
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
