@@ -296,6 +296,75 @@ body {
   border: 1px solid var(--border, #E5E7EB);
 }
 
+/* DIALOG DARK MODE COMPAT */
+body.dark .p-dialog,
+html.app-dark .p-dialog {
+  color: var(--text-color);
+}
+
+body.dark .p-dialog .p-dialog-header,
+body.dark .p-dialog .p-dialog-content,
+body.dark .p-dialog .p-dialog-footer,
+html.app-dark .p-dialog .p-dialog-header,
+html.app-dark .p-dialog .p-dialog-content,
+html.app-dark .p-dialog .p-dialog-footer {
+  background-color: var(--surface-card) !important;
+  color: var(--text-color) !important;
+  border-color: var(--surface-border) !important;
+}
+
+body.dark .p-dialog .bg-white,
+html.app-dark .p-dialog .bg-white {
+  background-color: var(--surface-card) !important;
+}
+
+body.dark .p-dialog .bg-gray-50,
+html.app-dark .p-dialog .bg-gray-50 {
+  background-color: var(--surface-800, #1f2937) !important;
+}
+
+body.dark .p-dialog .bg-blue-50,
+html.app-dark .p-dialog .bg-blue-50 {
+  background-color: color-mix(in srgb, var(--primary-color) 15%, var(--surface-card)) !important;
+}
+
+body.dark .p-dialog .bg-blue-100,
+html.app-dark .p-dialog .bg-blue-100 {
+  background-color: color-mix(in srgb, var(--primary-color) 22%, var(--surface-card)) !important;
+}
+
+body.dark .p-dialog .text-gray-500,
+body.dark .p-dialog .text-gray-600,
+body.dark .p-dialog .text-gray-700,
+html.app-dark .p-dialog .text-gray-500,
+html.app-dark .p-dialog .text-gray-600,
+html.app-dark .p-dialog .text-gray-700 {
+  color: var(--text-color-secondary) !important;
+}
+
+body.dark .p-dialog .text-blue-700,
+body.dark .p-dialog .text-blue-800,
+html.app-dark .p-dialog .text-blue-700,
+html.app-dark .p-dialog .text-blue-800 {
+  color: color-mix(in srgb, var(--primary-color) 55%, white) !important;
+}
+
+body.dark .p-dialog .border-gray-200,
+body.dark .p-dialog .border-gray-300,
+body.dark .p-dialog .border-blue-200,
+body.dark .p-dialog .border-blue-400,
+html.app-dark .p-dialog .border-gray-200,
+html.app-dark .p-dialog .border-gray-300,
+html.app-dark .p-dialog .border-blue-200,
+html.app-dark .p-dialog .border-blue-400 {
+  border-color: var(--surface-border) !important;
+}
+
+body.dark .p-dialog .hover\:bg-gray-50:hover,
+html.app-dark .p-dialog .hover\:bg-gray-50:hover {
+  background-color: var(--surface-hover) !important;
+}
+
 /* PLATFORM STYLES - CAPA GLOBAL */
 @import './assets/layout/platform';
 @import '@fullcalendar/core/main.css';

@@ -12,6 +12,9 @@ export interface CashCloseReportData {
     usuario: string;
     montoInicial: number;
     ventasEfectivo: number;
+    ingresosNoEfectivo: PaymentMethodDto[];
+    totalNoEfectivo: number;
+    totalGeneral: number;
     montoEsperado: number;
     montoContado: number;
     diferencia: number;
@@ -22,6 +25,7 @@ interface BuildCashCloseReportInput {
     usuario: string;
     montoEsperado: number;
     ventasEfectivoHoy: number;
+    pagosNoCash: PaymentMethodDto[];
     montoFinalCaja: number;
     diferenciaCaja: number;
     estadisticas: CashCloseStats;
@@ -29,12 +33,17 @@ interface BuildCashCloseReportInput {
 
 export function buildCashCloseReportData(input: BuildCashCloseReportInput): CashCloseReportData {
     const montoInicialReal = input.montoEsperado - input.ventasEfectivoHoy;
+    const ingresosNoEfectivo = input.pagosNoCash || [];
+    const totalNoEfectivo = ingresosNoEfectivo.reduce((sum, payment) => sum + (Number(payment.total) || 0), 0);
     return {
         fecha: new Date().toLocaleDateString('es-ES'),
         hora: new Date().toLocaleTimeString('es-ES'),
         usuario: input.usuario,
         montoInicial: Math.max(0, montoInicialReal),
         ventasEfectivo: input.ventasEfectivoHoy,
+        ingresosNoEfectivo,
+        totalNoEfectivo,
+        totalGeneral: (Number(input.ventasEfectivoHoy) || 0) + totalNoEfectivo,
         montoEsperado: input.montoEsperado,
         montoContado: input.montoFinalCaja,
         diferencia: input.diferenciaCaja,
@@ -68,6 +77,25 @@ export function printCashCloseReport(data: CashCloseReportData): void {
                         <td style="text-align: right; font-weight: bold; color: ${data.diferencia === 0 ? '#155724' : '#721c24'};">$${data.diferencia.toFixed(2)}</td>
                     </tr>
                 </table>
+            </div>
+
+            <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; background-color: #f9f9f9;">
+                <h3 style="color: #333; margin-top: 0;">OTROS MÉTODOS DE PAGO (INFORMATIVO)</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    ${
+                        data.ingresosNoEfectivo.length > 0
+                            ? data.ingresosNoEfectivo.map((payment) => `
+                                <tr>
+                                    <td style="padding: 5px 0; border-bottom: 1px solid #eee; text-transform: capitalize;"><strong>${payment.payment_method}:</strong></td>
+                                    <td style="text-align: right; border-bottom: 1px solid #eee;">$${(Number(payment.total) || 0).toFixed(2)}</td>
+                                </tr>
+                            `).join('')
+                            : `<tr><td style="padding: 5px 0;" colspan="2">Sin ingresos por métodos no efectivos.</td></tr>`
+                    }
+                    <tr><td style="padding: 8px 0; border-top: 1px solid #ddd;"><strong>Total no efectivo:</strong></td><td style="text-align: right; border-top: 1px solid #ddd;">$${data.totalNoEfectivo.toFixed(2)}</td></tr>
+                    <tr><td style="padding: 8px 0;"><strong>Total general cobrado:</strong></td><td style="text-align: right;"><strong>$${data.totalGeneral.toFixed(2)}</strong></td></tr>
+                </table>
+                <p style="margin: 8px 0 0 0; color: #666; font-size: 12px;">Estos montos no forman parte del arqueo físico de caja.</p>
             </div>
 
             <div style="border: 1px solid #ddd; padding: 15px; background-color: #f9f9f9;">

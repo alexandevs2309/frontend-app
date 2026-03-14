@@ -19,6 +19,15 @@ import { FileUploadModule } from 'primeng/fileupload';
 import { InventoryService, Product } from '../../../core/services/inventory/inventory.service';
 import { environment } from '../../../../environments/environment';
 
+interface StockMovementRow {
+    id: number;
+    product: number | { id?: number; name?: string };
+    quantity: number;
+    reason: string;
+    created_at?: string;
+    date?: string;
+}
+
 @Component({
     selector: 'app-products-management',
     standalone: true,
@@ -168,6 +177,45 @@ import { environment } from '../../../../environments/environment';
                     <tr><td colspan="7" class="text-center py-4">No hay productos registrados</td></tr>
                 </ng-template>
             </p-table>
+
+            <!-- Historial de Movimientos de Stock -->
+            <div class="mt-6">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Historial de Movimientos de Stock</h3>
+                    <button pButton icon="pi pi-refresh" class="p-button-text p-button-sm"
+                            (click)="cargarMovimientosStock()" pTooltip="Recargar historial"></button>
+                </div>
+
+                <p-table [value]="movimientosStock()" [loading]="cargandoMovimientos()">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Tipo</th>
+                            <th>Cantidad</th>
+                            <th>Motivo</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-mov>
+                        <tr>
+                            <td>{{ getMovementDate(mov) | date:'dd/MM/yyyy HH:mm' }}</td>
+                            <td>{{ getMovementProductName(mov) }}</td>
+                            <td>
+                                <p-tag [value]="mov.quantity >= 0 ? 'Entrada' : 'Salida'"
+                                       [severity]="mov.quantity >= 0 ? 'success' : 'warn'">
+                                </p-tag>
+                            </td>
+                            <td [class]="mov.quantity >= 0 ? 'text-green-600 font-medium' : 'text-orange-600 font-medium'">
+                                {{ mov.quantity >= 0 ? '+' : '' }}{{ mov.quantity }}
+                            </td>
+                            <td>{{ mov.reason || 'Sin motivo' }}</td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr><td colspan="5" class="text-center py-4">No hay movimientos de stock registrados.</td></tr>
+                    </ng-template>
+                </p-table>
+            </div>
 
             <!-- Diálogo de Producto -->
             <p-dialog [header]="productoSeleccionado ? 'Editar Producto' : 'Nuevo Producto'"
@@ -327,7 +375,9 @@ export class ProductsManagement implements OnInit {
 
     productos = signal<Product[]>([]);
     productosStockBajo = signal<Product[]>([]);
+    movimientosStock = signal<StockMovementRow[]>([]);
     cargando = signal(false);
+    cargandoMovimientos = signal(false);
     guardando = signal(false);
     mostrarDialogo = false;
     mostrarDialogoStock = false;
@@ -382,6 +432,7 @@ export class ProductsManagement implements OnInit {
 
     ngOnInit() {
         this.cargarProductos();
+        this.cargarMovimientosStock();
     }
 
     async cargarProductos() {
@@ -416,6 +467,29 @@ export class ProductsManagement implements OnInit {
             }
         } finally {
             this.cargando.set(false);
+        }
+    }
+
+    async cargarMovimientosStock() {
+        this.cargandoMovimientos.set(true);
+        try {
+            const response = await this.inventoryService.getStockMovements().toPromise();
+            const movimientos = (response as any)?.results || response || [];
+            this.movimientosStock.set((movimientos as StockMovementRow[]).slice(0, 20));
+        } catch (error: any) {
+            if (!environment.production) {
+                
+            }
+            // Evitar ruido para errores de auth controlados por interceptor
+            if (error?.status !== 401 && error?.status !== 403) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Historial no disponible',
+                    detail: 'No se pudo cargar el historial de movimientos de stock'
+                });
+            }
+        } finally {
+            this.cargandoMovimientos.set(false);
         }
     }
 
@@ -569,6 +643,7 @@ export class ProductsManagement implements OnInit {
 
             this.cerrarDialogoStock();
             this.cargarProductos();
+            this.cargarMovimientosStock();
         } catch (error: any) {
             if (!environment.production) {
                 
@@ -622,6 +697,19 @@ export class ProductsManagement implements OnInit {
             return 'text-orange-600 font-medium';
         }
         return 'text-green-600';
+    }
+
+    getMovementDate(mov: StockMovementRow): string | null {
+        return mov.created_at || mov.date || null;
+    }
+
+    getMovementProductName(mov: StockMovementRow): string {
+        if (typeof mov.product === 'object' && mov.product?.name) {
+            return mov.product.name;
+        }
+        const productId = typeof mov.product === 'number' ? mov.product : mov.product?.id;
+        const product = this.productos().find((p) => p.id === productId);
+        return product?.name || `Producto #${productId ?? 'N/A'}`;
     }
 
     onImageSelect(event: any) {

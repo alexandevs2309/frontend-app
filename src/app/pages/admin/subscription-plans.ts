@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Table, TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
@@ -16,22 +16,24 @@ import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SubscriptionService } from '../../core/services/subscription/subscription.service';
-import { StatusPipe } from '../../shared/pipes';
+import { AdminErrorLogService } from '../../core/services/admin-error-log.service';
 
 interface SubscriptionPlan {
     id?: number;
     name?: string;
+    display_name?: string;
     description?: string;
     price?: number;
     max_employees?: number;
     max_users?: number;
-    max_appointments?: number;
     duration_month?: number;
+    stripe_price_id?: string | null;
     allows_multiple_branches?: boolean;
-    features?: any;
+    features?: Record<string, boolean> | string[];
     features_list?: string[];
     is_active?: boolean;
     created_at?: string;
+    updated_at?: string;
 }
 
 @Component({
@@ -234,6 +236,8 @@ interface SubscriptionPlan {
     providers: [MessageService, ConfirmationService]
 })
 export class SubscriptionPlans implements OnInit {
+    private readonly errorLogger = inject(AdminErrorLogService);
+
     planDialog: boolean = false;
     plans = signal<SubscriptionPlan[]>([]);
     plan!: SubscriptionPlan;
@@ -275,8 +279,7 @@ export class SubscriptionPlans implements OnInit {
     // Removed - Plans are created automatically via management command
 
     editPlan(plan: SubscriptionPlan) {
-        const features = this.getFeaturesList(plan.features);
-        this.plan = { ...plan, features: [...features] };
+        this.plan = { ...plan };
         this.planDialog = true;
     }
 
@@ -287,29 +290,6 @@ export class SubscriptionPlans implements OnInit {
     hideDialog() {
         this.planDialog = false;
         this.submitted = false;
-    }
-
-    addFeature() {
-        if (!this.plan.features || !Array.isArray(this.plan.features)) {
-            this.plan.features = [];
-        }
-        this.plan.features.push('');
-    }
-
-    removeFeature(index: number) {
-        if (this.plan.features) {
-            this.plan.features.splice(index, 1);
-        }
-    }
-
-    updateFeature(index: number, event: any) {
-        if (this.plan.features && this.plan.features[index] !== undefined) {
-            this.plan.features[index] = event.target.value;
-        }
-    }
-
-    trackByIndex(index: number): number {
-        return index;
     }
 
     getFeaturesList(features: any): string[] {
@@ -415,12 +395,6 @@ export class SubscriptionPlans implements OnInit {
     }
 
     private logError(context: string, error: any): void {
-        const errorInfo = {
-            context,
-            timestamp: new Date().toISOString(),
-            error: error?.message || 'Unknown error',
-            component: 'SubscriptionPlans'
-        };
-        
+        this.errorLogger.log('SubscriptionPlans', context, error);
     }
 }

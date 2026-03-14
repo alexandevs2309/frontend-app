@@ -2,6 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 import { EmployeeService } from '../../../core/services/employee/employee.service';
 import { AuthService } from '../../../core/services/auth/auth.service';
 
@@ -25,9 +27,12 @@ interface ScheduleFormState {
 @Component({
     selector: 'app-schedules-management',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, ConfirmDialogModule],
+    providers: [ConfirmationService],
     template: `
         <div class="p-4 md:p-6">
+            <p-confirmDialog></p-confirmDialog>
+
             <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-6 rounded-xl mb-6">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-teal-600 rounded-xl">
@@ -193,6 +198,7 @@ interface ScheduleFormState {
 export class SchedulesManagement implements OnInit {
     private readonly employeeService = inject(EmployeeService);
     private readonly authService = inject(AuthService);
+    private readonly confirmationService = inject(ConfirmationService);
 
     loading = false;
     errorMessage = '';
@@ -284,15 +290,24 @@ export class SchedulesManagement implements OnInit {
         };
     }
 
-    async deleteSchedule(schedule: any): Promise<void> {
+    deleteSchedule(schedule: any): void {
         if (!this.canDeleteSchedule()) {
             return;
         }
-        const confirmed = window.confirm('¿Eliminar este turno?');
-        if (!confirmed) {
-            return;
-        }
+        this.confirmationService.confirm({
+            message: '¿Eliminar este turno? Esta acción no se puede deshacer.',
+            header: 'Confirmar Eliminación',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Eliminar',
+            rejectLabel: 'Cancelar',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                void this.deleteScheduleConfirmed(schedule);
+            }
+        });
+    }
 
+    private async deleteScheduleConfirmed(schedule: any): Promise<void> {
         this.loading = true;
         this.errorMessage = '';
         try {

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe, JsonPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -11,10 +11,13 @@ import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
+import { TextareaModule } from 'primeng/textarea';
 import { TenantService } from '../../core/services/tenant/tenant.service';
 import { SubscriptionService } from '../../core/services/subscription/subscription.service';
 import { ActivityLogService } from '../../core/services/activity-log/activity-log.service';
 import { BillingService } from '../../core/services/billing.service';
+import { AdminErrorLogService } from '../../core/services/admin-error-log.service';
 
 interface DiagnosticFinding {
     severity: 'critical' | 'warning' | 'info';
@@ -35,6 +38,8 @@ interface DiagnosticFinding {
         TableModule,
         SelectModule,
         ToastModule,
+        DialogModule,
+        TextareaModule,
         DatePipe,
         JsonPipe
     ],
@@ -71,12 +76,12 @@ interface DiagnosticFinding {
                 <div class="text-lg font-semibold">{{ tenant()?.trial_end_date ? (tenant()?.trial_end_date | date:'dd/MM/yyyy') : '-' }}</div>
             </p-card>
             <p-card>
-                <div class="text-sm text-gray-500">Facturas vencidas</div>
-                <div class="text-2xl font-bold text-red-600">{{ overdueInvoicesCount() }}</div>
+                <div class="text-sm text-gray-500">Facturas totales</div>
+                <div class="text-2xl font-bold text-blue-600">{{ totalInvoicesCount() }}</div>
             </p-card>
             <p-card>
-                <div class="text-sm text-gray-500">Pagos fallidos</div>
-                <div class="text-2xl font-bold text-orange-600">{{ failedPaymentsCount() }}</div>
+                <div class="text-sm text-gray-500">Facturas pagadas</div>
+                <div class="text-2xl font-bold text-green-600">{{ paidInvoicesCount() }}</div>
             </p-card>
         </div>
 
@@ -197,16 +202,17 @@ interface DiagnosticFinding {
                             <td>{{ sub.user?.email || sub.user_email || '-' }}</td>
                             <td>{{ sub.plan?.name || sub.plan_name || '-' }}</td>
                             <td>
-                                <p-tag [value]="sub.is_active ? 'Activa' : 'Inactiva'" [severity]="sub.is_active ? 'success' : 'danger'" />
+                                <p-tag [value]="getUserSubscriptionStatusLabel(sub)" [severity]="getUserSubscriptionStatusSeverity(sub)" />
                             </td>
                             <td>{{ sub.start_date ? (sub.start_date | date:'dd/MM/yyyy') : '-' }}</td>
                             <td>{{ sub.end_date ? (sub.end_date | date:'dd/MM/yyyy') : '-' }}</td>
                             <td>
                                 <div class="flex gap-2">
                                     <p-button
-                                        [label]="sub.is_active ? 'Cancelar' : 'Reactivar'"
-                                        [severity]="sub.is_active ? 'danger' : 'success'"
+                                        [label]="getUserSubscriptionActionLabel(sub)"
+                                        [severity]="sub.is_active ? 'danger' : (canToggleUserSubscription(sub) ? 'success' : 'secondary')"
                                         size="small"
+                                        [disabled]="!canToggleUserSubscription(sub)"
                                         (onClick)="toggleUserSubscription(sub)"
                                     />
                                 </div>
@@ -217,7 +223,29 @@ interface DiagnosticFinding {
             </p-card>
 
             <p-card header="Facturación y Cobros">
-                <p-table [value]="tenantInvoices()" [tableStyle]="{ 'min-width': '100%' }">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+                    <div class="p-2 rounded bg-amber-50 dark:bg-amber-900/10">
+                        <div class="text-xs text-amber-700 dark:text-amber-300">Pendientes</div>
+                        <div class="text-lg font-semibold">{{ pendingInvoicesCount() }}</div>
+                    </div>
+                    <div class="p-2 rounded bg-red-50 dark:bg-red-900/10">
+                        <div class="text-xs text-red-700 dark:text-red-300">Vencidas</div>
+                        <div class="text-lg font-semibold">{{ overdueInvoicesCount() }}</div>
+                    </div>
+                    <div class="p-2 rounded bg-orange-50 dark:bg-orange-900/10">
+                        <div class="text-xs text-orange-700 dark:text-orange-300">Fallidas</div>
+                        <div class="text-lg font-semibold">{{ failedPaymentsCount() }}</div>
+                    </div>
+                </div>
+
+                <div
+                    *ngIf="outstandingInvoices().length === 0"
+                    class="p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/10 text-green-800 dark:text-green-200 text-sm mb-3"
+                >
+                    Sin pendientes, vencidas o fallidas.
+                </div>
+
+                <p-table [value]="outstandingInvoices()" [tableStyle]="{ 'min-width': '100%' }">
                     <ng-template #header>
                         <tr>
                             <th>Factura</th>
@@ -230,7 +258,7 @@ interface DiagnosticFinding {
                         <tr>
                             <td>#{{ inv.id }}</td>
                             <td>{{ inv.amount | currency:'USD' }}</td>
-                            <td><p-tag [value]="inv.status || 'pending'" [severity]="getInvoiceSeverity(inv.status)" /></td>
+                            <td><p-tag [value]="getInvoiceDisplayStatus(inv)" [severity]="getInvoiceSeverity(getInvoiceDisplayStatus(inv))" /></td>
                             <td>{{ inv.due_date ? (inv.due_date | date:'dd/MM/yyyy') : '-' }}</td>
                         </tr>
                     </ng-template>
@@ -258,9 +286,44 @@ interface DiagnosticFinding {
                 </ng-template>
             </p-table>
         </p-card>
+
+        <p-dialog
+            [(visible)]="suspensionDialogVisible"
+            header="Suspender suscripción"
+            [modal]="true"
+            [style]="{ width: '32rem' }"
+            (onHide)="closeSuspensionDialog()"
+        >
+            <div class="space-y-4">
+                <p class="m-0 text-sm text-gray-600">
+                    Indica el motivo de la suspensión. Este texto puede usarse para soporte y auditoría.
+                </p>
+                <textarea
+                    pTextarea
+                    [(ngModel)]="suspensionReason"
+                    rows="4"
+                    class="w-full"
+                    maxlength="240"
+                    placeholder="Ej: facturas vencidas, solicitud del cliente, fraude detectado"
+                ></textarea>
+            </div>
+            <ng-template #footer>
+                <p-button label="Cancelar" severity="secondary" (onClick)="closeSuspensionDialog()" />
+                <p-button
+                    label="Suspender"
+                    severity="warn"
+                    icon="pi pi-pause"
+                    (onClick)="confirmSuspension()"
+                    [disabled]="!suspensionReason.trim()"
+                    [loading]="saving()"
+                />
+            </ng-template>
+        </p-dialog>
     `
 })
 export class TenantDetail implements OnInit {
+    private readonly errorLogger = inject(AdminErrorLogService);
+
     tenantId = signal<number | null>(null);
     tenant = signal<any>(null);
     tenantStats = signal<any>(null);
@@ -274,6 +337,8 @@ export class TenantDetail implements OnInit {
     loading = signal(false);
     saving = signal(false);
     diagnostics = signal<DiagnosticFinding[]>([]);
+    suspensionDialogVisible = false;
+    suspensionReason = '';
 
     planOptions = signal<any[]>([]);
 
@@ -305,7 +370,7 @@ export class TenantDetail implements OnInit {
         this.loading.set(true);
         const invoices$ = this.billingService
             .getInvoices({ tenant: id })
-            .pipe(catchError(() => this.billingService.getInvoices().pipe(catchError(() => of([])))));
+            .pipe(catchError(() => of([])));
 
         forkJoin({
             tenant: this.tenantService.getTenant(id).pipe(catchError(() => of(null))),
@@ -319,23 +384,19 @@ export class TenantDetail implements OnInit {
             next: ({ tenant, stats, users, subscription, userSubscriptions, invoices, logs }) => {
                 const usersArr = Array.isArray(users) ? users : users?.results || [];
                 const userSubsArr = Array.isArray(userSubscriptions) ? userSubscriptions : userSubscriptions?.results || [];
+                const normalizedUserSubsArr = this.normalizeUserSubscriptions(userSubsArr);
                 const invoicesArrRaw = Array.isArray(invoices) ? invoices : invoices?.results || [];
                 const logsArr = logs?.results || [];
-
-                const filteredInvoices = invoicesArrRaw.filter((inv: any) => {
-                    const tenantId = tenant?.id;
-                    return inv?.tenant === tenantId || inv?.tenant_id === tenantId || inv?.tenant_name === tenant?.name;
-                });
 
                 this.tenant.set(tenant);
                 this.tenantStats.set(stats);
                 this.users.set(usersArr);
                 this.tenantSubscription.set(subscription);
-                this.userSubscriptions.set(userSubsArr);
-                this.tenantInvoices.set(filteredInvoices);
+                this.userSubscriptions.set(normalizedUserSubsArr);
+                this.tenantInvoices.set(invoicesArrRaw);
                 this.tenantLogs.set(logsArr);
                 this.selectedPlanId = tenant?.subscription_plan?.id || tenant?.subscription_plan || null;
-                this.diagnostics.set(this.buildDiagnostics(tenant, filteredInvoices, logsArr, userSubsArr));
+                this.diagnostics.set(this.buildDiagnostics(tenant, invoicesArrRaw, logsArr, normalizedUserSubsArr));
                 this.loading.set(false);
             },
             error: (error) => {
@@ -377,51 +438,67 @@ export class TenantDetail implements OnInit {
     }
 
     toggleActive(): void {
-        const id = this.tenantId();
         const current = this.tenant();
-        if (!id || !current) return;
+        if (!current) return;
 
         const action$ = current.is_active
-            ? this.tenantService.deactivateTenant(id)
-            : this.tenantService.activateTenant(id);
+            ? this.tenantService.deactivateTenant(this.tenantId()!)
+            : this.tenantService.activateTenant(this.tenantId()!);
 
+        this.saving.set(true);
         action$.subscribe({
             next: () => {
+                this.saving.set(false);
                 this.showSuccess(current.is_active ? 'Tenant desactivado' : 'Tenant activado');
                 this.loadTenantData();
             },
-            error: (error) => this.showError('No se pudo actualizar estado activo', error)
+            error: (error) => {
+                this.saving.set(false);
+                this.showError('No se pudo actualizar estado activo', error);
+            }
         });
     }
 
     toggleSuspension(): void {
-        const id = this.tenantId();
         const current = this.tenant();
-        if (!id || !current) return;
+        if (!current) return;
 
         if (current.subscription_status === 'suspended') {
-            this.tenantService.resumeTenant(id).subscribe({
-                next: () => {
-                    this.showSuccess('Suscripción reanudada');
-                    this.loadTenantData();
-                },
-                error: (error) => this.showError('No se pudo reanudar suscripción', error)
-            });
+            this.resumeSuspension();
             return;
         }
 
-        const reason = window.prompt('Razón de suspensión:') || 'Suspensión administrativa';
+        this.suspensionReason = '';
+        this.suspensionDialogVisible = true;
+    }
+
+    confirmSuspension(): void {
+        const id = this.tenantId();
+        const reason = this.suspensionReason.trim();
+        if (!id || !reason) return;
+
+        this.saving.set(true);
         this.tenantService.suspendTenant(id, reason).subscribe({
             next: () => {
+                this.saving.set(false);
+                this.closeSuspensionDialog();
                 this.showSuccess('Suscripción suspendida');
                 this.loadTenantData();
             },
-            error: (error) => this.showError('No se pudo suspender suscripción', error)
+            error: (error) => {
+                this.saving.set(false);
+                this.showError('No se pudo suspender suscripción', error);
+            }
         });
     }
 
+    closeSuspensionDialog(): void {
+        this.suspensionDialogVisible = false;
+        this.suspensionReason = '';
+    }
+
     toggleUserSubscription(sub: any): void {
-        if (!sub?.id) return;
+        if (!sub?.id || !this.canToggleUserSubscription(sub)) return;
         const action$ = sub.is_active
             ? this.subscriptionService.cancelUserSubscription(sub.id)
             : this.subscriptionService.reactivateUserSubscription(sub.id);
@@ -435,6 +512,31 @@ export class TenantDetail implements OnInit {
         });
     }
 
+    canToggleUserSubscription(sub: any): boolean {
+        if (!sub?.id) return false;
+        if (this.isTenantSuspended()) return false;
+        if (sub.is_active) return true;
+        return !this.isSubscriptionExpired(sub);
+    }
+
+    getUserSubscriptionActionLabel(sub: any): string {
+        if (this.isTenantSuspended()) return 'Bloqueada';
+        if (sub?.is_active) return 'Cancelar';
+        return this.canToggleUserSubscription(sub) ? 'Reactivar' : 'Histórica';
+    }
+
+    getUserSubscriptionStatusLabel(sub: any): string {
+        if (this.isTenantAccessBlocked()) {
+            return sub?.is_active ? 'Inactiva (tenant suspendido)' : 'Inactiva';
+        }
+        return sub?.is_active ? 'Activa' : 'Inactiva';
+    }
+
+    getUserSubscriptionStatusSeverity(sub: any): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+        if (this.isTenantAccessBlocked()) return 'danger';
+        return sub?.is_active ? 'success' : 'danger';
+    }
+
     overdueInvoicesCount(): number {
         const now = new Date();
         return this.tenantInvoices().filter((inv) => inv?.status === 'pending' && inv?.due_date && new Date(inv.due_date) < now).length;
@@ -442,6 +544,34 @@ export class TenantDetail implements OnInit {
 
     failedPaymentsCount(): number {
         return this.tenantInvoices().filter((inv) => inv?.status === 'failed').length;
+    }
+
+    pendingInvoicesCount(): number {
+        return this.tenantInvoices().filter((inv) => inv?.status === 'pending').length;
+    }
+
+    totalInvoicesCount(): number {
+        return this.tenantInvoices().length;
+    }
+
+    paidInvoicesCount(): number {
+        return this.tenantInvoices().filter((inv) => inv?.status === 'paid' || inv?.is_paid === true).length;
+    }
+
+    outstandingInvoices(): any[] {
+        return this.tenantInvoices().filter((inv) => {
+            if (!inv) return false;
+            if (inv.status === 'failed' || inv.status === 'overdue') return true;
+            return inv.status === 'pending';
+        });
+    }
+
+    getInvoiceDisplayStatus(inv: any): string {
+        if (!inv) return 'pending';
+        if (inv.status === 'pending' && inv.due_date && new Date(inv.due_date) < new Date()) {
+            return 'overdue';
+        }
+        return inv.status || 'pending';
     }
 
     getSubscriptionSeverity(status?: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
@@ -484,13 +614,16 @@ export class TenantDetail implements OnInit {
         const errors = logs.filter((log) => String(log?.action || '').includes('ERROR')).length;
         const inactiveUsers = (this.users() || []).filter((u) => u && u.is_active === false).length;
         const inactiveSubs = userSubscriptions.filter((s) => s && s.is_active === false).length;
+        const suspensionContext = this.extractSuspensionContext(logs);
 
         if (tenant?.subscription_status === 'suspended') {
             findings.push({
                 severity: 'critical',
                 title: 'Tenant suspendido',
                 detail: 'El tenant no está en estado operativo normal.',
-                action: 'Verificar causa de suspensión, pagos vencidos y reanudar si corresponde.'
+                action: suspensionContext
+                    ? `Causa detectada en logs: ${suspensionContext}. Verifica "Facturación y Cobros" (pending/failed) y luego usa "Reanudar Suscripción" en "Acciones Operativas".`
+                    : 'Revisa "Actividad Técnica Reciente del Tenant" para identificar el último evento de suspensión, valida "Facturación y Cobros" (pending/failed) y luego usa "Reanudar Suscripción" en "Acciones Operativas".'
             });
         }
 
@@ -535,11 +668,137 @@ export class TenantDetail implements OnInit {
                 severity: 'info',
                 title: 'Suscripciones de usuario inactivas',
                 detail: `${inactiveSubs} suscripciones de usuario aparecen inactivas.`,
-                action: 'Validar estado de suscripciones y plan aplicable por usuario.'
+                action: 'En "Suscripciones de Usuarios", revisa Estado/Plan/Fin por usuario. Si aplica, usa "Reactivar"; si el plan no corresponde, ajusta plan del tenant en "Acciones Operativas".'
             });
         }
 
         return findings;
+    }
+
+    private extractSuspensionContext(logs: any[]): string {
+        if (!Array.isArray(logs) || logs.length === 0) return '';
+
+        const suspensionLog = logs.find((log) => {
+            const action = String(log?.action || '').toLowerCase();
+            const description = String(log?.description || '').toLowerCase();
+            return action.includes('suspend') || description.includes('suspend');
+        });
+
+        const description = String(suspensionLog?.description || '').trim();
+        return description.substring(0, 120);
+    }
+
+    private normalizeUserSubscriptions(subscriptions: any[]): any[] {
+        if (!Array.isArray(subscriptions)) return [];
+
+        const bestByKey = new Map<string, any>();
+        for (const sub of subscriptions) {
+            const key = `${this.getSubscriptionUserKey(sub)}::${this.getSubscriptionPlanKey(sub)}`;
+            const current = bestByKey.get(key);
+            if (!current || this.isBetterSubscriptionCandidate(sub, current)) {
+                bestByKey.set(key, sub);
+            }
+        }
+
+        return Array.from(bestByKey.values()).sort((a, b) => this.getSubscriptionSortScore(b) - this.getSubscriptionSortScore(a));
+    }
+
+    private isBetterSubscriptionCandidate(candidate: any, current: any): boolean {
+        const candidateRank = this.getSubscriptionRank(candidate);
+        const currentRank = this.getSubscriptionRank(current);
+
+        if (candidateRank.currentPeriod !== currentRank.currentPeriod) {
+            return candidateRank.currentPeriod > currentRank.currentPeriod;
+        }
+
+        if (candidateRank.startTs !== currentRank.startTs) {
+            return candidateRank.startTs > currentRank.startTs;
+        }
+
+        if (candidateRank.endTs !== currentRank.endTs) {
+            return candidateRank.endTs > currentRank.endTs;
+        }
+
+        return candidateRank.id > currentRank.id;
+    }
+
+    private getSubscriptionSortScore(sub: any): number {
+        return this.toTimestamp(sub?.start_date) || this.toTimestamp(sub?.end_date) || 0;
+    }
+
+    private getSubscriptionRank(sub: any): { currentPeriod: number; startTs: number; endTs: number; id: number } {
+        const startTs = this.toTimestamp(sub?.start_date);
+        const endTs = this.toTimestamp(sub?.end_date);
+        const nowTs = this.todayTimestamp();
+        const startsBeforeNow = !startTs || startTs <= nowTs;
+        const endsAfterNow = !endTs || endTs >= nowTs;
+        const currentPeriod = startsBeforeNow && endsAfterNow ? 1 : 0;
+        const id = Number(sub?.id || 0);
+
+        return { currentPeriod, startTs, endTs, id };
+    }
+
+    private getSubscriptionUserKey(sub: any): string {
+        return String(sub?.user?.id || sub?.user_id || sub?.user?.email || sub?.user_email || 'unknown-user');
+    }
+
+    private getSubscriptionPlanKey(sub: any): string {
+        return String(sub?.plan?.id || sub?.plan_id || sub?.plan?.name || sub?.plan_name || 'unknown-plan');
+    }
+
+    private isSubscriptionExpired(sub: any): boolean {
+        const endDate = this.toDate(sub?.end_date);
+        if (!endDate) return false;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return endDate < today;
+    }
+
+    private isTenantSuspended(): boolean {
+        return this.tenant()?.subscription_status === 'suspended';
+    }
+
+    private resumeSuspension(): void {
+        const id = this.tenantId();
+        if (!id) return;
+
+        this.saving.set(true);
+        this.tenantService.resumeTenant(id).subscribe({
+            next: () => {
+                this.saving.set(false);
+                this.showSuccess('Suscripción reanudada');
+                this.loadTenantData();
+            },
+            error: (error) => {
+                this.saving.set(false);
+                this.showError('No se pudo reanudar suscripción', error);
+            }
+        });
+    }
+
+    private isTenantAccessBlocked(): boolean {
+        const tenant = this.tenant();
+        return tenant?.is_active === false || tenant?.subscription_status === 'suspended';
+    }
+
+    private toDate(value: any): Date | null {
+        if (!value) return null;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return null;
+        date.setHours(0, 0, 0, 0);
+        return date;
+    }
+
+    private toTimestamp(value: any): number {
+        const date = this.toDate(value);
+        return date ? date.getTime() : 0;
+    }
+
+    private todayTimestamp(): number {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return today.getTime();
     }
 
     goBack(): void {
@@ -551,6 +810,7 @@ export class TenantDetail implements OnInit {
     }
 
     private showError(detail: string, error?: any): void {
+        this.errorLogger.log('TenantDetail', detail, error);
         const errorMessage = error?.error?.message || error?.message || detail;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: String(errorMessage).substring(0, 200), life: 4000 });
     }

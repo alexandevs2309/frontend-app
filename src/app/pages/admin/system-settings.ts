@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, ReactiveFormsModule, FormBuilder, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { SettingsService } from '../../core/services/settings.service';
+import { AdminErrorLogService } from '../../core/services/admin-error-log.service';
 import { ToastModule } from 'primeng/toast';
 import { TabsModule } from 'primeng/tabs';
 import { InputTextModule } from 'primeng/inputtext';
@@ -12,6 +13,24 @@ import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+
+const MASKED_SECRET = '••••••••configured••••••••';
+
+function optionalPatternValidator(pattern: RegExp, errorKey: string): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+        const value = String(control.value || '').trim();
+        if (!value || value === MASKED_SECRET) return null;
+        return pattern.test(value) ? null : { [errorKey]: true };
+    };
+}
+
+function optionalEmailValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+        const value = String(control.value || '').trim();
+        if (!value) return null;
+        return Validators.email(control);
+    };
+}
 
 @Component({
     selector: 'app-system-settings',
@@ -476,6 +495,8 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
     providers: [MessageService]
 })
 export class SystemSettings implements OnInit {
+    private readonly errorLogger = inject(AdminErrorLogService);
+
     generalForm!: FormGroup;
     emailForm!: FormGroup;
     paymentForm!: FormGroup;
@@ -517,25 +538,25 @@ export class SystemSettings implements OnInit {
         this.emailForm = this.fb.group({
             smtp_host: ['', Validators.required],
             smtp_port: [587, [Validators.required, Validators.min(1)]],
-            smtp_username: ['', Validators.required],
-            smtp_password: ['', Validators.required],
+            smtp_username: ['', [Validators.required, optionalEmailValidator()]],
+            smtp_password: ['', [Validators.required]],
             from_email: ['', [Validators.required, Validators.email]],
             from_name: ['', Validators.required],
             enable_notifications: [true]
         });
 
         this.paymentForm = this.fb.group({
-            stripe_public_key: [''],
-            stripe_secret_key: [''],
-            webhook_secret: [''],
+            stripe_public_key: ['', [optionalPatternValidator(/^pk_(test|live)_[A-Za-z0-9]+$/, 'stripePublicKeyFormat')]],
+            stripe_secret_key: ['', [optionalPatternValidator(/^sk_(test|live)_[A-Za-z0-9]+$/, 'stripeSecretKeyFormat')]],
+            webhook_secret: ['', [optionalPatternValidator(/^whsec_[A-Za-z0-9]+$/, 'stripeWebhookFormat')]],
             stripe_enabled: [false],
-            paypal_client_id: [''],
-            paypal_client_secret: [''],
+            paypal_client_id: ['', [optionalPatternValidator(/^[A-Za-z0-9_-]{10,}$/, 'paypalClientIdFormat')]],
+            paypal_client_secret: ['', [optionalPatternValidator(/^[A-Za-z0-9._-]{10,}$/, 'paypalClientSecretFormat')]],
             paypal_enabled: [false],
             paypal_sandbox: [true],
-            twilio_account_sid: [''],
-            twilio_auth_token: [''],
-            twilio_phone_number: [''],
+            twilio_account_sid: ['', [optionalPatternValidator(/^AC[a-fA-F0-9]{32}$/, 'twilioSidFormat')]],
+            twilio_auth_token: ['', [optionalPatternValidator(/^[a-fA-F0-9]{32}$/, 'twilioTokenFormat')]],
+            twilio_phone_number: ['', [optionalPatternValidator(/^\+[1-9]\d{7,14}$/, 'twilioPhoneFormat')]],
             twilio_enabled: [false],
             currency: ['USD', Validators.required],
             trial_days: [14, [Validators.required, Validators.min(0)]]
@@ -590,7 +611,7 @@ export class SystemSettings implements OnInit {
                     smtp_host: settings.smtp_host || 'smtp.gmail.com',
                     smtp_port: settings.smtp_port || 587,
                     smtp_username: settings.smtp_username || 'noreply@barbersaas.com',
-                    smtp_password: settings.smtp_password || '',
+                    smtp_password: this.maskSecret(settings.smtp_password),
                     from_email: settings.from_email || 'noreply@barbersaas.com',
                     from_name: settings.from_name || 'BarberSaaS Team',
                     enable_notifications: settings.email_notifications !== false
@@ -599,15 +620,15 @@ export class SystemSettings implements OnInit {
                 // Payment form
                 this.paymentForm.patchValue({
                     stripe_public_key: settings.stripe_public_key || '',
-                    stripe_secret_key: settings.stripe_secret_key || '',
-                    webhook_secret: settings.webhook_secret || '',
+                    stripe_secret_key: this.maskSecret(settings.stripe_secret_key),
+                    webhook_secret: this.maskSecret(settings.webhook_secret),
                     stripe_enabled: settings.stripe_enabled || false,
                     paypal_client_id: settings.paypal_client_id || '',
-                    paypal_client_secret: settings.paypal_client_secret || '',
+                    paypal_client_secret: this.maskSecret(settings.paypal_client_secret),
                     paypal_enabled: settings.paypal_enabled || false,
                     paypal_sandbox: settings.paypal_sandbox !== false,
-                    twilio_account_sid: settings.twilio_account_sid || '',
-                    twilio_auth_token: settings.twilio_auth_token || '',
+                    twilio_account_sid: this.maskSecret(settings.twilio_account_sid),
+                    twilio_auth_token: this.maskSecret(settings.twilio_auth_token),
                     twilio_phone_number: settings.twilio_phone_number || '',
                     twilio_enabled: settings.twilio_enabled || false,
                     currency: settings.default_currency || 'USD',
@@ -675,7 +696,7 @@ export class SystemSettings implements OnInit {
     saveEmail() {
         if (this.emailForm.valid) {
             this.saving = true;
-            this.settingsService.updateSettings(this.emailForm.value).subscribe({
+            this.settingsService.updateSettings(this.buildEmailPayload()).subscribe({
                 next: () => {
                     this.saving = false;
                     this.messageService.add({
@@ -693,7 +714,7 @@ export class SystemSettings implements OnInit {
     savePayment() {
         if (this.paymentForm.valid) {
             this.saving = true;
-            this.settingsService.updateSettings(this.paymentForm.value).subscribe({
+            this.settingsService.updateSettings(this.buildPaymentPayload()).subscribe({
                 next: () => {
                     this.saving = false;
                     this.messageService.add({
@@ -737,7 +758,7 @@ export class SystemSettings implements OnInit {
             return;
         }
 
-        this.settingsService.testEmailConnection(this.emailForm.value).subscribe({
+        this.settingsService.testEmailConnection(this.buildEmailPayload()).subscribe({
             next: (response) => {
                 this.messageService.add({
                     severity: response.success ? 'success' : 'error',
@@ -777,7 +798,7 @@ export class SystemSettings implements OnInit {
             return;
         }
 
-        this.settingsService.testPaymentConnection(stripeData).subscribe({
+        this.settingsService.testPaymentConnection(this.omitMaskedSecrets(stripeData, ['stripe_secret_key'])).subscribe({
             next: (response) => {
                 this.messageService.add({
                     severity: response.success ? 'success' : 'error',
@@ -807,7 +828,7 @@ export class SystemSettings implements OnInit {
             return;
         }
 
-        this.settingsService.testPaypalConnection(paypalData).subscribe({
+        this.settingsService.testPaypalConnection(this.omitMaskedSecrets(paypalData, ['paypal_client_secret'])).subscribe({
             next: (response) => {
                 this.messageService.add({
                     severity: response.success ? 'success' : 'error',
@@ -837,7 +858,7 @@ export class SystemSettings implements OnInit {
             return;
         }
 
-        this.settingsService.testTwilioConnection(twilioData).subscribe({
+        this.settingsService.testTwilioConnection(this.omitMaskedSecrets(twilioData, ['twilio_account_sid', 'twilio_auth_token'])).subscribe({
             next: (response) => {
                 this.messageService.add({
                     severity: response.success ? 'success' : 'error',
@@ -946,6 +967,42 @@ export class SystemSettings implements OnInit {
         }
     }
 
+    private buildEmailPayload(): Record<string, unknown> {
+        return this.omitMaskedSecrets(this.emailForm.getRawValue(), ['smtp_password']);
+    }
+
+    private buildPaymentPayload(): Record<string, unknown> {
+        return this.omitMaskedSecrets(this.paymentForm.getRawValue(), [
+            'stripe_secret_key',
+            'webhook_secret',
+            'paypal_client_secret',
+            'twilio_account_sid',
+            'twilio_auth_token'
+        ]);
+    }
+
+    private omitMaskedSecrets<T extends Record<string, unknown>>(payload: T, secretKeys: string[]): Record<string, unknown> {
+        const sanitized: Record<string, unknown> = { ...payload };
+
+        for (const key of secretKeys) {
+            const raw = sanitized[key];
+            if (typeof raw === 'string') {
+                const value = raw.trim();
+                if (!value || value === MASKED_SECRET) {
+                    delete sanitized[key];
+                } else {
+                    sanitized[key] = value;
+                }
+            }
+        }
+
+        return sanitized;
+    }
+
+    private maskSecret(value?: string | null): string {
+        return value ? MASKED_SECRET : '';
+    }
+
     private handleLoadError(error: any): void {
         this.logError('Failed to load settings', error);
         this.showErrorMessage('Error al cargar la configuración', error);
@@ -973,12 +1030,6 @@ export class SystemSettings implements OnInit {
     }
 
     private logError(context: string, error: any): void {
-        const errorInfo = {
-            context,
-            timestamp: new Date().toISOString(),
-            error: error?.message || 'Unknown error',
-            component: 'SystemSettings'
-        };
-        
+        this.errorLogger.log('SystemSettings', context, error);
     }
 }

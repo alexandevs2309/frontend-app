@@ -22,6 +22,7 @@ import { LocaleService } from '../../core/services/locale/locale.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
+import { toggleTenantActive, toggleTenantSuspension } from './utils/tenant-admin-actions';
 
 interface Tenant {
     id?: number;
@@ -102,6 +103,7 @@ interface Tenant {
         <p-table
             #dt
             [value]="tenants()"
+            [rowTrackBy]="trackByTenant"
             [rows]="10"
             [paginator]="true"
             [globalFilterFields]="['name', 'subdomain', 'owner_email', 'subscription_plan']"
@@ -523,43 +525,32 @@ export class TenantsManagement implements OnInit {
     }
 
     toggleTenantActive(tenant: Tenant) {
-        if (!tenant.id) return;
-
-        const action$ = tenant.is_active
-            ? this.tenantService.deactivateTenant(tenant.id)
-            : this.tenantService.activateTenant(tenant.id);
-
-        action$.subscribe({
-            next: () => {
+        toggleTenantActive(
+            this.tenantService,
+            tenant,
+            () => {
                 this.showSuccessMessage(tenant.is_active ? 'Tenant desactivado' : 'Tenant activado');
                 this.loadTenants();
             },
-            error: (error) => this.showErrorMessage('No se pudo cambiar estado activo del tenant', error)
-        });
+            (message, error) => this.showErrorMessage(message, error)
+        );
     }
 
     toggleTenantSuspension(tenant: Tenant) {
-        if (!tenant.id) return;
-
-        if (tenant.subscription_status === 'suspended') {
-            this.tenantService.resumeTenant(tenant.id).subscribe({
-                next: () => {
-                    this.showSuccessMessage('Tenant reanudado');
-                    this.loadTenants();
-                },
-                error: (error) => this.showErrorMessage('No se pudo reanudar tenant', error)
-            });
-            return;
-        }
-
-        const reason = window.prompt('Razón de suspensión del tenant:') || 'Suspensión administrativa';
-        this.tenantService.suspendTenant(tenant.id, reason).subscribe({
-            next: () => {
-                this.showSuccessMessage('Tenant suspendido');
+        toggleTenantSuspension(
+            this.tenantService,
+            tenant,
+            () => {
+                this.showSuccessMessage(tenant.subscription_status === 'suspended' ? 'Tenant reanudado' : 'Tenant suspendido');
                 this.loadTenants();
             },
-            error: (error) => this.showErrorMessage('No se pudo suspender tenant', error)
-        });
+            (_message, error) =>
+                this.showErrorMessage(
+                    tenant.subscription_status === 'suspended' ? 'No se pudo reanudar tenant' : 'No se pudo suspender tenant',
+                    error
+                ),
+            'Razón de suspensión del tenant:'
+        );
     }
 
     private handleLoadError(error: any): void {

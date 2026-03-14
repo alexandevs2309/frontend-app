@@ -14,6 +14,7 @@ export interface PosCatalogLoadResult extends PosCatalogCacheData {
 
 export interface PosCatalogLoadFetchers {
     getServices: () => Promise<any>;
+    getServiceCategories?: () => Promise<any>;
     getProducts: () => Promise<any>;
     getClients: () => Promise<any>;
     getEmployees: () => Promise<any>;
@@ -55,11 +56,23 @@ export function setCachedPosCatalog(
 export async function loadPosCatalogData(fetchers: PosCatalogLoadFetchers): Promise<PosCatalogLoadResult> {
     let accessLimited = false;
 
-    const services = await loadWithAccessControl(
+    const serviceCategories = await loadWithAccessControl(
+        async () => (fetchers.getServiceCategories ? fetchers.getServiceCategories() : []),
+        (response) => normalizeArrayResponse<any>(response),
+        () => { accessLimited = true; }
+    );
+    const serviceCategoryMap = new Map<number, string>(
+        serviceCategories
+            .filter((category: any) => category && category.id != null)
+            .map((category: any) => [Number(category.id), String(category.name || '').trim()])
+    );
+
+    const servicesRaw = await loadWithAccessControl(
         fetchers.getServices,
         (response) => normalizeArrayResponse<any>(response).filter((service: any) => service.is_active !== false),
         () => { accessLimited = true; }
     );
+    const services = mapServicesWithCategories(servicesRaw, serviceCategoryMap);
 
     const products = await loadWithAccessControl(
         fetchers.getProducts,
@@ -98,8 +111,30 @@ export async function loadPosCatalogData(fetchers: PosCatalogLoadFetchers): Prom
     };
 }
 
+function mapServicesWithCategories(services: any[], serviceCategoryMap: Map<number, string>): any[] {
+    return services.map((service: any) => {
+        const categoryIds: number[] = Array.isArray(service?.categories)
+            ? service.categories.map((id: any) => Number(id)).filter((id: number) => !Number.isNaN(id))
+            : [];
+        const categoryNames = categoryIds
+            .map((id: number) => serviceCategoryMap.get(id))
+            .filter((name: string | undefined): name is string => Boolean(name && name.trim()));
+
+        const fallbackCategory = resolveCategoryName(service);
+        const normalizedCategoryNames = categoryNames.length > 0
+            ? categoryNames
+            : (fallbackCategory ? [fallbackCategory] : []);
+
+        return {
+            ...service,
+            category_names: normalizedCategoryNames,
+            category: normalizedCategoryNames[0] || fallbackCategory || ''
+        };
+    });
+}
+
 export function extractCatalogCategories(items: any[]): any[] {
-    const uniqueCategories = [...new Set(items.map((item) => item.category).filter(Boolean))];
+    const uniqueCategories = [...new Set(items.map((item) => resolveCategoryName(item)).filter(Boolean))];
     return [
         { name: 'Todas', value: '' },
         ...uniqueCategories.map((category) => ({ name: category, value: category }))
@@ -116,7 +151,7 @@ export function filterCatalogItems(
 
     if (selectedCategory) {
         result = result.filter((item) => {
-            const itemCategory = item.category || 'General';
+            const itemCategory = resolveCategoryName(item) || 'General';
             return itemCategory === selectedCategory;
         });
     }
@@ -134,6 +169,21 @@ export function filterCatalogItems(
     }
 
     return result;
+}
+
+function resolveCategoryName(item: any): string {
+    if (!item) return '';
+
+    if (Array.isArray(item.category_names) && item.category_names.length > 0) {
+        const firstCategory = item.category_names[0];
+        if (typeof firstCategory === 'string') return firstCategory.trim();
+    }
+    if (typeof item.category === 'string') return item.category.trim();
+    if (item.category && typeof item.category.name === 'string') return item.category.name.trim();
+    if (typeof item.category_name === 'string') return item.category_name.trim();
+    if (typeof item.category_display === 'string') return item.category_display.trim();
+
+    return '';
 }
 
 async function loadWithAccessControl(

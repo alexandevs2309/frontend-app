@@ -305,6 +305,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         try {
             const loadedCatalog = await loadPosCatalogData({
                 getServices: async () => this.servicesService.getServices().toPromise(),
+                getServiceCategories: async () => this.servicesService.getServiceCategories().toPromise(),
                 getProducts: async () => this.inventoryService.getProducts().toPromise(),
                 getClients: async () => this.clientsService.getClients().toPromise(),
                 getEmployees: async () => this.employeesService.getEmployees().toPromise()
@@ -349,6 +350,13 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     private extraerCategorias() {
         const items = this.tipoActivo === 'services' ? this.servicios : this.productos;
         this.categorias = extractCatalogCategories(items);
+    }
+
+    cambiarTipoActivo(tipo: 'services' | 'products'): void {
+        this.tipoActivo = tipo;
+        this.categoriaSeleccionada = '';
+        this.extraerCategorias();
+        this.filtrarItems();
     }
 
 
@@ -1080,15 +1088,23 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     calcularTotalArqueo(): number {
-        this.denominaciones = getDenominationsWithTotals(this.denominaciones);
         return calculateArqueoTotal(this.denominaciones);
     }
 
     calcularDiferenciaArqueo(): number {
         const totalContado = this.calcularTotalArqueo();
-        const montoInicial = this.obtenerMontoInicialCaja();
-        const efectivoEsperado = calculateExpectedCash(montoInicial, this.ventasEfectivoHoy);
+        const efectivoEsperado = this.calcularEfectivoEsperadoArqueo();
         return calculateCashDifference(totalContado, efectivoEsperado);
+    }
+
+    calcularEfectivoEsperadoArqueo(): number {
+        return calculateExpectedCash(this.obtenerMontoInicialCaja(), this.ventasEfectivoHoy);
+    }
+
+    actualizarDenominacion(denom: { valor: number; cantidad: number; total: number }, cantidad: number | string | null): void {
+        const cantidadNormalizada = Math.max(0, Number(cantidad) || 0);
+        denom.cantidad = cantidadNormalizada;
+        denom.total = (Number(denom.valor) || 0) * cantidadNormalizada;
     }
 
     obtenerMontoInicialCaja(): number {
@@ -1410,6 +1426,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 usuario: this.obtenerUsuarioActual(),
                 montoEsperado: this.montoEsperado,
                 ventasEfectivoHoy: this.ventasEfectivoHoy,
+                pagosNoCash: this.pagosNoCash(),
                 montoFinalCaja: this.montoFinalCaja,
                 diferenciaCaja: this.diferenciaCaja,
                 estadisticas: this.estadisticasDia()

@@ -55,6 +55,6 @@ export class SubscriptionService extends BaseApiService {
   }
 
   updatePlan(planId: number, planData: any): Observable<any> {
-    return this.put(`${API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.PLANS}${planId}/`, planData);
+    return this.patch(`${API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.PLANS}${planId}/`, planData);
   }
 }

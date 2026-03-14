@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Table, TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
@@ -20,6 +20,7 @@ import { RoleService } from '../../core/services/role/role.service';
 import { UIHelpers } from '../../shared/utils/ui-helpers';
 import { DatePipe } from '@angular/common';
 import { roleKey } from '../../core/utils/role-normalizer';
+import { AdminErrorLogService } from '../../core/services/admin-error-log.service';
 
 interface User {
     id?: number;
@@ -48,17 +49,32 @@ interface User {
                     </div>
                     <div>
                         <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 m-0">Usuarios</h2>
-                        <p class="text-sm text-muted-color m-0">Gestiona todos los usuarios del sistema</p>
+                        <p class="text-sm text-muted-color m-0">
+                            {{ isSuperAdminView() ? 'Selecciona un tenant para gestionar sus usuarios' : 'Gestiona los usuarios de tu tenant' }}
+                        </p>
                     </div>
                 </div>
             </ng-template>
             <ng-template #end>
                 <div class="flex gap-2">
-                    <p-select [(ngModel)]="selectedTenantFilter" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Filtrar por Tenant" (onChange)="filterByTenant()" styleClass="w-48" />
+                    <p-select
+                        [(ngModel)]="selectedTenantFilter"
+                        [options]="tenantOptions()"
+                        optionLabel="name"
+                        optionValue="id"
+                        [filter]="true"
+                        filterBy="name,subdomain,id"
+                        [showClear]="true"
+                        [placeholder]="isSuperAdminView() ? 'Selecciona Tenant' : 'Tenant actual'"
+                        emptyFilterMessage="No se encontraron tenants"
+                        (onChange)="filterByTenant()"
+                        styleClass="w-48"
+                    />
                     <p-button 
                         label="Nuevo Usuario" 
                         icon="pi pi-plus" 
                         styleClass="bg-linear-to-r from-indigo-500 to-purple-500 border-0 shadow-lg hover:shadow-xl transition-all"
+                        [disabled]="isSuperAdminView() && !selectedTenantFilter"
                         (onClick)="openNew()" 
                     />
                     <p-button 
@@ -101,6 +117,12 @@ interface User {
                             class="rounded-xl border-2 focus:border-indigo-500"
                         />
                     </p-iconfield>
+                </div>
+                <div
+                    *ngIf="isSuperAdminView() && !selectedTenantFilter"
+                    class="mx-4 mb-4 p-3 rounded border border-amber-200 bg-amber-50 text-amber-800 text-sm"
+                >
+                    Selecciona un tenant para ver y gestionar usuarios.
                 </div>
             </ng-template>
             <ng-template #header>
@@ -203,6 +225,12 @@ interface User {
                         <label for="password" class="block font-bold mb-3">Password</label>
                         <input type="password" pInputText id="password" [(ngModel)]="user.password" required fluid />
                         <small class="text-red-500" *ngIf="submitted && !user.password && !user.id">Password is required for new users.</small>
+                        <small class="text-red-500" *ngIf="submitted && !!user.password && !isValidPassword(user.password)">
+                            Password must have at least 8 characters.
+                        </small>
+                        <small class="text-surface-500 block mt-2" *ngIf="!submitted || !user.password">
+                            Minimum 8 characters.
+                        </small>
                     </div>
 
                     <div class="flex items-center gap-2">
@@ -224,6 +252,8 @@ interface User {
     providers: [MessageService, ConfirmationService]
 })
 export class UsersManagement implements OnInit {
+    private readonly errorLogger = inject(AdminErrorLogService);
+
     userDialog: boolean = false;
     users = signal<User[]>([]);
     tenantOptions = signal<any[]>([]);
@@ -234,6 +264,7 @@ export class UsersManagement implements OnInit {
     submitted: boolean = false;
     loading = signal(false);
     saving = signal(false);
+    isSuperAdminView = signal(false);
 
     constructor(
         private authService: AuthService,
@@ -244,25 +275,31 @@ export class UsersManagement implements OnInit {
     ) {}
 
     ngOnInit() {
-        this.loadUsers();
+        const currentUser = this.authService.getCurrentUser();
+        this.isSuperAdminView.set(this.isSuperAdmin(currentUser?.role));
+
+        if (!this.isSuperAdminView()) {
+            this.loadUsers();
+        } else {
+            this.users.set([]);
+        }
+
         this.loadTenants();
         this.loadRoles();
     }
 
     loadUsers() {
+        if (this.isSuperAdminView() && !this.selectedTenantFilter) {
+            this.users.set([]);
+            this.loading.set(false);
+            return;
+        }
+
         this.loading.set(true);
-        this.authService.getUsers().subscribe({
+        const params = this.isSuperAdminView() && this.selectedTenantFilter ? { tenant: this.selectedTenantFilter } : undefined;
+        this.authService.getUsers(params).subscribe({
             next: (data: any) => {
-                const users = Array.isArray(data) ? data : data.results || [];
-                // Filtrar solo usuarios del tenant actual (excluir SuperAdmin)
-                const filteredUsers = users.filter((user: any) => 
-                    user.role && user.role !== 'SuperAdmin' && user.role !== 'SUPER_ADMIN'
-                );
-                const mappedUsers = filteredUsers.map((user: any) => ({
-                    ...user,
-                    tenant_name: user.tenant?.name || user.tenant_name || 'N/A'
-                }));
-                this.users.set(mappedUsers);
+                this.users.set(this.normalizeUsers(data));
                 this.loading.set(false);
             },
             error: (error) => this.handleLoadUsersError(error)
@@ -277,7 +314,7 @@ export class UsersManagement implements OnInit {
             this.tenantService.getTenants().subscribe({
                 next: (data: any) => {
                     const tenants = Array.isArray(data) ? data : data.results || [];
-                    const options = [{ name: 'All Tenants', id: null }, ...tenants.map((t: any) => ({ name: t.name, id: t.id }))];
+                    const options = tenants.map((t: any) => ({ name: t.name, id: t.id }));
                     this.tenantOptions.set(options);
                 },
                 error: (error) => this.handleLoadTenantsError(error)
@@ -307,11 +344,10 @@ export class UsersManagement implements OnInit {
                 const options = rolesArray
                     .filter((r: any) => r.scope === 'TENANT')
                     .map((r: any) => ({ label: r.description || r.name, value: r.name }));
-                this.roleOptions.set(options);
+                this.roleOptions.set(options.length > 0 ? options : this.getDefaultRoleOptions());
             },
             error: (error) => {
-                
-                this.roleOptions.set([]);
+                this.roleOptions.set(this.getDefaultRoleOptions());
             }
         });
     }
@@ -320,17 +356,7 @@ export class UsersManagement implements OnInit {
         const currentUser = this.authService.getCurrentUser();
         
         if (this.isSuperAdmin(currentUser?.role)) {
-            if (this.selectedTenantFilter) {
-                this.authService.getUsers({ tenant: this.selectedTenantFilter }).subscribe({
-                    next: (data: any) => {
-                        const users = Array.isArray(data) ? data : data.results || [];
-                        this.users.set(users);
-                    },
-                    error: (error) => this.handleFilterError(error)
-                });
-            } else {
-                this.loadUsers();
-            }
+            this.loadUsers();
         } else {
             // Client-Admin siempre ve solo sus usuarios
             this.loadUsers();
@@ -342,7 +368,11 @@ export class UsersManagement implements OnInit {
     }
 
     openNew() {
-        this.user = { is_active: true, role: 'Client-Staff' };
+        this.user = {
+            is_active: true,
+            role: 'Client-Staff',
+            tenant: this.isSuperAdminView() ? (this.selectedTenantFilter || undefined) : this.getDefaultTenantId()
+        };
         this.submitted = false;
         this.userDialog = true;
     }
@@ -501,7 +531,12 @@ export class UsersManagement implements OnInit {
     }
 
     private isUserFormValid(): boolean {
-        return !!this.user.email?.trim() && !!this.user.full_name?.trim() && (!!this.user.id || !!this.user.password?.trim()) && (!this.userNeedsTenant() || !!this.user.tenant);
+        return (
+            !!this.user.email?.trim() &&
+            !!this.user.full_name?.trim() &&
+            (!!this.user.id || this.isValidPassword(this.user.password)) &&
+            (!this.userNeedsTenant() || !!this.user.tenant)
+        );
     }
 
     private userNeedsTenant(): boolean {
@@ -587,7 +622,7 @@ export class UsersManagement implements OnInit {
 
     private handleLoadTenantsError(error: any): void {
         this.logError('Failed to load tenants', error);
-        this.tenantOptions.set([{ name: 'All Tenants', id: null }]);
+        this.tenantOptions.set([]);
     }
 
     private handleFilterError(error: any): void {
@@ -596,18 +631,36 @@ export class UsersManagement implements OnInit {
     }
 
     private sanitizeErrorMessage(error: any, fallback: string): string {
-        const errorMessage = error?.error?.message || error?.message;
-        return typeof errorMessage === 'string' ? errorMessage.substring(0, 200) : fallback;
+        const apiError = error?.error;
+        const directMessage = apiError?.message || apiError?.error || error?.message;
+
+        if (typeof directMessage === 'string' && directMessage.trim()) {
+            return directMessage.substring(0, 200);
+        }
+
+        if (apiError && typeof apiError === 'object') {
+            const parts = Object.entries(apiError)
+                .flatMap(([field, value]) => {
+                    if (Array.isArray(value)) {
+                        return value.map((item) => `${field}: ${String(item)}`);
+                    }
+                    if (typeof value === 'string') {
+                        return [`${field}: ${value}`];
+                    }
+                    return [];
+                })
+                .filter(Boolean);
+
+            if (parts.length > 0) {
+                return parts.join(' | ').substring(0, 200);
+            }
+        }
+
+        return fallback;
     }
 
     private logError(context: string, error: any): void {
-        const errorInfo = {
-            context,
-            timestamp: new Date().toISOString(),
-            error: error?.message || 'Unknown error',
-            component: 'UsersManagement'
-        };
-        
+        this.errorLogger.log('UsersManagement', context, error);
     }
 
     private toBackendRole(role?: string): string | undefined {
@@ -623,6 +676,37 @@ export class UsersManagement implements OnInit {
         };
 
         return map[key] || role;
+    }
+
+    private normalizeUsers(data: any): User[] {
+        const users = Array.isArray(data) ? data : data?.results || [];
+        const filteredUsers = users.filter((u: any) => u?.role && u.role !== 'SuperAdmin' && u.role !== 'SUPER_ADMIN');
+        return filteredUsers.map((u: any) => ({
+            ...u,
+            tenant_name: u.tenant?.name || u.tenant_name || 'N/A'
+        }));
+    }
+
+    private getDefaultTenantId(): number | undefined {
+        const options = this.tenantOptions();
+        if (!Array.isArray(options) || options.length === 0) return undefined;
+        const candidate = Number(options[0]?.id);
+        return Number.isNaN(candidate) ? undefined : candidate;
+    }
+
+    private getDefaultRoleOptions(): Array<{ label: string; value: string }> {
+        return [
+            { label: 'Administrador de Peluqueria', value: 'Client-Admin' },
+            { label: 'Empleado', value: 'Client-Staff' },
+            { label: 'Estilista', value: 'Estilista' },
+            { label: 'Cajera', value: 'Cajera' },
+            { label: 'Manager', value: 'Manager' },
+            { label: 'Utility', value: 'Utility' }
+        ];
+    }
+
+     isValidPassword(password?: string | null): boolean {
+        return !!password && password.trim().length >= 8;
     }
 
     UIHelpers = UIHelpers;

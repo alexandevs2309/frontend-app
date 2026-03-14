@@ -19,6 +19,7 @@ import { ConfirmationService } from 'primeng/api';
 import { EmployeeService, Employee, UpdateEmployeeRequest } from '../../../core/services/employee/employee.service';
 import { AuthService, User } from '../../../core/services/auth/auth.service';
 import { environment } from '../../../../environments/environment';
+import { firstValueFrom } from 'rxjs';
 import { UserDto, CreateUserDto, UpdateUserDto } from '../../../core/dto/user.dto';
 import { EmployeeDto, EmployeeWithUserDto, CreateEmployeeDto, UpdateEmployeeDto } from '../../../core/dto/employee.dto';
 import { PayrollConfigDto, PaymentStatsDto, PaymentReceiptDto } from '../../../core/dto/payroll.dto';
@@ -938,13 +939,7 @@ export class EmployeesManagement implements OnInit {
           tenant: this.authService.getTenantId()
         } as any).toPromise();
         
-        // Esperar un momento para que el signal cree el Employee
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Buscar el Employee recién creado y actualizarlo con los datos adicionales
-        const empleadosRes = await this.employeeService.getEmployees().toPromise();
-        const empleados = (empleadosRes as any)?.results || [];
-        const nuevoEmpleado = empleados.find((e: any) => e.user.id === (newUser as any).id);
+        const nuevoEmpleado = await this.esperarEmpleadoPorUsuario((newUser as any).id);
         
         if (nuevoEmpleado && nuevoEmpleado.id > 0) {
           const updateData = {
@@ -971,15 +966,24 @@ export class EmployeesManagement implements OnInit {
         
       }
 
-      let errorMessage = 'No se pudo guardar el empleado';
+      const isUpdate = !!this.empleadoSeleccionado;
+      let errorMessage = isUpdate
+        ? 'No se pudo actualizar el empleado'
+        : 'No se pudo crear el empleado';
 
       // Detectar límite de usuarios
       if (error?.error?.current !== undefined && error?.error?.limit !== undefined) {
         errorMessage = `Límite de usuarios alcanzado (${error.error.current}/${error.error.limit}). Actualiza tu plan para agregar más usuarios.`;
       } else if (error?.error?.error && error.error.error.includes('User limit reached')) {
         errorMessage = `Límite de usuarios alcanzado. Actualiza tu plan para agregar más usuarios.`;
+      } else if (error?.error?.detail) {
+        errorMessage = error.error.detail;
+      } else if (error?.error?.error) {
+        errorMessage = error.error.error;
       } else if (error.status === 403) {
-        errorMessage = 'No tienes permisos para crear usuarios. Verifica tu plan de suscripción.';
+        errorMessage = isUpdate
+          ? 'No tienes permisos para actualizar este empleado.'
+          : 'No tienes permisos para crear usuarios. Verifica tu plan de suscripción.';
       } else if (error?.error?.message) {
         errorMessage = error.error.message;
       }
@@ -1024,6 +1028,17 @@ export class EmployeesManagement implements OnInit {
     } catch (error: any) {
       if (!environment.production) {
         
+      }
+
+      // Si ya no existe en backend, considerar operación idempotente exitosa.
+      if (error?.status === 404) {
+        this.empleados.update(lista => lista.filter(e => e.user_id !== emp.user_id));
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'El empleado ya había sido eliminado'
+        });
+        return;
       }
 
       // Fallback: si el backend bloquea borrado físico por integridad/relaciones,
@@ -1409,5 +1424,30 @@ export class EmployeesManagement implements OnInit {
       'cancelled': 'danger'
     };
     return severities[status] || 'info';
+  }
+
+  private async esperarEmpleadoPorUsuario(userId: number, maxAttempts = 6, delayMs = 250): Promise<EmployeeWithUserDto | null> {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const employee = await firstValueFrom(this.employeeService.getEmployeeByUserId(userId)) as any;
+        if (employee?.id) {
+          return employee as EmployeeWithUserDto;
+        }
+      } catch (error: any) {
+        if (error?.status !== 404) {
+          throw error;
+        }
+      }
+
+      if (attempt < maxAttempts - 1) {
+        await this.delay(delayMs);
+      }
+    }
+
+    return null;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

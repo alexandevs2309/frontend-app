@@ -66,7 +66,7 @@
       <div class="flex" style="border-bottom: 1px solid var(--surface-border);">
         <button pButton 
                 label="Servicios" 
-                (click)="tipoActivo='services'; filtrarItems()"
+                (click)="cambiarTipoActivo('services')"
                 [severity]="tipoActivo==='services' ? 'info' : 'secondary'"
                 [outlined]="tipoActivo!=='services'"
                 [text]="true"
@@ -74,7 +74,7 @@
                 [style]="tipoActivo==='services' ? 'border-bottom-color: var(--primary-color)' : 'border-bottom-color: transparent'"></button>
         <button pButton 
                 label="Productos" 
-                (click)="tipoActivo='products'; filtrarItems()"
+                (click)="cambiarTipoActivo('products')"
                 [severity]="tipoActivo==='products' ? 'info' : 'secondary'"
                 [outlined]="tipoActivo!=='products'"
                 [text]="true"
@@ -88,27 +88,23 @@
         <!-- Vista Normal (Tarjetas) -->
         <div *ngIf="!vistaCompacta" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div *ngFor="let item of itemsFiltrados; trackBy: trackByItemId"
-               class="group relative p-5 rounded-2xl shadow-lg transition-all duration-300 border-2 transform cursor-pointer overflow-hidden bg-surface-0 dark:bg-surface-800 hover:shadow-2xl hover:scale-105 animate-item"
-               [class.hover:border-emerald-500]="puedeAgregarMas(item)"
+               class="group relative p-5 rounded-2xl shadow-sm transition-all duration-200 border cursor-pointer bg-surface-0 dark:bg-surface-800 hover:shadow-md"
                [class.opacity-50]="!puedeAgregarMas(item)"
                [class.cursor-not-allowed]="!puedeAgregarMas(item)"
                [style.border-color]="puedeAgregarMas(item) ? 'var(--primary-color)' : 'var(--surface-border)'"
                (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
-            
-            <!-- Efecto de brillo al hover -->
-            <div class="absolute inset-0 bg-linear-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500 transform -skew-x-12"></div>
-            
+
             <!-- Imagen o icono -->
             <div class="relative z-10">
               <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="w-full h-36 object-cover rounded-xl mb-3 shadow-md">
-              <div *ngIf="!item.image" class="w-full h-36 bg-linear-to-br from-primary-100 via-primary-50 to-primary-100 dark:from-primary-900 dark:via-primary-900 dark:to-primary-900 rounded-xl mb-3 flex items-center justify-center shadow-inner">
-                <i [class]="tipoActivo === 'services' ? 'pi pi-cut' : 'pi pi-box'" class="text-6xl text-primary-600 dark:text-primary-400 drop-shadow-lg"></i>
+              <div *ngIf="!item.image" class="w-full h-36 bg-surface-100 dark:bg-surface-700 rounded-xl mb-3 flex items-center justify-center">
+                <i [class]="tipoActivo === 'services' ? 'pi pi-cut' : 'pi pi-box'" class="text-5xl text-primary-600 dark:text-primary-400"></i>
               </div>
               
               <!-- Nombre y precio -->
               <div class="flex justify-between items-start mb-2">
                 <h6 class="font-bold text-lg text-surface-900 dark:text-surface-0 group-hover:text-primary-600 transition-colors">{{ item.name }}</h6>
-                <div class="px-3 py-1 rounded-full shadow-md bg-primary-500">
+                <div class="px-3 py-1 rounded-full bg-primary-500">
                   <span class="text-lg font-bold text-white">{{ formatearMoneda(item.price) }}</span>
                 </div>
               </div>
@@ -117,7 +113,7 @@
               
               <!-- Footer con categoría y stock -->
               <div class="flex justify-between items-center">
-                <span class="text-xs px-3 py-1.5 rounded-full font-semibold shadow-sm bg-primary-500 text-white">
+                <span class="text-xs px-3 py-1.5 rounded-full font-semibold bg-surface-200 dark:bg-surface-700 text-surface-900 dark:text-surface-0">
                   {{ item.category || 'General' }}
                 </span>
                 <div *ngIf="tipoActivo==='products'" class="flex items-center gap-1">
@@ -130,7 +126,7 @@
               
               <!-- Botón de agregar (aparece al hover) -->
               <div *ngIf="puedeAgregarMas(item)" class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform bg-primary-500 hover:bg-primary-600">
+                <button class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-500 hover:bg-primary-600">
                   <i class="pi pi-plus text-white font-bold"></i>
                 </button>
               </div>
@@ -180,7 +176,7 @@
               <div class="shrink-0 text-right">
                 <span class="text-lg font-bold" style="color: var(--primary-color);">{{ formatearMoneda(item.price) }}</span>
                 <div *ngIf="tipoActivo === 'products' && obtenerStockDisponible(item) === 0"
-                     class="text-xs font-semibold" style="color: var(--danger-color-text);">AGOTADO</div>
+                     class="text-xs font-semibold" style="color: var(--danger-color-text);">Sin stock</div>
               </div>
 
               <!-- Botón de agregar -->
@@ -207,7 +203,7 @@
 
       <ng-template #loadingTemplate>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div *ngFor="let i of [1,2,3,4,5,6]" class="p-4 rounded-lg shadow animate-pulse" style="background-color: var(--surface-card);">
+          <div *ngFor="let i of [1,2,3,4,5,6]" class="p-4 rounded-lg shadow-sm" style="background-color: var(--surface-card);">
             <div class="h-4 rounded mb-2" style="background-color: var(--surface-200);"></div>
             <div class="h-3 rounded mb-2 w-3/4" style="background-color: var(--surface-200);"></div>
             <div class="h-3 rounded w-1/2" style="background-color: var(--surface-200);"></div>
@@ -240,14 +236,10 @@
 
     <!-- PANEL DERECHO: Resumen -->
     <div class="flex flex-col gap-4 sticky top-4">
-      <div id="pos-tour-summary" class="p-6 rounded-2xl shadow-2xl flex flex-col gap-4 relative overflow-hidden bg-surface-0 dark:bg-surface-800 border-2 border-primary-500">
-        
-        <!-- Decoración de fondo -->
-        <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-0 left-0 w-24 h-24 bg-teal-500/10 rounded-full blur-2xl"></div>
+      <div id="pos-tour-summary" class="p-6 rounded-2xl shadow-sm flex flex-col gap-4 bg-surface-0 dark:bg-surface-800 border border-surface-200 dark:border-surface-700">
 
         <div class="flex items-center gap-3 pb-3 border-b relative z-10 border-surface-200 dark:border-surface-700">
-          <div class="p-3 rounded-xl shadow-lg animate-pulse bg-primary-500">
+          <div class="p-3 rounded-xl bg-primary-500">
             <i class="pi pi-shopping-bag text-2xl text-white"></i>
           </div>
           <div>
@@ -267,7 +259,7 @@
               <div class="flex items-center justify-between w-full">
                 <span>{{ cliente.full_name }}</span>
                 <span *ngIf="esClienteFrecuente(cliente)" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                  ⭐ VIP
+                  VIP
                 </span>
               </div>
             </ng-template>
@@ -291,7 +283,7 @@
         </div>
 
         <!-- Totales -->
-        <div class="p-4 rounded-xl bg-surface-50 dark:bg-surface-900 border-2 border-primary-500">
+        <div class="p-4 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700">
           <div class="flex justify-between mb-2 text-surface-700 dark:text-surface-300"><span class="font-medium">Subtotal:</span><span class="font-semibold">{{ formatearMoneda(calcularSubtotal()) }}</span></div>
           <div class="flex justify-between mb-3 text-surface-700 dark:text-surface-300">
             <span class="font-medium text-gray-700">Descuento:</span>
@@ -300,7 +292,7 @@
               <button pButton [label]="tipoDescuento()" size="small" class="p-button-outlined w-8" (click)="alternarTipoDescuento()"></button>
             </div>
           </div>
-          <hr class="my-3 border-emerald-300">
+          <hr class="my-3 border-surface-200 dark:border-surface-700">
           <div class="flex justify-between font-bold text-2xl">
             <span class="text-primary-600 dark:text-primary-400">Total:</span>
             <span class="text-primary-600 dark:text-primary-400">{{ formatearMoneda(calcularTotal()) }}</span>
@@ -390,8 +382,8 @@
 
   <p-dialog header="Cuadre y Cierre de Caja" [(visible)]="mostrarDialogoCerrarCaja" [modal]="true" [style]="{width:'500px'}">
     <div class="flex flex-col gap-4">
-      <div class="p-3 bg-gray-50 rounded">
-        <h5 class="font-bold mb-2">🧦 Resumen del Día - Solo Efectivo</h5>
+      <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded">
+        <h5 class="font-bold mb-2">Resumen del día (efectivo)</h5>
         <div class="flex justify-between text-sm">
           <span>Monto inicial:</span>
           <span class="font-mono">${{ (montoEsperado - ventasEfectivoHoy).toFixed(2) }}</span>
@@ -407,16 +399,16 @@
       </div>
 
       <!-- Pagos NO en Efectivo (Solo Informativo) -->
-      <div *ngIf="pagosNoCash().length > 0" class="p-3 bg-blue-50 rounded border border-blue-200">
-        <h5 class="font-bold mb-2 text-blue-800 flex items-center gap-2">
+      <div *ngIf="pagosNoCash().length > 0" class="p-3 bg-blue-50 dark:bg-slate-800 rounded border border-blue-200 dark:border-slate-700">
+        <h5 class="font-bold mb-2 text-blue-800 dark:text-blue-300 flex items-center gap-2">
           <i class="pi pi-info-circle"></i>
-          📊 Ingresos por Otros Métodos
+          Ingresos por otros métodos
         </h5>
         <div *ngFor="let pago of pagosNoCash()" class="flex justify-between text-sm mb-1">
           <span>{{ pago.payment_method }}:</span>
-          <span class="font-mono text-blue-700">${{ pago.total.toFixed(2) }}</span>
+          <span class="font-mono text-blue-700 dark:text-blue-300">${{ pago.total.toFixed(2) }}</span>
         </div>
-        <div class="text-xs text-blue-700 mt-2 p-2 bg-blue-100 rounded border-l-4 border-blue-400">
+        <div class="text-xs text-blue-700 dark:text-blue-300 mt-2 p-2 bg-blue-100 dark:bg-slate-700 rounded border-l-4 border-blue-400 dark:border-blue-500">
           <i class="pi pi-shield mr-1"></i>
           <strong>Importante:</strong> Estos montos NO se incluyen en el arqueo de caja físico
         </div>
@@ -439,16 +431,16 @@
         </div>
         <div class="text-xs mt-2" [class]="Math.abs(diferenciaCaja) > 5 ? 'text-red-700' : 'text-green-700'">
           <p *ngIf="diferenciaCaja > 5">
-            ℹ️ Sobra dinero: Verifique si hay ingresos no registrados o errores de conteo
+            Sobra dinero: Verifique si hay ingresos no registrados o errores de conteo
           </p>
           <p *ngIf="diferenciaCaja < -5">
-            ⚠️ Falta dinero: Revise gastos no registrados o posibles errores de conteo
+            Falta dinero: Revise gastos no registrados o posibles errores de conteo
           </p>
           <p *ngIf="Math.abs(diferenciaCaja) <= 5">
-            ✅ Diferencia aceptable: El cuadre está dentro del rango normal
+            Diferencia aceptable: El cuadre está dentro del rango normal
           </p>
           <p class="mt-1 font-medium">
-            🔍 Debe verificar y confirmar antes de cerrar la caja
+            Debe verificar y confirmar antes de cerrar la caja
           </p>
         </div>
       </div>
@@ -621,7 +613,7 @@
   <!-- DIÁLOGO DE PAGO EFECTIVO -->
   <p-dialog header="Pago en Efectivo" [(visible)]="mostrarDialogoPago" [modal]="true" [style]="{width:'400px'}">
     <div class="flex flex-col gap-4">
-      <div class="p-3 bg-gray-50 rounded">
+      <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded">
         <div class="flex justify-between text-lg font-bold">
           <span>Total a pagar:</span>
           <span class="text-primary-600">{{ formatearMoneda(calcularTotal()) }}</span>
@@ -666,7 +658,7 @@
       </div>
 
       <!-- Agregar pago -->
-      <div class="p-3 bg-gray-50 rounded">
+      <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded">
         <h6 class="font-bold mb-3">Agregar método de pago</h6>
         <div class="flex gap-2 mb-2">
           <p-select [(ngModel)]="metodoPagoTemporal" [options]="[
@@ -682,7 +674,7 @@
       <!-- Lista de pagos -->
       <div *ngIf="pagosMixtos.length > 0" class="flex flex-col gap-2">
         <h6 class="font-bold">Pagos agregados:</h6>
-        <div *ngFor="let pago of pagosMixtos; let i = index" class="flex justify-between items-center p-2 bg-white rounded border">
+        <div *ngFor="let pago of pagosMixtos; let i = index" class="flex justify-between items-center p-2 bg-white dark:bg-slate-800 rounded border dark:border-slate-700">
           <span class="font-medium">{{ getPaymentMethodName(pago.metodo) }}</span>
           <span class="font-mono">{{ formatearMoneda(pago.monto) }}</span>
           <button pButton icon="pi pi-trash" size="small" (click)="removerPagoMixto(i)" class="p-button-danger p-button-text"></button>
@@ -723,11 +715,17 @@
   <!-- DIÁLOGO DE ARQUEO -->
   <p-dialog header="Arqueo de Caja (Solo Consulta)" [(visible)]="mostrarDialogoArqueo" [modal]="true" [style]="{width:'500px'}" (onShow)="cargarDatosArqueo()">
     <div class="flex flex-col gap-4">
-      <p class="text-sm text-gray-600 mb-3">💡 Este arqueo es solo para consulta. El cuadre oficial se hace al cerrar caja.</p>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Este arqueo es solo para consulta. El cuadre oficial se realiza al cerrar caja.</p>
 
       <div *ngFor="let denom of denominaciones; trackBy: trackByDenominacion" class="flex items-center gap-3">
         <span class="w-16 font-mono">${{ denom.valor }}</span>
-        <input type="number" pInputText [(ngModel)]="denom.cantidad" min="0" class="w-20" (input)="denom.total = denom.valor * denom.cantidad">
+        <input
+          type="number"
+          pInputText
+          [ngModel]="denom.cantidad"
+          (ngModelChange)="actualizarDenominacion(denom, $event)"
+          min="0"
+          class="w-20">
         <span class="w-24 text-right font-mono">${{ denom.total.toFixed(2) }}</span>
       </div>
 
@@ -736,9 +734,9 @@
           <span>Total contado:</span>
           <span class="font-mono">${{ calcularTotalArqueo().toFixed(2) }}</span>
         </div>
-        <div class="flex justify-between text-sm text-gray-600 mt-2">
+        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
           <span>Efectivo esperado:</span>
-          <span class="font-mono">${{ (obtenerMontoInicialCaja() + ventasEfectivoSesionActual).toFixed(2) }}</span>
+          <span class="font-mono">${{ calcularEfectivoEsperadoArqueo().toFixed(2) }}</span>
         </div>
         <div class="flex justify-between font-semibold mt-1" [class]="calcularDiferenciaArqueo() >= 0 ? 'text-green-600' : 'text-red-600'">
           <span>Diferencia:</span>
@@ -764,15 +762,15 @@
         <p>No hay ventas registradas</p>
       </div>
       <div *ngIf="!cargandoHistorial && historialVentas.length > 0" class="max-h-96 overflow-y-auto">
-        <div *ngFor="let venta of historialVentas" class="border rounded p-3 mb-2 hover:bg-gray-50">
+        <div *ngFor="let venta of historialVentas" class="border dark:border-slate-700 rounded p-3 mb-2 hover:bg-gray-50 dark:hover:bg-slate-800">
           <div class="flex justify-between items-center">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <strong>Venta #{{ venta.id }}</strong>
                 <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{{ getPaymentMethodName(venta.payment_method) }}</span>
               </div>
-              <p class="text-sm text-gray-600">{{ venta.date_time | date:'dd/MM/yyyy HH:mm' }}</p>
-              <p class="text-sm text-gray-600" *ngIf="venta.client">Cliente: {{ venta.client }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300">{{ venta.date_time | date:'dd/MM/yyyy HH:mm' }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300" *ngIf="venta.client">Cliente: {{ venta.client }}</p>
             </div>
 
             <div class="text-right">
@@ -809,7 +807,7 @@
         <div class="flex justify-between items-center">
           <div>
             <h4 class="font-bold">{{ promocion.name }}</h4>
-            <p class="text-sm text-gray-600">{{ promocion.description }}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">{{ promocion.description }}</p>
             <div class="text-sm">
               <span *ngIf="promocion.type === 'percentage'">{{ promocion.discount_value }}% descuento</span>
               <span *ngIf="promocion.type === 'fixed'">${{ promocion.discount_value }} descuento</span>
@@ -829,7 +827,7 @@
   <p-dialog header="Firma del Cliente" [(visible)]="mostrarDialogoFirma" [modal]="true" [style]="{width:'500px'}">
     <div class="flex flex-col gap-4">
       <p>Por favor, solicite al cliente que firme en el recuadro:</p>
-      <div class="border-2 border-gray-300 rounded">
+      <div class="border-2 border-gray-300 dark:border-slate-600 rounded">
         <canvas #firmaCanvas
                 width="450"
                 height="200"

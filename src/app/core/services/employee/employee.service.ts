@@ -45,6 +45,10 @@ export class EmployeeService extends BaseApiService {
     return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}${id}/`);
   }
 
+  getEmployeeByUserId(userId: number): Observable<Employee> {
+    return this.get(`${API_CONFIG.ENDPOINTS.EMPLOYEES.BASE}by-user/${userId}/`);
+  }
+
   createEmployee(employee: Partial<Employee>): Observable<Employee> {
     return this.post(API_CONFIG.ENDPOINTS.EMPLOYEES.BASE, employee);
   }

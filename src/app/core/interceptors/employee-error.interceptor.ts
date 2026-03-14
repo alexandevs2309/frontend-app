@@ -14,7 +14,7 @@ export class EmployeeErrorInterceptor implements HttpInterceptor {
       catchError((error: HttpErrorResponse) => {
         // Solo manejar errores de endpoints de empleados y usuarios
         if (this.isEmployeeOrUserEndpoint(req.url)) {
-          this.handleEmployeeError(error, req.url);
+          this.handleEmployeeError(error, req);
         }
         
         return throwError(() => error);
@@ -26,7 +26,8 @@ export class EmployeeErrorInterceptor implements HttpInterceptor {
     return url.includes('/employees/') || url.includes('/auth/users/');
   }
 
-  private handleEmployeeError(error: HttpErrorResponse, url: string): void {
+  private handleEmployeeError(error: HttpErrorResponse, req: HttpRequest<any>): void {
+    const url = req.url;
     const isUserEndpoint = url.includes('/auth/users/');
     const isEmployeeEndpoint = url.includes('/employees/');
 
@@ -43,21 +44,13 @@ export class EmployeeErrorInterceptor implements HttpInterceptor {
 
     // Errores de validación de usuario
     if (isUserEndpoint && error.status === 400) {
-      if (error.error?.email) {
+      const details = this.extractValidationMessages(error.error);
+      if (details.length > 0) {
         this.messageService.add({
           severity: 'error',
-          summary: 'Email Inválido',
-          detail: Array.isArray(error.error.email) ? error.error.email[0] : error.error.email,
-          life: 5000
-        });
-      }
-      
-      if (error.error?.password) {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Contraseña Inválida',
-          detail: Array.isArray(error.error.password) ? error.error.password[0] : error.error.password,
-          life: 5000
+          summary: 'Datos invalidos',
+          detail: details.join(' | ').substring(0, 250),
+          life: 7000
         });
       }
       return;
@@ -101,5 +94,34 @@ export class EmployeeErrorInterceptor implements HttpInterceptor {
       });
       return;
     }
+  }
+
+  private extractValidationMessages(payload: any): string[] {
+    if (!payload) return [];
+
+    if (typeof payload === 'string') {
+      return [payload];
+    }
+
+    const direct = [payload.error, payload.message, payload.detail].filter((item) => typeof item === 'string' && item.trim());
+    if (direct.length > 0) {
+      return direct as string[];
+    }
+
+    if (typeof payload === 'object') {
+      return Object.entries(payload)
+        .flatMap(([field, value]) => {
+          if (Array.isArray(value)) {
+            return value.map((item) => `${field}: ${String(item)}`);
+          }
+          if (typeof value === 'string') {
+            return [`${field}: ${value}`];
+          }
+          return [];
+        })
+        .filter(Boolean);
+    }
+
+    return [];
   }
 }
