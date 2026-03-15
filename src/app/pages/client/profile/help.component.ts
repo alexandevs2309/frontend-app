@@ -214,7 +214,7 @@ export class HelpComponent {
     }
 
     supportEmail(): string {
-        return this.barbershopSettings.settings()?.contact?.email || 'soporte@auron-suite.com';
+        return this.barbershopSettings.settings()?.contact?.email || 'auronsuite.soporte@gmail.com';
     }
 
     supportPhone(): string {

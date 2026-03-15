@@ -169,6 +169,6 @@ export class RegistrationSuccess implements OnInit {
   }
 
   showEmailHelp() {
-    alert(`Si no recibiste el email en ${this.email}:\n\n1. Revisa tu carpeta de SPAM\n2. Verifica que el email esté escrito correctamente\n3. Contacta soporte: soporte@auron-suite.com`);
+    alert(`Si no recibiste el email en ${this.email}:\n\n1. Revisa tu carpeta de SPAM\n2. Verifica que el email esté escrito correctamente\n3. Contacta soporte: auronsuite.soporte@gmail.com`);
   }
 }

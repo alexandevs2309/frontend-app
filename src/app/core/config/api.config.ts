@@ -30,6 +30,7 @@ export const API_CONFIG = {
     SUBSCRIPTIONS: {
       BASE: '/subscriptions/',
       PLANS: '/subscriptions/plans/',
+      PUBLIC_PLANS: '/subscriptions/plans/public-catalog/',
       USER_SUBSCRIPTIONS: '/subscriptions/user-subscriptions/',
       AUDIT_LOGS: '/subscriptions/audit-logs/',
       MY_ACTIVE: '/subscriptions/me/active/',

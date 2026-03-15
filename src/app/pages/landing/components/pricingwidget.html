@@ -1,41 +1,40 @@
-<div id="pricing">
+<div id="pricing" class="pricing-shell">
     <div class="max-w-7xl mx-auto px-6 lg:px-8">
-        <div class="text-center mb-20">
-           
+        <div class="text-center mb-20 pricing-intro">
             <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 mb-4">
                 <i class="pi pi-tag mr-2"></i>
                 Planes y Precios
             </div>
-            <h2 class="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-6">
+            <h2 class="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-6 pricing-title">
                 Elige el plan perfecto para
-                <span class="text-indigo-600">tu barbería</span>
+                <span class="text-indigo-600">tu barberia</span>
             </h2>
             <p class="text-lg text-slate-600 dark:text-slate-300 max-w-4xl mx-auto">
-                Más de 340 peluquerías activas. Todos los planes incluyen soporte 24/7.
+                Planes claros, con limites y funciones alineados a lo que la plataforma soporta hoy.
             </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto pricing-grid">
             <div *ngFor="let plan of plans; let i = index"
-                 class="relative bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors"
+                 class="relative pricing-card bg-white dark:bg-slate-900 rounded-[28px] border border-slate-200 dark:border-slate-700 p-8 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] hover:-translate-y-1 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300"
+                 [ngClass]="getCardClass(plan.name)"
                  [class.ring-2]="isPopularPlan(plan.name)"
                  [class.ring-indigo-500]="isPopularPlan(plan.name)"
                  [class.border-indigo-500]="isPopularPlan(plan.name)"
                  [class.dark:border-indigo-400]="isPopularPlan(plan.name)">
 
-                <!-- Popular Badge -->
-                <div *ngIf="isPopularPlan(plan.name)" class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span class="bg-indigo-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                        Más popular
+                <div *ngIf="isPopularPlan(plan.name)" class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+                    <span class="pricing-popular-badge px-4 py-1.5 rounded-full text-sm font-semibold">
+                        Mas popular
                     </span>
                 </div>
 
-                <div class="text-center mb-8">
-                    <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
+                <div class="text-center mb-8 pricing-card__head" [class.pt-10]="isPopularPlan(plan.name)">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center pricing-icon-wrap">
                         <i [class]="getPlanIcon(plan.name)" class="text-2xl text-indigo-600"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{{ getPlanDisplayName(plan.name) }}</h3>
-                    <div class="mb-4">
+                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">{{ getPlanDisplayName(plan.name) }}</h3>
+                    <div class="mb-4 pricing-price">
                         <span class="text-4xl font-bold text-slate-900 dark:text-white">${{ +plan.price }}</span>
                         <span class="text-slate-600 dark:text-slate-400 ml-2">/ mes</span>
                     </div>
@@ -43,6 +42,20 @@
                 </div>
 
                 <div class="mb-8">
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-3">
+                        Lo esencial
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span *ngFor="let highlight of getPlanHighlights(plan)" class="inline-flex items-center rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 px-3 py-1 text-xs font-semibold">
+                            {{ highlight }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mb-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-3">
+                        Capacidades tecnicas
+                    </p>
                     <ul class="space-y-4">
                         <li *ngFor="let feature of getPlanFeatures(plan)" class="flex items-center text-slate-700 dark:text-slate-300">
                             <i class="pi pi-check-circle text-emerald-500 mr-3"></i>
@@ -51,33 +64,44 @@
                     </ul>
                 </div>
 
+                <div *ngIf="getPlanBenefits(plan).length" class="mb-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">
+                        Beneficios comerciales
+                    </p>
+                    <ul class="space-y-3">
+                        <li *ngFor="let benefit of getPlanBenefits(plan)" class="flex items-center text-slate-700 dark:text-slate-300">
+                            <i class="pi pi-briefcase text-indigo-500 mr-3"></i>
+                            <span>{{ benefit }}</span>
+                        </li>
+                    </ul>
+                </div>
+
                 <button pButton pRipple
                         [label]="getPlanButtonText(plan.name)"
                         (click)="selectPlan(plan.name, +plan.price)"
                         class="w-full py-3 text-base font-semibold transition-colors"
-                        [class]="isPopularPlan(plan.name) ? 
-                            'bg-indigo-600! text-white! hover:bg-indigo-700! border-0!' : 
+                        [class]="isPopularPlan(plan.name) ?
+                            'bg-indigo-600! text-white! hover:bg-indigo-700! border-0!' :
                             'bg-slate-100! dark:bg-slate-800! text-slate-900! dark:text-white! border! border-slate-300! dark:border-slate-600! hover:bg-slate-200! dark:hover:bg-slate-700!'">
                 </button>
 
                 <div *ngIf="showGuarantee(plan.name)" class="text-center mt-4">
                     <span class="text-slate-500 dark:text-slate-400 text-xs">
                         <i class="pi pi-shield-check mr-1"></i>
-                        Garantía de 30 días
+                        Garantia de 30 dias
                     </span>
                 </div>
             </div>
         </div>
 
-        <!-- Enterprise CTA -->
         <div class="mt-16 text-center">
-            <div class="bg-white dark:bg-slate-900 rounded-lg p-8 max-w-4xl mx-auto border border-slate-200 dark:border-slate-700">
+            <div class="pricing-enterprise bg-linear-to-br from-indigo-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 rounded-[28px] p-8 max-w-4xl mx-auto border border-slate-200 dark:border-indigo-500/30 shadow-[0_28px_90px_-56px_rgba(15,23,42,0.45)] dark:shadow-[0_36px_110px_-60px_rgba(15,23,42,0.9)]">
                 <div class="flex items-center justify-center mb-4">
                     <i class="pi pi-building text-3xl text-indigo-600 mr-4"></i>
-                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white">¿Tienes una cadena de barberías?</h3>
+                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Tienes una cadena de barberias?</h3>
                 </div>
                 <p class="text-slate-600 dark:text-slate-300 mb-6 text-lg">
-                    Planes empresariales con empleados ilimitados, múltiples ubicaciones y soporte dedicado 24/7
+                    Si necesitas una oferta a medida, podemos ayudarte a definir limites, migracion y acompanamiento comercial.
                 </p>
                 <button pButton pRipple
                         label="Contactar Ventas Empresariales"
@@ -85,37 +109,27 @@
                         class="bg-indigo-600! text-white! hover:bg-indigo-700! border-0! px-8! py-4! text-lg! font-semibold!">
                 </button>
                 <div class="mt-4">
-                    <span class="text-slate-500 dark:text-slate-400 text-sm">
+                    <span class="text-slate-500 dark:text-slate-300 text-sm">
                         <i class="pi pi-phone mr-2"></i>
-                        Respuesta en menos de 24 horas
+                        Te respondemos para coordinar una propuesta
                     </span>
                 </div>
             </div>
         </div>
 
-        <!-- FAQ Section -->
         <div class="mt-16 text-center">
-            <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-8">¿Preguntas frecuentes?</h3>
+            <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-8">Preguntas frecuentes</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 <div class="bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
-                    <h4 class="text-slate-900 dark:text-white font-semibold mb-2">¿Puedo cambiar de plan?</h4>
-                    <p class="text-slate-600 dark:text-slate-300 text-sm">Sí, puedes actualizar o degradar tu plan en cualquier momento desde tu panel de control.</p>
+                    <h4 class="text-slate-900 dark:text-white font-semibold mb-2">Puedo cambiar de plan?</h4>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm">Si, puedes actualizar o degradar tu plan en cualquier momento desde tu panel de control.</p>
                 </div>
                 <div class="bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
-                    <h4 class="text-slate-900 dark:text-white font-semibold mb-2">¿Hay período de prueba?</h4>
-                    <p class="text-slate-600 dark:text-slate-300 text-sm">Todos los planes pagos incluyen 14 días de prueba gratuita. No se requiere tarjeta de crédito.</p>
+                    <h4 class="text-slate-900 dark:text-white font-semibold mb-2">Hay periodo de prueba?</h4>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm">La disponibilidad y duracion de la prueba dependen de la configuracion activa del sistema.</p>
                 </div>
             </div>
         </div>
 
-                <div class="mt-12 text-center">
-            <div class="flex items-center justify-center space-x-4 text-xs text-slate-500 dark:text-slate-400">
-                <span class="flex items-center">
-                    <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></div>
-                    Sistema operativo
-                </span>
-                <span>•</span>
-            </div>
-        </div>
     </div>
 </div>

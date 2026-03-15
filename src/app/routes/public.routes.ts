@@ -27,6 +27,18 @@ export const publicRoutes: Routes = [
         loadComponent: () => import('../pages/legal/cookies.component').then(m => m.CookiesComponent)
     },
     {
+        path: 'billing',
+        loadComponent: () => import('../pages/legal/billing-policy.component').then(m => m.BillingPolicyComponent)
+    },
+    {
+        path: 'acceptable-use',
+        loadComponent: () => import('../pages/legal/acceptable-use.component').then(m => m.AcceptableUseComponent)
+    },
+    {
+        path: 'dpa',
+        loadComponent: () => import('../pages/legal/dpa.component').then(m => m.DpaComponent)
+    },
+    {
         path: 'about',
         loadComponent: () => import('../pages/info/about.component').then(m => m.AboutComponent)
     },

@@ -1,11 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
-import { RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { AnimationService } from '../../../shared/services/animation.service';
 import { LandingPublicService, PublicPlan } from '../../../core/services/landing-public.service';
+import { AnimationService } from '../../../shared/services/animation.service';
 
 @Component({
     selector: 'pricing-widget',
@@ -24,8 +23,9 @@ export class PricingWidget implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit() {
-        // Datos estáticos - render instantáneo, sin HTTP calls
-        this.plans = this.landingService.getPlans();
+        this.landingService.getPlans().subscribe((plans) => {
+            this.plans = plans;
+        });
     }
 
     ngOnDestroy() {
@@ -39,71 +39,79 @@ export class PricingWidget implements OnInit, OnDestroy {
 
     getPlanButtonText(name: string): string {
         const texts: { [key: string]: string } = {
-            'free': 'Comenzar Gratis',
-            'basic': 'Elegir Plan',
-            'standard': 'Elegir Plan',
-            'premium': 'Elegir Plan',
-            'enterprise': 'Contactar Ventas'
+            free: 'Comenzar Gratis',
+            basic: 'Elegir Plan',
+            standard: 'Elegir Plan',
+            premium: 'Elegir Plan',
+            enterprise: 'Contactar Ventas'
         };
         return texts[name] || 'Elegir Plan';
     }
 
     getPlanFeatures(plan: PublicPlan): string[] {
-        return plan.features;
+        return plan.technicalFeatures;
     }
-    
+
+    getPlanHighlights(plan: PublicPlan): string[] {
+        return plan.highlightFeatures;
+    }
+
+    getPlanBenefits(plan: PublicPlan): string[] {
+        return plan.commercialBenefits;
+    }
+
     getPlanDescription(name: string): string {
         const descriptions: { [key: string]: string } = {
-            'free': 'Prueba sin compromiso',
-            'basic': 'Para barberías pequeñas',
-            'standard': 'Para barberías en crecimiento',
-            'premium': 'Para barberías establecidas',
-            'enterprise': 'Para cadenas grandes'
+            free: 'Prueba sin compromiso',
+            basic: 'Para equipos pequenos',
+            standard: 'Para negocios en crecimiento',
+            premium: 'Para operaciones de mayor escala',
+            enterprise: 'Para cadenas grandes'
         };
         return descriptions[name] || 'Plan personalizado';
     }
-    
+
     getPlanIcon(name: string): string {
         const icons: { [key: string]: string } = {
-            'free': 'pi pi-gift',
-            'basic': 'pi pi-home',
-            'standard': 'pi pi-star',
-            'premium': 'pi pi-crown',
-            'enterprise': 'pi pi-building'
+            free: 'pi pi-gift',
+            basic: 'pi pi-home',
+            standard: 'pi pi-star',
+            premium: 'pi pi-crown',
+            enterprise: 'pi pi-building'
         };
         return icons[name] || 'pi pi-star';
     }
-    
-    getPlanButtonClass(name: string): string {
-        if (this.isPopularPlan(name)) {
-            return 'bg-linear-to-r from-yellow-400 to-orange-500 border-0 text-black hover:from-yellow-500 hover:to-orange-600';
+
+    getCardClass(name: string): string {
+        if (!this.isPopularPlan(name)) {
+            return '';
         }
-        return 'bg-white/20 border-2 border-white/30 text-white hover:bg-white/30';
+
+        return 'pricing-card--popular bg-linear-to-b from-indigo-50 via-white to-sky-50 dark:from-indigo-950 dark:via-slate-900 dark:to-slate-900 shadow-[0_36px_110px_-48px_rgba(79,70,229,0.6)]';
     }
-    
+
     isPopularPlan(name: string): boolean {
         const plan = this.plans.find(p => p.name === name);
         return plan?.popular || false;
     }
-    
-    showGuarantee(name: string): boolean {
-        return name !== 'free';
+
+    showGuarantee(_name: string): boolean {
+        return false;
     }
-    
+
     selectPlan(planName: string, price: number) {
         this.router.navigate(['/auth/register'], {
-            queryParams: { plan: planName.toLowerCase(), price: price }
+            queryParams: { plan: planName.toLowerCase(), price }
         });
     }
-    
+
     contactEnterprise() {
-        // Scroll to contact section or open contact modal
         const contactSection = document.getElementById('contact');
         if (contactSection) {
             contactSection.scrollIntoView({ behavior: 'smooth' });
-        } else {
-            // Fallback: navigate to contact page or open email
-            window.location.href = 'mailto:ventas@auron-suite.com?subject=Consulta Plan Empresarial';
+            return;
         }
+
+        window.location.href = 'mailto:auronsuite.soporte@gmail.com?subject=Consulta Plan Empresarial';
     }
 }

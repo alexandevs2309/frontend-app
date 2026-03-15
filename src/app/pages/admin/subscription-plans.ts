@@ -31,6 +31,7 @@ interface SubscriptionPlan {
     allows_multiple_branches?: boolean;
     features?: Record<string, boolean> | string[];
     features_list?: string[];
+    commercial_benefits?: string[];
     is_active?: boolean;
     created_at?: string;
     updated_at?: string;
@@ -55,9 +56,7 @@ interface SubscriptionPlan {
         InputIconModule,
         IconFieldModule,
         ConfirmDialogModule,
-
     ],
-
     template: `
         <p-toolbar styleClass="mb-6 rounded-2xl shadow-lg border-0">
             <ng-template #start>
@@ -66,7 +65,7 @@ interface SubscriptionPlan {
                         <i class="pi pi-credit-card text-white"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 m-0">Planes de Suscripción</h2>
+                        <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 m-0">Planes de Suscripcion</h2>
                         <p class="text-sm text-muted-color m-0">Gestiona los planes del sistema</p>
                     </div>
                 </div>
@@ -75,18 +74,19 @@ interface SubscriptionPlan {
                 <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800">
                     <div class="flex items-center gap-2">
                         <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-sm"></i>
-                        <p class="text-xs text-blue-700 dark:text-blue-300 m-0">Los planes se crean automáticamente. Puedes editar precios y límites.</p>
+                        <p class="text-xs text-blue-700 dark:text-blue-300 m-0">Las features tecnicas y los beneficios comerciales se administran por separado.</p>
                     </div>
                 </div>
             </ng-template>
         </p-toolbar>
 
-        <p-table #dt
+        <p-table
+            #dt
             [value]="plans()"
             [rows]="10"
             [paginator]="true"
             [globalFilterFields]="['name', 'description', 'price']"
-            [tableStyle]="{ 'min-width': '75rem' }"
+            [tableStyle]="{ 'min-width': '80rem' }"
             [(selection)]="selectedPlans"
             [rowHover]="true"
             dataKey="id"
@@ -98,14 +98,14 @@ interface SubscriptionPlan {
         >
             <ng-template #caption>
                 <div class="flex items-center justify-between p-4 bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20">
-                    <h5 class="m-0 font-bold text-lg">Gestionar Planes de Suscripción</h5>
+                    <h5 class="m-0 font-bold text-lg">Gestionar Planes de Suscripcion</h5>
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
-                        <input 
-                            pInputText 
-                            type="text" 
-                            (input)="onGlobalFilter(dt, $event)" 
-                            placeholder="Buscar..." 
+                        <input
+                            pInputText
+                            type="text"
+                            (input)="onGlobalFilter(dt, $event)"
+                            placeholder="Buscar..."
                             class="rounded-xl border-2 focus:border-emerald-500"
                         />
                     </p-iconfield>
@@ -113,12 +113,11 @@ interface SubscriptionPlan {
             </ng-template>
             <ng-template #header>
                 <tr>
-
                     <th pSortableColumn="name" style="min-width:12rem">
                         Name
                         <p-sortIcon field="name" />
                     </th>
-                    <th style="min-width:20rem">Description</th>
+                    <th style="min-width:18rem">Description</th>
                     <th pSortableColumn="price" style="min-width:8rem">
                         Price
                         <p-sortIcon field="price" />
@@ -127,6 +126,7 @@ interface SubscriptionPlan {
                     <th style="min-width:10rem">Max-Users</th>
                     <th style="min-width:8rem">Multi-Sucursal</th>
                     <th style="min-width:15rem">Features</th>
+                    <th style="min-width:15rem">Benefits</th>
                     <th pSortableColumn="is_active" style="min-width:8rem">
                         Status
                         <p-sortIcon field="is_active" />
@@ -136,7 +136,6 @@ interface SubscriptionPlan {
             </ng-template>
             <ng-template #body let-plan>
                 <tr>
-
                     <td>{{ plan.name }}</td>
                     <td>{{ plan.description }}</td>
                     <td>{{ plan.price | currency:'USD' }}</td>
@@ -150,23 +149,28 @@ interface SubscriptionPlan {
                         <span *ngIf="getFeaturesList(plan.features || plan.features_list).length > 2" class="text-muted">+{{ getFeaturesList(plan.features || plan.features_list).length - 2 }} more</span>
                     </td>
                     <td>
+                        <span *ngFor="let benefit of (plan.commercial_benefits || []).slice(0, 2); trackBy: trackByFeature" class="badge bg-primary me-1">{{ benefit }}</span>
+                        <span *ngIf="(plan.commercial_benefits || []).length > 2" class="text-muted">+{{ (plan.commercial_benefits || []).length - 2 }} more</span>
+                        <span *ngIf="!(plan.commercial_benefits || []).length" class="text-muted">-</span>
+                    </td>
+                    <td>
                         <p-tag [value]="plan.is_active ? 'Activo' : 'Inactivo'" [severity]="plan.is_active ? 'success' : 'danger'" />
                     </td>
                     <td>
-                        <p-button 
-                            icon="pi pi-pencil" 
-                            [rounded]="true" 
-                            [outlined]="true" 
+                        <p-button
+                            icon="pi pi-pencil"
+                            [rounded]="true"
+                            [outlined]="true"
                             severity="info"
                             styleClass="hover:scale-110 transition-transform"
-                            (click)="editPlan(plan)" 
+                            (click)="editPlan(plan)"
                         />
                     </td>
                 </tr>
             </ng-template>
         </p-table>
 
-        <p-dialog [(visible)]="planDialog" [style]="{ width: '600px' }" header="Subscription Plan Details" [modal]="true">
+        <p-dialog [(visible)]="planDialog" [style]="{ width: '640px' }" header="Subscription Plan Details" [modal]="true">
             <ng-template #content>
                 <div class="flex flex-col gap-6">
                     <div class="grid grid-cols-2 gap-4">
@@ -202,18 +206,32 @@ interface SubscriptionPlan {
                     </div>
 
                     <div>
-                        <label class="block font-bold mb-3">Features</label>
-                        <div class="flex flex-col gap-2">
-                            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Características del Plan:</p>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div *ngFor="let feature of getFeaturesList(plan.features || plan.features_list); trackBy: trackByFeature" class="flex items-center gap-2">
-                                        <i class="pi pi-check text-green-500"></i>
-                                        <span class="text-sm">{{ feature }}</span>
-                                    </div>
+                        <label class="block font-bold mb-3">Features tecnicas</label>
+                        <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Capacidades del sistema controladas por el plan:</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div *ngFor="let feature of getFeaturesList(plan.features || plan.features_list); trackBy: trackByFeature" class="flex items-center gap-2">
+                                    <i class="pi pi-check text-green-500"></i>
+                                    <span class="text-sm">{{ feature }}</span>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-2">Las características se configuran automáticamente</p>
                             </div>
+                            <p class="text-xs text-gray-500 mt-2">Las features tecnicas se configuran automaticamente.</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold mb-3">Beneficios comerciales</label>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/40">
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Beneficios operativos o comerciales no gobernados por feature flags:</p>
+                            <div *ngIf="(plan.commercial_benefits || []).length; else noBenefits" class="flex flex-col gap-2">
+                                <div *ngFor="let benefit of plan.commercial_benefits || []; trackBy: trackByFeature" class="flex items-center gap-2">
+                                    <i class="pi pi-briefcase text-blue-500"></i>
+                                    <span class="text-sm">{{ benefit }}</span>
+                                </div>
+                            </div>
+                            <ng-template #noBenefits>
+                                <p class="text-sm text-gray-500 m-0">Este plan no tiene beneficios comerciales adicionales definidos.</p>
+                            </ng-template>
                         </div>
                     </div>
 
@@ -276,16 +294,10 @@ export class SubscriptionPlans implements OnInit {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
 
-    // Removed - Plans are created automatically via management command
-
     editPlan(plan: SubscriptionPlan) {
         this.plan = { ...plan };
         this.planDialog = true;
     }
-
-    // Removed - Plans cannot be deleted from frontend
-
-    // Removed - Plans cannot be deleted from frontend
 
     hideDialog() {
         this.planDialog = false;
@@ -300,9 +312,9 @@ export class SubscriptionPlans implements OnInit {
         if (typeof features === 'object' && features !== null) {
             try {
                 return Object.entries(features)
-                    .filter(([key, value]) => value === true)
+                    .filter(([_, value]) => value === true)
                     .map(([key]) => this.translateFeature(key));
-            } catch (error) {
+            } catch {
                 return [];
             }
         }
@@ -311,20 +323,22 @@ export class SubscriptionPlans implements OnInit {
 
     private translateFeature(key: string): string {
         const translations: { [key: string]: string } = {
-            'appointments': 'Gestión de Citas',
-            'basic_reports': 'Reportes Básicos',
-            'inventory': 'Gestión de Inventario',
-            'advanced_reports': 'Reportes Avanzados',
-            'multi_location': 'Múltiples Ubicaciones',
-            'api_access': 'Acceso a API',
-            'custom_branding': 'Marca Personalizada',
-            'priority_support': 'Soporte Prioritario'
+            appointments: 'Gestion de Citas',
+            basic_reports: 'Reportes Basicos',
+            inventory: 'Gestion de Inventario',
+            advanced_reports: 'Reportes Avanzados',
+            multi_location: 'Multiples Ubicaciones',
+            api_access: 'Acceso a API',
+            custom_branding: 'Marca Personalizada',
+            priority_support: 'Soporte Prioritario',
+            cash_register: 'Caja y Ventas',
+            client_history: 'Historial de Clientes'
         };
         return translations[key] || key;
     }
 
     getMultiBranchText(plan: SubscriptionPlan): string {
-        return plan.allows_multiple_branches ? 'Sí' : 'No';
+        return plan.allows_multiple_branches ? 'Si' : 'No';
     }
 
     getMultiBranchSeverity(plan: SubscriptionPlan): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
@@ -338,7 +352,6 @@ export class SubscriptionPlans implements OnInit {
             this.saving.set(true);
 
             if (this.plan.id) {
-                // Update existing plan - name es read-only
                 this.subscriptionService.updatePlan(this.plan.id, {
                     description: this.plan.description,
                     price: this.plan.price,
@@ -375,8 +388,8 @@ export class SubscriptionPlans implements OnInit {
         return plan.id || index;
     }
 
-    trackByFeature(index: number, feature: string): any {
-        return feature || index;
+    trackByFeature(index: number, value: string): any {
+        return value || index;
     }
 
     private showErrorMessage(message: string, error?: any): void {
