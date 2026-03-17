@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule, DatePipe, JsonPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, JsonPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
@@ -30,7 +30,7 @@ interface DiagnosticFinding {
     selector: 'app-tenant-detail',
     standalone: true,
     imports: [
-        CommonModule,
+        CurrencyPipe,
         FormsModule,
         CardModule,
         ButtonModule,
@@ -91,7 +91,7 @@ interface DiagnosticFinding {
                     <div><strong>Nombre:</strong> {{ tenant()?.name || '-' }}</div>
                     <div><strong>Subdominio:</strong> {{ tenant()?.subdomain || '-' }}</div>
                     <div><strong>Contacto:</strong> {{ tenant()?.contact_email || '-' }}</div>
-                    <div><strong>Plan actual:</strong> {{ tenant()?.subscription_plan?.name || tenant()?.plan_type || '-' }}</div>
+                    <div><strong>Plan actual:</strong> {{ getTenantPlanDisplayName() }}</div>
                     <div><strong>Límites:</strong> Users {{ tenant()?.max_users || 0 }} / Employees {{ tenant()?.max_employees || 0 }}</div>
                     <div><strong>Creado:</strong> {{ tenant()?.created_at ? (tenant()?.created_at | date:'dd/MM/yyyy HH:mm') : '-' }}</div>
                 </div>
@@ -119,31 +119,53 @@ interface DiagnosticFinding {
                         <p-select
                             [(ngModel)]="selectedPlanId"
                             [options]="planOptions()"
-                            optionLabel="name"
+                            optionLabel="displayName"
                             optionValue="id"
                             placeholder="Seleccionar plan"
                         />
                     </div>
-                    <p-button label="Aplicar" icon="pi pi-check" (onClick)="applyPlanChange()" [disabled]="!selectedPlanId" [loading]="saving()" />
+                    <p-button label="Aplicar" icon="pi pi-check" (onClick)="applyPlanChange()" [disabled]="!canApplyPlanChange()" [loading]="saving()" />
                 </div>
+
+                @if (selectedPlanPreview(); as preview) {
+                <div class="mt-4 p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                    <div class="font-semibold mb-2">Impacto del cambio de plan</div>
+                    <div class="text-sm space-y-2">
+                        <div><strong>Nuevo plan:</strong> {{ preview.display_name || preview.name || '-' }}</div>
+                        <div><strong>Precio:</strong> {{ preview.price | currency:'USD' }}</div>
+                        <div><strong>Nuevos límites:</strong> Usuarios {{ formatLimit(preview.max_users) }} / Empleados {{ formatLimit(preview.max_employees) }}</div>
+                        <div><strong>Uso actual:</strong> Usuarios {{ currentUsersCount() }} / Empleados {{ currentEmployeesCountLabel() }}</div>
+                        <div><strong>Sucursales múltiples:</strong> {{ preview.allows_multiple_branches ? 'Sí' : 'No' }}</div>
+                        @if (isSelectedPlanCurrent()) {
+                            <div class="text-amber-700 dark:text-amber-300">Este tenant ya tiene asignado ese plan.</div>
+                        }
+                        @if (selectedPlanCreatesUserOverage()) {
+                            <div class="text-red-700 dark:text-red-300">Advertencia: el tenant ya supera el límite de usuarios del plan seleccionado.</div>
+                        }
+                        @if (selectedPlanCreatesEmployeeRisk()) {
+                            <div class="text-slate-500 dark:text-slate-400">Nota: no hay conteo de empleados en este panel, así que conviene validar ese límite manualmente antes de aplicar el cambio.</div>
+                        }
+                        <div class="text-slate-500 dark:text-slate-400">El cambio actualiza el plan del tenant y sus límites operativos inmediatamente.</div>
+                    </div>
+                </div>
+                }
             </p-card>
         </div>
 
         <p-card header="Diagnóstico Asistido" styleClass="mb-6">
-            <div class="space-y-3" *ngIf="diagnostics().length > 0; else noFindings">
-                <div
-                    *ngFor="let finding of diagnostics(); trackBy: trackByDiagnostic"
-                    class="p-3 rounded border-l-4"
-                    [class]="getDiagnosticClass(finding.severity)"
-                >
-                    <div class="font-semibold">{{ finding.title }}</div>
-                    <div class="text-sm">{{ finding.detail }}</div>
-                    <div class="text-xs mt-1 text-gray-600"><strong>Acción sugerida:</strong> {{ finding.action }}</div>
+            @if (diagnostics().length > 0) {
+                <div class="space-y-3">
+                    @for (finding of diagnostics(); track finding.title) {
+                        <div class="p-3 rounded border-l-4" [class]="getDiagnosticClass(finding.severity)">
+                            <div class="font-semibold">{{ finding.title }}</div>
+                            <div class="text-sm">{{ finding.detail }}</div>
+                            <div class="text-xs mt-1 text-gray-600"><strong>Acción sugerida:</strong> {{ finding.action }}</div>
+                        </div>
+                    }
                 </div>
-            </div>
-            <ng-template #noFindings>
+            } @else {
                 <div class="text-green-700">No se detectaron hallazgos críticos para este tenant.</div>
-            </ng-template>
+            }
         </p-card>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -177,10 +199,12 @@ interface DiagnosticFinding {
                     <div><strong>Inicio:</strong> {{ tenantSubscription()?.start_date ? (tenantSubscription()?.start_date | date:'dd/MM/yyyy') : '-' }}</div>
                     <div><strong>Fin:</strong> {{ tenantSubscription()?.end_date ? (tenantSubscription()?.end_date | date:'dd/MM/yyyy') : '-' }}</div>
                 </div>
-                <div class="mt-4" *ngIf="tenantStats()">
-                    <strong>Stats:</strong>
-                    <pre class="text-xs bg-gray-50 dark:bg-gray-800 p-2 rounded mt-2 overflow-auto">{{ tenantStats() | json }}</pre>
-                </div>
+                @if (tenantStats()) {
+                    <div class="mt-4">
+                        <strong>Stats:</strong>
+                        <pre class="text-xs bg-gray-50 dark:bg-gray-800 p-2 rounded mt-2 overflow-auto">{{ tenantStats() | json }}</pre>
+                    </div>
+                }
             </p-card>
         </div>
 
@@ -238,12 +262,11 @@ interface DiagnosticFinding {
                     </div>
                 </div>
 
-                <div
-                    *ngIf="outstandingInvoices().length === 0"
-                    class="p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/10 text-green-800 dark:text-green-200 text-sm mb-3"
-                >
-                    Sin pendientes, vencidas o fallidas.
-                </div>
+                @if (outstandingInvoices().length === 0) {
+                    <div class="p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/10 text-green-800 dark:text-green-200 text-sm mb-3">
+                        Sin pendientes, vencidas o fallidas.
+                    </div>
+                }
 
                 <p-table [value]="outstandingInvoices()" [tableStyle]="{ 'min-width': '100%' }">
                     <ng-template #header>
@@ -411,7 +434,11 @@ export class TenantDetail implements OnInit {
             next: (data: any) => {
                 const plans = Array.isArray(data) ? data : data?.results || [];
                 this.plans.set(plans);
-                this.planOptions.set(plans.map((p: any) => ({ id: p.id, name: p.name })));
+                this.planOptions.set(plans.map((p: any) => ({
+                    id: p.id,
+                    name: p.name,
+                    displayName: p.display_name || p.name
+                })));
             },
             error: () => {
                 this.planOptions.set([]);
@@ -421,7 +448,7 @@ export class TenantDetail implements OnInit {
 
     applyPlanChange(): void {
         const id = this.tenantId();
-        if (!id || !this.selectedPlanId) return;
+        if (!id || !this.selectedPlanId || !this.canApplyPlanChange()) return;
 
         this.saving.set(true);
         this.tenantService.updateTenant(id, { subscription_plan: this.selectedPlanId }).subscribe({
@@ -780,6 +807,67 @@ export class TenantDetail implements OnInit {
     private isTenantAccessBlocked(): boolean {
         const tenant = this.tenant();
         return tenant?.is_active === false || tenant?.subscription_status === 'suspended';
+    }
+
+    selectedPlanPreview(): any | null {
+        if (!this.selectedPlanId) return null;
+        return this.plans().find((plan) => plan?.id === this.selectedPlanId) || null;
+    }
+
+    currentTenantPlanId(): number | null {
+        const tenant = this.tenant();
+        const planId = tenant?.subscription_plan?.id || tenant?.subscription_plan || null;
+        return typeof planId === 'number' ? planId : Number(planId) || null;
+    }
+
+    isSelectedPlanCurrent(): boolean {
+        return !!this.selectedPlanId && this.selectedPlanId === this.currentTenantPlanId();
+    }
+
+    canApplyPlanChange(): boolean {
+        return !!this.selectedPlanId && !this.isSelectedPlanCurrent();
+    }
+
+    getTenantPlanDisplayName(): string {
+        const tenant = this.tenant();
+        const currentPlan = this.plans().find((plan) => plan?.id === this.currentTenantPlanId());
+        return (
+            currentPlan?.display_name ||
+            tenant?.subscription_plan?.display_name ||
+            tenant?.subscription_plan?.name ||
+            tenant?.plan_type ||
+            '-'
+        );
+    }
+
+    formatLimit(limit: number | null | undefined): string {
+        return !limit ? 'Ilimitado' : String(limit);
+    }
+
+    currentUsersCount(): number {
+        return Number(this.tenantStats()?.current_users ?? this.users().length ?? 0);
+    }
+
+    currentEmployeesCountLabel(): string {
+        const currentEmployees = this.tenantStats()?.current_employees;
+        if (typeof currentEmployees === 'number') {
+            return String(currentEmployees);
+        }
+        return 'No disponible';
+    }
+
+    selectedPlanCreatesUserOverage(): boolean {
+        const selectedPlan = this.selectedPlanPreview();
+        if (!selectedPlan || !selectedPlan.max_users) return false;
+        return this.currentUsersCount() > selectedPlan.max_users;
+    }
+
+    selectedPlanCreatesEmployeeRisk(): boolean {
+        const selectedPlan = this.selectedPlanPreview();
+        const currentEmployees = this.tenantStats()?.current_employees;
+        if (!selectedPlan || !selectedPlan.max_employees) return false;
+        if (typeof currentEmployees !== 'number') return true;
+        return currentEmployees > selectedPlan.max_employees;
     }
 
     private toDate(value: any): Date | null {

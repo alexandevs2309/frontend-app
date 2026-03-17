@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
@@ -18,7 +18,7 @@ import { BillingService } from '../../core/services/billing.service';
 @Component({
     selector: 'app-admin-support',
     standalone: true,
-    imports: [CommonModule, FormsModule, CardModule, InputTextModule, ButtonModule, TableModule, TagModule, ToastModule, DatePipe],
+    imports: [FormsModule, CardModule, InputTextModule, ButtonModule, TableModule, TagModule, ToastModule, DatePipe],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -93,10 +93,18 @@ import { BillingService } from '../../core/services/billing.service';
                         </td>
                     </tr>
                 </ng-template>
+                <ng-template #emptymessage>
+                    <tr>
+                        <td colspan="6" class="text-center text-sm text-gray-500 py-6">
+                            No hay tenants que coincidan con la búsqueda.
+                        </td>
+                    </tr>
+                </ng-template>
             </p-table>
         </p-card>
 
-        <p-card *ngIf="selectedTenant()" [header]="'Diagnóstico Rápido: ' + selectedTenant().name">
+        @if (selectedTenant()) {
+        <p-card [header]="'Diagnóstico Rápido: ' + selectedTenant().name">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div class="p-3 rounded bg-gray-50 dark:bg-gray-800">
                     <div class="text-sm text-gray-500">Facturas vencidas</div>
@@ -129,8 +137,16 @@ import { BillingService } from '../../core/services/billing.service';
                         <td>{{ log.description || '-' }}</td>
                     </tr>
                 </ng-template>
+                <ng-template #emptymessage>
+                    <tr>
+                        <td colspan="4" class="text-center text-sm text-gray-500 py-6">
+                            No hay registros recientes para este tenant.
+                        </td>
+                    </tr>
+                </ng-template>
             </p-table>
         </p-card>
+        }
     `
 })
 export class AdminSupport implements OnInit {
@@ -204,8 +220,8 @@ export class AdminSupport implements OnInit {
         this.selectedTenant.set(tenant);
 
         const invoices$ = this.billingService
-            .getInvoices({ tenant: tenantId })
-            .pipe(catchError(() => this.billingService.getInvoices().pipe(catchError(() => of([])))));
+            .getInvoices({ tenant: tenantId, page_size: 500 })
+            .pipe(catchError(() => of([])));
 
         forkJoin({
             logs: this.activityLogService.getAuditLogs({ tenant: tenantId, page_size: 20 }).pipe(catchError(() => of({ results: [] }))),

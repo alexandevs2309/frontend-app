@@ -118,12 +118,13 @@ interface User {
                         />
                     </p-iconfield>
                 </div>
-                <div
-                    *ngIf="isSuperAdminView() && !selectedTenantFilter"
-                    class="mx-4 mb-4 p-3 rounded border border-amber-200 bg-amber-50 text-amber-800 text-sm"
-                >
-                    Selecciona un tenant para ver y gestionar usuarios.
-                </div>
+                @if (isSuperAdminView() && !selectedTenantFilter) {
+                    <div
+                        class="mx-4 mb-4 p-3 rounded border border-amber-200 bg-amber-50 text-amber-800 text-sm"
+                    >
+                        Selecciona un tenant para ver y gestionar usuarios.
+                    </div>
+                }
             </ng-template>
             <ng-template #header>
                 <tr>
@@ -201,13 +202,17 @@ interface User {
                     <div>
                         <label for="email" class="block font-bold mb-3">Email</label>
                         <input type="email" pInputText id="email" [(ngModel)]="user.email" required autofocus fluid />
-                        <small class="text-red-500" *ngIf="submitted && !user.email">Email is required.</small>
+                        @if (submitted && !user.email) {
+                            <small class="text-red-500">Email is required.</small>
+                        }
                     </div>
 
                     <div>
                         <label for="full_name" class="block font-bold mb-3">Full Name</label>
                         <input type="text" pInputText id="full_name" [(ngModel)]="user.full_name" required fluid />
-                        <small class="text-red-500" *ngIf="submitted && !user.full_name">Name is required.</small>
+                        @if (submitted && !user.full_name) {
+                            <small class="text-red-500">Name is required.</small>
+                        }
                     </div>
 
                     <div>
@@ -215,23 +220,35 @@ interface User {
                         <p-select [(ngModel)]="user.role" inputId="role" [options]="roleOptions()" optionLabel="label" optionValue="value" placeholder="Select Role" fluid />
                     </div>
 
-                    <div *ngIf="requiresTenant(user.role)">
-                        <label for="tenant" class="block font-bold mb-3">Tenant</label>
-                        <p-select [(ngModel)]="user.tenant" inputId="tenant" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Select Tenant" fluid />
-                        <small class="text-red-500" *ngIf="submitted && requiresTenant(user.role) && !user.tenant">Tenant is required for this role.</small>
-                    </div>
+                    @if (requiresTenant(user.role)) {
+                        <div>
+                            <label for="tenant" class="block font-bold mb-3">Tenant</label>
+                            <p-select [(ngModel)]="user.tenant" inputId="tenant" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Select Tenant" fluid />
+                            @if (submitted && requiresTenant(user.role) && !user.tenant) {
+                                <small class="text-red-500">Tenant is required for this role.</small>
+                            }
+                        </div>
+                    }
 
-                    <div *ngIf="!user.id">
-                        <label for="password" class="block font-bold mb-3">Password</label>
-                        <input type="password" pInputText id="password" [(ngModel)]="user.password" required fluid />
-                        <small class="text-red-500" *ngIf="submitted && !user.password && !user.id">Password is required for new users.</small>
-                        <small class="text-red-500" *ngIf="submitted && !!user.password && !isValidPassword(user.password)">
-                            Password must have at least 8 characters.
-                        </small>
-                        <small class="text-surface-500 block mt-2" *ngIf="!submitted || !user.password">
-                            Minimum 8 characters.
-                        </small>
-                    </div>
+                    @if (!user.id) {
+                        <div>
+                            <label for="password" class="block font-bold mb-3">Password</label>
+                            <input type="password" pInputText id="password" [(ngModel)]="user.password" required fluid />
+                            @if (submitted && !user.password && !user.id) {
+                                <small class="text-red-500">Password is required for new users.</small>
+                            }
+                            @if (submitted && !!user.password && !isValidPassword(user.password)) {
+                                <small class="text-red-500">
+                                    Password must have at least 8 characters.
+                                </small>
+                            }
+                            @if (!submitted || !user.password) {
+                                <small class="text-surface-500 block mt-2">
+                                    Minimum 8 characters.
+                                </small>
+                            }
+                        </div>
+                    }
 
                     <div class="flex items-center gap-2">
                         <input type="checkbox" id="is_active" [(ngModel)]="user.is_active" />

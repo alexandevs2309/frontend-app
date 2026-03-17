@@ -1,11 +1,10 @@
 import { Component, inject, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { BarbershopSettingsService } from '../services/barbershop-settings.service';
 
 @Component({
   selector: 'app-business-hours',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="bg-white rounded-lg p-4 shadow-sm">
       <h3 class="font-semibold mb-3 flex items-center gap-2">
@@ -13,12 +12,14 @@ import { BarbershopSettingsService } from '../services/barbershop-settings.servi
         Horarios de Atención
       </h3>
       <div class="space-y-2">
-        <div *ngFor="let day of daysWithHours()" class="flex justify-between text-sm">
-          <span class="font-medium">{{ day.label }}</span>
-          <span [class]="day.closed ? 'text-red-500' : 'text-green-600'">
-            {{ day.closed ? 'Cerrado' : day.open + ' - ' + day.close }}
-          </span>
-        </div>
+        @for (day of daysWithHours(); track day.key) {
+          <div class="flex justify-between text-sm">
+            <span class="font-medium">{{ day.label }}</span>
+            <span [class]="day.closed ? 'text-red-500' : 'text-green-600'">
+              {{ day.closed ? 'Cerrado' : day.open + ' - ' + day.close }}
+            </span>
+          </div>
+        }
       </div>
     </div>
   `

@@ -1,5 +1,4 @@
 import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MessageService } from 'primeng/api';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -8,11 +7,12 @@ import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SystemMonitorService, SystemHealth, RevenueAlert } from '../../core/services/system-monitor.service';
+import { DatePipe } from '@angular/common';
 
 @Component({
     selector: 'app-system-monitor',
     standalone: true,
-    imports: [CommonModule, CardModule, ButtonModule, TagModule, TableModule, ToastModule, ProgressBarModule],
+    imports: [CardModule, ButtonModule, TagModule, TableModule, ToastModule, ProgressBarModule, DatePipe],
     template: `
         <div class="grid grid-cols-12 gap-6">
             <!-- Header -->
@@ -110,14 +110,18 @@ import { SystemMonitorService, SystemHealth, RevenueAlert } from '../../core/ser
                                 </td>
                                 <td>
                                     <p-tag [value]="service.status" [severity]="getServiceSeverity(service.status)" />
+                                    @if (isNotConfigured(service.error_message)) {
+                                        <div class="text-xs text-amber-600 mt-1">No configurado</div>
+                                    }
                                 </td>
                                 <td>{{ service.response_time || 'N/A' }}ms</td>
                                 <td>{{ service.last_check | date: 'dd/MM/yyyy HH:mm' }}</td>
                                 <td>
-                                    <span class="text-red-500 text-sm" *ngIf="service.error_message">
-                                        {{ service.error_message }}
-                                    </span>
-                                    <span class="text-green-500" *ngIf="!service.error_message">OK</span>
+                                    @if (service.error_message) {
+                                        <span class="text-red-500 text-sm">{{ service.error_message }}</span>
+                                    } @else {
+                                        <span class="text-green-500">OK</span>
+                                    }
                                 </td>
                             </tr>
                         </ng-template>
@@ -128,19 +132,22 @@ import { SystemMonitorService, SystemHealth, RevenueAlert } from '../../core/ser
             <!-- Revenue Alerts -->
             <div class="col-span-12 md:col-span-4">
                 <p-card header="Alertas de Revenue">
-                    <div class="space-y-3" *ngIf="hasRevenueAlerts(); else noAlerts">
-                        <div *ngFor="let alert of alertsList(); trackBy: trackAlert" class="p-3 rounded-lg border-l-4" [class]="getAlertClass(alert.severity)">
-                            <div class="font-semibold text-sm">{{ getAlertTitle(alert.type) }}</div>
-                            <div class="text-xs text-gray-600 mt-1">{{ alert.message }}</div>
-                            <div class="text-xs mt-2"><span class="font-medium">Valor:</span> {{ alert.value }} | <span class="font-medium">Umbral:</span> {{ alert.threshold }}</div>
+                    @if (hasRevenueAlerts()) {
+                        <div class="space-y-3">
+                            @for (alert of alertsList(); track alert.type) {
+                                <div class="p-3 rounded-lg border-l-4" [class]="getAlertClass(alert.severity)">
+                                    <div class="font-semibold text-sm">{{ getAlertTitle(alert.type) }}</div>
+                                    <div class="text-xs text-gray-600 mt-1">{{ alert.message }}</div>
+                                    <div class="text-xs mt-2"><span class="font-medium">Valor:</span> {{ alert.value }} | <span class="font-medium">Umbral:</span> {{ alert.threshold }}</div>
+                                </div>
+                            }
                         </div>
-                    </div>
-                    <ng-template #noAlerts>
+                    } @else {
                         <div class="text-center text-gray-500 py-4">
                             <i class="pi pi-check-circle text-green-500 text-2xl mb-2"></i>
                             <div>No hay alertas de revenue</div>
                         </div>
-                    </ng-template>
+                    }
                 </p-card>
             </div>
 
@@ -160,7 +167,7 @@ import { SystemMonitorService, SystemHealth, RevenueAlert } from '../../core/ser
                         <ng-template #body let-alert>
                             <tr>
                                 <td>
-                                    <p-tag [value]="alert.type" [severity]="getAlertSeverity(alert.type)" />
+                                    <p-tag [value]="getAlertLabel(alert.type)" [severity]="getAlertSeverity(alert.type)" />
                                 </td>
                                 <td class="font-semibold">{{ alert.title }}</td>
                                 <td>{{ alert.message }}</td>
@@ -269,7 +276,7 @@ export class SystemMonitor implements OnInit, OnDestroy {
                 this.testingEmail.set(false);
                 this.messageService.add({
                     severity: result.status === 'up' ? 'success' : 'error',
-                    summary: result.status === 'up' ? '✅ Email OK' : '❌ Email Error',
+                    summary: result.status === 'up' ? 'Email OK' : 'Email Error',
                     detail: result.error_message || 'Email funcionando correctamente',
                     life: 5000
                 });
@@ -288,7 +295,7 @@ export class SystemMonitor implements OnInit, OnDestroy {
                 this.testingPayments.set(false);
                 this.messageService.add({
                     severity: result.status === 'up' ? 'success' : 'error',
-                    summary: result.status === 'up' ? '✅ Stripe OK' : '❌ Stripe Error',
+                    summary: result.status === 'up' ? 'Stripe OK' : 'Stripe Error',
                     detail: result.error_message || 'Pagos funcionando correctamente',
                     life: 5000
                 });
@@ -307,7 +314,7 @@ export class SystemMonitor implements OnInit, OnDestroy {
                 this.testingPaypal.set(false);
                 this.messageService.add({
                     severity: result.status === 'up' ? 'success' : 'error',
-                    summary: result.status === 'up' ? '✅ PayPal OK' : '❌ PayPal Error',
+                    summary: result.status === 'up' ? 'PayPal OK' : 'PayPal Error',
                     detail: result.error_message || 'PayPal funcionando correctamente',
                     life: 5000
                 });
@@ -326,7 +333,7 @@ export class SystemMonitor implements OnInit, OnDestroy {
                 this.testingTwilio.set(false);
                 this.messageService.add({
                     severity: result.status === 'up' ? 'success' : 'error',
-                    summary: result.status === 'up' ? '✅ SMS OK' : '❌ SMS Error',
+                    summary: result.status === 'up' ? 'SMS OK' : 'SMS Error',
                     detail: result.error_message || 'SMS funcionando correctamente',
                     life: 5000
                 });
@@ -447,6 +454,11 @@ export class SystemMonitor implements OnInit, OnDestroy {
         return Math.min((responseTime / 1000) * 100, 100);
     }
 
+    isNotConfigured(errorMessage?: string): boolean {
+        if (!errorMessage) return false;
+        return errorMessage.toLowerCase().includes('no configurado');
+    }
+
     getAlertClass(severity: string): string {
         switch (severity) {
             case 'high':
@@ -486,12 +498,25 @@ export class SystemMonitor implements OnInit, OnDestroy {
         }
     }
 
+    getAlertLabel(type: string): string {
+        switch (type) {
+            case 'critical':
+                return 'Crítico';
+            case 'warning':
+                return 'Advertencia';
+            case 'info':
+                return 'Info';
+            default:
+                return type || 'Desconocido';
+        }
+    }
+
     private showErrorMessage(message: string, error?: any): void {
         const errorDetail = this.sanitizeErrorMessage(error, message);
         this.logError(message, error);
         this.messageService.add({
             severity: 'error',
-            summary: '🚨 Error Crítico',
+            summary: 'Error Crítico',
             detail: errorDetail,
             life: 5000
         });
@@ -499,12 +524,12 @@ export class SystemMonitor implements OnInit, OnDestroy {
 
     private sanitizeErrorMessage(error: any, fallbackMessage: string): string {
         if (!error) return fallbackMessage;
-        
+
         const errorMessage = error?.error?.message || error?.message;
         if (typeof errorMessage === 'string' && errorMessage.trim()) {
             return errorMessage.substring(0, 200);
         }
-        
+
         return fallbackMessage;
     }
 
@@ -515,7 +540,6 @@ export class SystemMonitor implements OnInit, OnDestroy {
             error: error?.message || 'Unknown error',
             component: 'SystemMonitor'
         };
-        // Replace console.error with structured logging
-        
+        console.error(errorInfo);
     }
 }

@@ -1,5 +1,4 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -18,7 +17,7 @@ import { ToastModule } from 'primeng/toast';
     selector: 'app-audit-logs',
     standalone: true,
     imports: [
-        CommonModule, FormsModule, ButtonModule, TableModule, TagModule,
+        FormsModule, ButtonModule, TableModule, TagModule,
         InputIconModule, IconFieldModule, InputTextModule, SelectModule,
         ToolbarModule, DatePipe, ToastModule
     ],
@@ -28,18 +27,18 @@ import { ToastModule } from 'primeng/toast';
         <p-toolbar styleClass="mb-6">
             <ng-template #start>
                 <div class="flex items-center gap-4">
-                    <h4 class="m-0">System Logs</h4>
+                    <h4 class="m-0">Logs del Sistema</h4>
                     <p-tag [value]="getLogStats()" severity="info" />
                 </div>
             </ng-template>
 
             <ng-template #end>
                 <div class="flex gap-2">
-                    <p-select [(ngModel)]="selectedSource" [options]="sourceOptions" placeholder="Filter by Source" (onChange)="filterLogs()" />
-                    <p-select [(ngModel)]="selectedAction" [options]="actionOptions" placeholder="Filter by Action" (onChange)="filterLogs()" />
-                    <input type="date" pInputText [(ngModel)]="startDate" placeholder="Start Date" (change)="filterLogs()" />
-                    <input type="date" pInputText [(ngModel)]="endDate" placeholder="End Date" (change)="filterLogs()" />
-                    <p-button label="Clear Filters" icon="pi pi-filter-slash" (click)="clearFilters()" />
+                    <p-select [(ngModel)]="selectedSource" [options]="sourceOptions" placeholder="Filtrar por fuente" (onChange)="filterLogs()" />
+                    <p-select [(ngModel)]="selectedAction" [options]="actionOptions" placeholder="Filtrar por acción" (onChange)="filterLogs()" />
+                    <input type="date" pInputText [(ngModel)]="startDate" placeholder="Fecha inicio" (change)="filterLogs()" />
+                    <input type="date" pInputText [(ngModel)]="endDate" placeholder="Fecha fin" (change)="filterLogs()" />
+                    <p-button label="Limpiar filtros" icon="pi pi-filter-slash" (click)="clearFilters()" />
                 </div>
             </ng-template>
         </p-toolbar>
@@ -54,11 +53,11 @@ import { ToastModule } from 'primeng/toast';
                 <div class="text-2xl font-bold text-red-600">{{ summary().errors }}</div>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                <div class="text-sm text-gray-500">Warnings</div>
+                <div class="text-sm text-gray-500">Advertencias</div>
                 <div class="text-2xl font-bold text-yellow-600">{{ summary().warnings }}</div>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                <div class="text-sm text-gray-500">Últimas 24h</div>
+                <div class="text-sm text-gray-500">Ultimas 24h</div>
                 <div class="text-2xl font-bold text-blue-600">{{ summary().last_24h }}</div>
             </div>
         </div>
@@ -71,29 +70,28 @@ import { ToastModule } from 'primeng/toast';
             [tableStyle]="{ 'min-width': '75rem' }"
             [rowHover]="true"
             [loading]="loading()"
-            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} logs"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} logs"
             [showCurrentPageReport]="true"
-
         >
             <ng-template #caption>
                 <div class="flex items-center justify-between">
-                    <h5 class="m-0">System Activity Logs</h5>
+                    <h5 class="m-0">Actividad del Sistema</h5>
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
-                        <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search logs..." />
+                        <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Buscar logs..." />
                     </p-iconfield>
                 </div>
             </ng-template>
 
             <ng-template #header>
                 <tr>
-                    <th style="min-width:12rem">User</th>
-                    <th style="min-width:10rem">Action</th>
-                    <th style="min-width:10rem">Source</th>
-                    <th style="min-width:20rem">Description</th>
-                    <th style="min-width:8rem">Severity</th>
-                    <th style="min-width:12rem">IP Address</th>
-                    <th style="min-width:12rem">Date</th>
+                    <th style="min-width:12rem">Usuario</th>
+                    <th style="min-width:10rem">Accion</th>
+                    <th style="min-width:10rem">Fuente</th>
+                    <th style="min-width:20rem">Descripcion</th>
+                    <th style="min-width:8rem">Severidad</th>
+                    <th style="min-width:12rem">IP</th>
+                    <th style="min-width:12rem">Fecha</th>
                 </tr>
             </ng-template>
 
@@ -101,21 +99,23 @@ import { ToastModule } from 'primeng/toast';
                 <tr [class]="getRowClass(log.action)">
                     <td>{{ log.user?.email || 'Sistema' }}</td>
                     <td>
-                        <p-tag [value]="log.action" [severity]="getActionSeverity(log.action)" />
+                        <p-tag [value]="formatActionLabel(log.action)" [severity]="getActionSeverity(log.action)" />
                     </td>
                     <td>
-                        <p-tag [value]="log.source" [severity]="getSourceSeverity(log.source)" />
+                        <p-tag [value]="formatSourceLabel(log.source)" [severity]="getSourceSeverity(log.source)" />
                     </td>
                     <td>
                         <div class="max-w-md">
                             <div class="truncate">{{ formatDescription(log.description) }}</div>
-                            <div *ngIf="log.extra_data && Object.keys(log.extra_data).length > 0" class="text-xs text-gray-500 mt-1">
-                                <span *ngFor="let key of Object.keys(log.extra_data); let last = last; trackBy: trackByKey">
-                                    <ng-container *ngIf="formatExtraDataValue(log.extra_data[key])">
-                                        {{key}}: {{formatExtraDataValue(log.extra_data[key])}}{{!last ? ', ' : ''}}
-                                    </ng-container>
-                                </span>
-                            </div>
+                            @if (log.extra_data && Object.keys(log.extra_data).length > 0) {
+                                <div class="text-xs text-gray-500 mt-1">
+                                    @for (key of Object.keys(log.extra_data); track key; let last = $last) {
+                                        @if (formatExtraDataValue(log.extra_data[key])) {
+                                            <span>{{key}}: {{formatExtraDataValue(log.extra_data[key])}}{{!last ? ', ' : ''}}</span>
+                                        }
+                                    }
+                                </div>
+                            }
                         </div>
                     </td>
                     <td>
@@ -128,11 +128,11 @@ import { ToastModule } from 'primeng/toast';
 
             <ng-template #emptymessage>
                 <tr>
-                    <td colspan="6" class="text-center p-4">
+                    <td colspan="7" class="text-center p-4">
                         <div class="flex flex-col items-center gap-3">
                             <i class="pi pi-info-circle text-4xl text-gray-400"></i>
-                            <p class="text-gray-500 m-0">No hay logs de auditoría disponibles</p>
-                            <p class="text-gray-400 text-sm m-0">Los logs aparecerán aquí cuando los usuarios realicen acciones en el sistema</p>
+                            <p class="text-gray-500 m-0">No hay logs de auditoria disponibles</p>
+                            <p class="text-gray-400 text-sm m-0">Los logs apareceran aqui cuando los usuarios realicen acciones en el sistema</p>
                         </div>
                     </td>
                 </tr>
@@ -156,23 +156,26 @@ export class AuditLogs implements OnInit {
     endDate: string | null = null;
 
     sourceOptions: { label: string; value: string | null }[] = [
-        { label: 'All Sources', value: null },
-        { label: 'System', value: 'SYSTEM' },
-        { label: 'Integrations', value: 'INTEGRATIONS' },
-        { label: 'Performance', value: 'PERFORMANCE' },
-        { label: 'Authentication', value: 'AUTH' },
-        { label: 'Settings', value: 'SETTINGS' }
+        { label: 'Todas las fuentes', value: null },
+        { label: 'Sistema', value: 'SYSTEM' },
+        { label: 'Integraciones', value: 'INTEGRATIONS' },
+        { label: 'Rendimiento', value: 'PERFORMANCE' },
+        { label: 'Autenticacion', value: 'AUTH' },
+        { label: 'Configuracion', value: 'SETTINGS' },
+        { label: 'Roles y permisos', value: 'ROLES' },
+        { label: 'Suscripciones', value: 'SUBSCRIPTIONS' },
+        { label: 'Usuarios', value: 'USERS' }
     ];
 
     actionOptions: { label: string; value: string | null }[] = [
-        { label: 'All Actions', value: null },
-        { label: 'System Errors', value: 'SYSTEM_ERROR' },
-        { label: 'Integration Errors', value: 'INTEGRATION_ERROR' },
-        { label: 'Performance Alerts', value: 'PERFORMANCE_ALERT' },
-        { label: 'Stripe Errors', value: 'STRIPE_ERROR' },
-        { label: 'PayPal Errors', value: 'PAYPAL_ERROR' },
-        { label: 'Twilio Errors', value: 'TWILIO_ERROR' },
-        { label: 'SendGrid Errors', value: 'SENDGRID_ERROR' }
+        { label: 'Todas las acciones', value: null },
+        { label: 'Errores del sistema', value: 'SYSTEM_ERROR' },
+        { label: 'Errores de integraciones', value: 'INTEGRATION_ERROR' },
+        { label: 'Alertas de rendimiento', value: 'PERFORMANCE_ALERT' },
+        { label: 'Errores de Stripe', value: 'STRIPE_ERROR' },
+        { label: 'Errores de PayPal', value: 'PAYPAL_ERROR' },
+        { label: 'Errores de Twilio', value: 'TWILIO_ERROR' },
+        { label: 'Errores de SendGrid', value: 'SENDGRID_ERROR' }
     ];
 
     constructor(
@@ -206,13 +209,13 @@ export class AuditLogs implements OnInit {
         this.activityLogService.getActions().subscribe({
             next: (actions) => {
                 this.actionOptions = [
-                    { label: 'All Actions', value: null },
+                    { label: 'Todas las acciones', value: null },
                     ...actions.map(action => ({ label: action.label, value: action.value as string }))
                 ];
             },
             error: (error) => {
                 this.showErrorMessage('Error al cargar las acciones', error);
-                this.actionOptions = [{ label: 'All Actions', value: null }];
+                this.actionOptions = [{ label: 'Todas las acciones', value: null }];
             }
         });
     }
@@ -245,7 +248,7 @@ export class AuditLogs implements OnInit {
                 this.loading.set(false);
             },
             error: (error) => {
-                this.showErrorMessage('Error al cargar los logs de auditoría', error);
+                this.showErrorMessage('Error al cargar los logs de auditoria', error);
                 this.loading.set(false);
                 this.logs.set([]);
                 this.filteredLogs.set([]);
@@ -321,41 +324,21 @@ export class AuditLogs implements OnInit {
         return '';
     }
 
-    getSeverityIcon(action: string): string {
-        if (action.includes('ERROR')) {
-            return 'pi pi-exclamation-triangle';
-        }
-        if (action === 'PERFORMANCE_ALERT') {
-            return 'pi pi-clock';
-        }
-        return 'pi pi-info-circle';
-    }
-
-    getSeverityColor(action: string): string {
-        if (action.includes('ERROR')) {
-            return '#ef4444';
-        }
-        if (action === 'PERFORMANCE_ALERT') {
-            return '#f59e0b';
-        }
-        return '#6b7280';
-    }
-
     getSeverityLabel(action: string): string {
         if (action.includes('ERROR')) {
             return 'Error';
         }
         if (action === 'PERFORMANCE_ALERT') {
-            return 'Warning';
+            return 'Advertencia';
         }
         if (action === 'CREATE') {
-            return 'Success';
+            return 'Exito';
         }
         if (action === 'UPDATE') {
             return 'Info';
         }
         if (action === 'DELETE') {
-            return 'Critical';
+            return 'Critico';
         }
         return 'Info';
     }
@@ -364,7 +347,7 @@ export class AuditLogs implements OnInit {
         const total = this.filteredLogs().length;
         const errors = this.filteredLogs().filter(log => log.action.includes('ERROR')).length;
         const alerts = this.filteredLogs().filter(log => log.action === 'PERFORMANCE_ALERT').length;
-        return `${total} logs (${errors} errors, ${alerts} alerts)`;
+        return `${total} logs (${errors} errores, ${alerts} alertas)`;
     }
 
     Object = Object;
@@ -430,6 +413,38 @@ export class AuditLogs implements OnInit {
             .trim();
     }
 
+    formatActionLabel(action: string): string {
+        const labels: Record<string, string> = {
+            SYSTEM_ERROR: 'Error de sistema',
+            INTEGRATION_ERROR: 'Error de integracion',
+            PERFORMANCE_ALERT: 'Alerta de rendimiento',
+            STRIPE_ERROR: 'Error de Stripe',
+            PAYPAL_ERROR: 'Error de PayPal',
+            TWILIO_ERROR: 'Error de Twilio',
+            SENDGRID_ERROR: 'Error de SendGrid',
+            LOGIN: 'Inicio de sesion',
+            LOGOUT: 'Cierre de sesion',
+            CREATE: 'Creacion',
+            UPDATE: 'Actualizacion',
+            DELETE: 'Eliminacion'
+        };
+        return labels[action] || action;
+    }
+
+    formatSourceLabel(source: string): string {
+        const labels: Record<string, string> = {
+            SYSTEM: 'Sistema',
+            INTEGRATIONS: 'Integraciones',
+            PERFORMANCE: 'Rendimiento',
+            AUTH: 'Autenticacion',
+            SETTINGS: 'Configuracion',
+            ROLES: 'Roles y permisos',
+            SUBSCRIPTIONS: 'Suscripciones',
+            USERS: 'Usuarios'
+        };
+        return labels[source] || source;
+    }
+
     private showErrorMessage(message: string, error?: any): void {
         this.logError(message, error);
         this.messageService.add({
@@ -452,6 +467,6 @@ export class AuditLogs implements OnInit {
             error: error?.message || 'Unknown error',
             component: 'AuditLogs'
         };
-        
+        console.error(errorInfo);
     }
 }

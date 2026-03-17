@@ -25,9 +25,12 @@ import { DatePipe } from '@angular/common';
                         </p>
 
                         <div class="flex space-x-4">
-                            <button pButton pRipple icon="pi pi-whatsapp" [rounded]="true" [text]="true" class="text-slate-400 hover:!text-green-400! transition-colors!" aria-label="WhatsApp"></button>
-                            <button pButton pRipple icon="pi pi-envelope" [rounded]="true" [text]="true" class="text-slate-400! hover:text-sky-400! transition-colors!" aria-label="Correo"></button>
-                            <button pButton pRipple icon="pi pi-linkedin" [rounded]="true" [text]="true" class="text-slate-400 hover:text-blue-500 transition-colors" aria-label="LinkedIn"></button>
+                            <a href="mailto:contacto@auron-suite.com" class="inline-flex">
+                                <button pButton pRipple icon="pi pi-envelope" [rounded]="true" [text]="true" class="text-slate-400! hover:text-sky-400! transition-colors!" aria-label="Correo"></button>
+                            </a>
+                            <a routerLink="/auth/register" class="inline-flex">
+                                <button pButton pRipple icon="pi pi-user-plus" [rounded]="true" [text]="true" class="text-slate-400 hover:!text-indigo-300! transition-colors!" aria-label="Crear cuenta"></button>
+                            </a>
                         </div>
                     </div>
 
@@ -56,9 +59,9 @@ import { DatePipe } from '@angular/common';
                     <div>
                         <h4 class="text-lg font-semibold text-white mb-6">Contacto</h4>
                         <ul class="space-y-4">
-                            <li><a href="mailto:auronsuite.soporte@gmail.com" class="text-slate-300 hover:text-white transition-colors">auronsuite.soporte@gmail.com</a></li>
-                            <li><a href="mailto:auronsuite.soporte@gmail.com" class="text-slate-300 hover:text-white transition-colors">auronsuite.soporte@gmail.com</a></li>
-                            <li><a href="https://wa.me/" class="text-slate-300 hover:text-white transition-colors">WhatsApp comercial</a></li>
+                            <li><a href="mailto:contacto@auron-suite.com" class="text-slate-300 hover:text-white transition-colors">contacto@auron-suite.com</a></li>
+                            <li><span class="text-slate-300">Santo Domingo, República Dominicana</span></li>
+                            <li><span class="text-slate-300">Respuesta comercial por email</span></li>
                             <li><a routerLink="/auth/register" class="text-slate-300 hover:text-white transition-colors">Crear cuenta</a></li>
                         </ul>
                     </div>
@@ -67,14 +70,18 @@ import { DatePipe } from '@angular/common';
                 <div class="bg-slate-800 dark:bg-slate-900 rounded-2xl p-8 mb-12 border border-slate-700">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                         <div>
-                            <h4 class="text-2xl font-bold text-white mb-4">Mantente al tanto</h4>
+                            <h4 class="text-2xl font-bold text-white mb-4">¿Quieres evaluar Auron-Suite?</h4>
                             <p class="text-slate-300">
-                                Recibe novedades del producto, mejoras importantes y contenido util para operar mejor tu negocio.
+                                Si estas revisando opciones para tu negocio, podemos orientarte por email sobre planes, implementacion y alcance actual del sistema.
                             </p>
                         </div>
-                        <div class="flex gap-4">
-                            <input type="email" placeholder="tu@email.com" class="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors">
-                            <button pButton pRipple label="Suscribirme" class="bg-indigo-600! text-white! font-semibold! px-6! py-3! hover:bg-indigo-700! border-0!"></button>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <a href="mailto:contacto@auron-suite.com?subject=Consulta%20sobre%20Auron-Suite" class="sm:flex-1">
+                                <button pButton pRipple label="Escribir a ventas" class="w-full bg-indigo-600! text-white! font-semibold! px-6! py-3! hover:bg-indigo-700! border-0!"></button>
+                            </a>
+                            <a routerLink="/auth/register" class="sm:flex-1">
+                                <button pButton pRipple label="Crear cuenta" class="w-full bg-slate-700! text-white! font-semibold! px-6! py-3! hover:bg-slate-600! border border-slate-600!"></button>
+                            </a>
                         </div>
                     </div>
                 </div>

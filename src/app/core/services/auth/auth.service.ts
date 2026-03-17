@@ -124,8 +124,10 @@ export class AuthService extends BaseApiService {
     return this.post(API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD, { email });
   }
 
-  requestPasswordReset(email: string): Observable<any> {
-    return this.post('/auth/reset-password/', { email });
+  requestPasswordReset(email: string, tenantSubdomain?: string): Observable<any> {
+    const payload: any = { email };
+    if (tenantSubdomain) payload.tenant_subdomain = tenantSubdomain;
+    return this.post('/auth/reset-password/', payload);
   }
 
   confirmPasswordReset(uid: string, token: string, password: string): Observable<any> {

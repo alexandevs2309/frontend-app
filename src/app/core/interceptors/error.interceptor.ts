@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse, HttpBackend, HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { Observable, Subject, throwError } from 'rxjs';
+import { catchError, switchMap, take, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { environment } from '../../../environments/environment';
@@ -9,6 +9,8 @@ import { environment } from '../../../environments/environment';
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
   private httpWithoutInterceptors: HttpClient;
+  private refreshInProgress = false;
+  private refreshCompleted$ = new Subject<boolean>();
 
   constructor(
     private router: Router,
@@ -36,14 +38,37 @@ export class ErrorInterceptor implements HttpInterceptor {
   }
 
   private tryRefreshAndRetry(req: HttpRequest<any>, next: HttpHandler, originalError: HttpErrorResponse): Observable<HttpEvent<any>> {
+    if (this.refreshInProgress) {
+      return this.refreshCompleted$.pipe(
+        take(1),
+        switchMap((refreshSucceeded) => {
+          if (!refreshSucceeded) {
+            this.handle401Error();
+            return throwError(() => originalError);
+          }
+
+          const retryReq = req.clone({ withCredentials: true });
+          return next.handle(retryReq);
+        })
+      );
+    }
+
+    this.refreshInProgress = true;
+
     return this.httpWithoutInterceptors
       .post(`${environment.apiUrl}/auth/cookie-refresh/`, {}, { withCredentials: true })
       .pipe(
+        tap(() => {
+          this.refreshInProgress = false;
+          this.refreshCompleted$.next(true);
+        }),
         switchMap(() => {
           const retryReq = req.clone({ withCredentials: true });
           return next.handle(retryReq);
         }),
         catchError(() => {
+          this.refreshInProgress = false;
+          this.refreshCompleted$.next(false);
           this.handle401Error();
           return throwError(() => originalError);
         })

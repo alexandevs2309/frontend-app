@@ -21,13 +21,26 @@ export class SubscriptionService extends BaseApiService {
     return this.get(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.RENEW);
   }
 
-  renewSubscription(planId: number, paymentMethodId: string, months: number = 1, autoRenew: boolean = false): Observable<any> {
-    return this.post(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.RENEW, {
+  renewSubscription(
+    planId: number,
+    paymentMethodId: string | null,
+    months: number = 1,
+    autoRenew: boolean = false,
+    paymentIntentId?: string
+  ): Observable<any> {
+    const payload: any = {
       plan_id: planId,
-      payment_method_id: paymentMethodId,
       months,
       auto_renew: autoRenew
-    });
+    };
+
+    if (paymentIntentId) {
+      payload.payment_intent_id = paymentIntentId;
+    } else if (paymentMethodId) {
+      payload.payment_method_id = paymentMethodId;
+    }
+
+    return this.post(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.RENEW, payload);
   }
 
   getPlans(): Observable<any> {

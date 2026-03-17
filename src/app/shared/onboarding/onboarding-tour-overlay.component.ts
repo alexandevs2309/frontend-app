@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostBinding, HostListener, OnDestroy, OnInit, Renderer2 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { OnboardingRuntimeState, OnboardingTourService } from './onboarding-tour.service';
 import { I18nPipe } from '../../core/pipes/i18n.pipe';
@@ -7,22 +7,27 @@ import { I18nPipe } from '../../core/pipes/i18n.pipe';
 @Component({
     selector: 'app-onboarding-tour-overlay',
     standalone: true,
-    imports: [CommonModule, I18nPipe],
+    imports: [DecimalPipe, I18nPipe],
     host: {
         style: 'position: fixed; inset: 0; z-index: 2147483000;'
     },
     template: `
-        <div *ngIf="state.active" class="onboarding-backdrop" [class.with-spotlight]="!!state.spotlightRect"></div>
+        @if (state.active) {
+        <div class="onboarding-backdrop" [class.with-spotlight]="!!state.spotlightRect"></div>
+        }
 
-        <div *ngIf="state.active && state.spotlightRect" class="onboarding-spotlight"
+        @if (state.active && state.spotlightRect) {
+        <div class="onboarding-spotlight"
             [style.top.px]="state.spotlightRect.top"
             [style.left.px]="state.spotlightRect.left"
             [style.width.px]="state.spotlightRect.width"
             [style.height.px]="state.spotlightRect.height"
             [class.spotlight-circle]="state.spotlightRect.shape === 'circle'">
         </div>
+        }
 
-        <aside *ngIf="state.active" class="onboarding-tooltip" [class.mobile]="isMobile">
+        @if (state.active) {
+        <aside class="onboarding-tooltip" [class.mobile]="isMobile">
             <header class="onboarding-tooltip-header">
                 <div class="onboarding-tooltip-kicker">{{ 'onboarding.overlay.kicker' | t : 'Recorrido guiado' }}</div>
                 <span class="onboarding-step-pill">{{ 'onboarding.overlay.step' | t : 'Paso' }} {{ state.stepIndex }} {{ 'onboarding.overlay.of' | t : 'de' }} {{ state.totalSteps }}</span>
@@ -43,6 +48,7 @@ import { I18nPipe } from '../../core/pipes/i18n.pipe';
                 <button type="button" class="onboarding-btn skip-link" (click)="skip()">{{ 'onboarding.overlay.skip' | t : 'Saltar tour' }}</button>
             </footer>
         </aside>
+        }
     `
 })
 export class OnboardingTourOverlayComponent implements OnInit, OnDestroy {

@@ -105,23 +105,23 @@ export class SystemMonitorService extends BaseApiService {
         return health;
       }),
       catchError(error => {
-        
+        const errorMessage = error?.error?.message || error?.message || 'No se pudo verificar el sistema';
         const criticalHealth: SystemHealth = {
           overall_status: 'critical',
           services: {
-            database: { status: 'down', last_check: new Date().toISOString() },
-            email: { status: 'down', last_check: new Date().toISOString() },
-            payments: { status: 'down', last_check: new Date().toISOString() },
-            paypal: { status: 'down', last_check: new Date().toISOString() },
-            twilio: { status: 'down', last_check: new Date().toISOString() },
-            storage: { status: 'down', last_check: new Date().toISOString() }
+            database: { status: 'down', last_check: new Date().toISOString(), error_message: errorMessage },
+            email: { status: 'down', last_check: new Date().toISOString(), error_message: errorMessage },
+            payments: { status: 'down', last_check: new Date().toISOString(), error_message: errorMessage },
+            paypal: { status: 'down', last_check: new Date().toISOString(), error_message: errorMessage },
+            twilio: { status: 'down', last_check: new Date().toISOString(), error_message: errorMessage },
+            storage: { status: 'down', last_check: new Date().toISOString(), error_message: errorMessage }
           },
           metrics: { response_time: 0, error_rate: 100, uptime: 0 },
           alerts: [{
             id: 'system-critical',
             type: 'critical',
-            title: 'System Critical',
-            message: 'Unable to perform system health check',
+            title: 'Sistema Crítico',
+            message: errorMessage,
             created_at: new Date().toISOString(),
             resolved: false
           }]
@@ -229,8 +229,8 @@ export class SystemMonitorService extends BaseApiService {
 
         this.revenueAlerts.set(alerts);
       },
-      error: (error) => {
-        
+      error: () => {
+        this.revenueAlerts.set([]);
       }
     });
   }
@@ -265,8 +265,8 @@ export class SystemMonitorService extends BaseApiService {
         alerts.push({
           id: `${serviceName}-down`,
           type: 'critical',
-          title: `${serviceName.charAt(0).toUpperCase() + serviceName.slice(1)} Service Down`,
-          message: service.error_message || `${serviceName} service is not responding`,
+          title: `${serviceName.charAt(0).toUpperCase() + serviceName.slice(1)} fuera de servicio`,
+          message: service.error_message || `${serviceName} no está respondiendo`,
           created_at: service.last_check,
           resolved: false
         });
@@ -274,8 +274,8 @@ export class SystemMonitorService extends BaseApiService {
         alerts.push({
           id: `${serviceName}-degraded`,
           type: 'warning',
-          title: `${serviceName.charAt(0).toUpperCase() + serviceName.slice(1)} Service Degraded`,
-          message: `${serviceName} service is experiencing issues`,
+          title: `${serviceName.charAt(0).toUpperCase() + serviceName.slice(1)} degradado`,
+          message: `${serviceName} presenta intermitencia`,
           created_at: service.last_check,
           resolved: false
         });

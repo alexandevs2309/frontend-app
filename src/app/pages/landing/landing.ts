@@ -41,6 +41,7 @@ import { VideoModal } from './components/video-modal';
                 <topbar-widget />
                 <hero-widget />
 
+                @defer (on idle) {
                 <div class="bg-slate-50 dark:bg-slate-900 py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="features">
                     <div class="relative z-10 transform skew-y-2">
                         <div class="max-w-7xl mx-auto px-6 lg:px-8">
@@ -53,24 +54,39 @@ import { VideoModal } from './components/video-modal';
                         </div>
                     </div>
                 </div>
+                } @placeholder {
+                <div class="h-96 bg-slate-50 dark:bg-slate-900"></div>
+                }
 
+                @defer (on idle) {
                 <div class="bg-linear-to-br from-indigo-900 via-indigo-800 to-slate-900 py-20 lg:py-32 relative overflow-hidden transform -skew-y-3" data-section="highlights">
                     <div class="relative z-10 transform skew-y-3">
                         <highlights-widget />
                     </div>
                 </div>
+                } @placeholder {
+                <div class="h-96 bg-indigo-900"></div>
+                }
 
+                @defer (on idle) {
                 <div class="bg-white dark:bg-slate-900 py-20 lg:py-32 relative overflow-hidden transform -skew-y-1" data-section="testimonials">
                     <div class="relative z-10 transform skew-y-1">
                         <testimonials-widget />
                     </div>
                 </div>
+                } @placeholder {
+                <div class="h-96 bg-white dark:bg-slate-900"></div>
+                }
 
+                @defer (on idle) {
                 <div class="bg-slate-50 dark:bg-slate-800 py-20 lg:py-32 relative overflow-hidden" data-section="pricing">
                     <div class="relative z-10">
                         <pricing-widget />
                     </div>
                 </div>
+                } @placeholder {
+                <div class="h-96 bg-slate-50 dark:bg-slate-800"></div>
+                }
 
                 <footer-widget />
             </div>

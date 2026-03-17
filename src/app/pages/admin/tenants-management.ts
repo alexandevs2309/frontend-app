@@ -1,7 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Table, TableModule } from 'primeng/table';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
@@ -50,7 +49,6 @@ interface Tenant {
     selector: 'app-tenants-management',
     standalone: true,
     imports: [
-        CommonModule,
         TableModule,
         FormsModule,
         ButtonModule,
@@ -243,19 +241,19 @@ interface Tenant {
                     <div>
                         <label for="name" class="block font-bold mb-3">Name</label>
                         <input type="text" pInputText id="name" [(ngModel)]="tenant.name" required autofocus fluid />
-                        <small class="text-red-500" *ngIf="submitted && !tenant.name">Name is required.</small>
+                        @if (submitted && !tenant.name) { <small class="text-red-500">Name is required.</small> }
                     </div>
 
                     <div>
                         <label for="subdomain" class="block font-bold mb-3">Subdomain</label>
                         <input type="text" pInputText id="subdomain" [(ngModel)]="tenant.subdomain" required fluid />
-                        <small class="text-red-500" *ngIf="submitted && !tenant.subdomain">Subdomain is required.</small>
+                        @if (submitted && !tenant.subdomain) { <small class="text-red-500">Subdomain is required.</small> }
                     </div>
 
                     <div>
                         <label for="contact_email" class="block font-bold mb-3">Contact Email</label>
                         <input type="email" pInputText id="contact_email" [(ngModel)]="tenant.contact_email" required fluid />
-                        <small class="text-red-500" *ngIf="submitted && !tenant.contact_email">Contact email is required.</small>
+                        @if (submitted && !tenant.contact_email) { <small class="text-red-500">Contact email is required.</small> }
                     </div>
 
                     <div>

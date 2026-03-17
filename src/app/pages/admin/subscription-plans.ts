@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Table, TableModule } from 'primeng/table';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
@@ -41,7 +41,6 @@ interface SubscriptionPlan {
     selector: 'app-subscription-plans',
     standalone: true,
     imports: [
-        CommonModule,
         TableModule,
         FormsModule,
         ButtonModule,
@@ -56,6 +55,7 @@ interface SubscriptionPlan {
         InputIconModule,
         IconFieldModule,
         ConfirmDialogModule,
+        CurrencyPipe,
     ],
     template: `
         <p-toolbar styleClass="mb-6 rounded-2xl shadow-lg border-0">
@@ -65,7 +65,7 @@ interface SubscriptionPlan {
                         <i class="pi pi-credit-card text-white"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 m-0">Planes de Suscripcion</h2>
+                        <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 m-0">Planes de Suscripción</h2>
                         <p class="text-sm text-muted-color m-0">Gestiona los planes del sistema</p>
                     </div>
                 </div>
@@ -74,7 +74,7 @@ interface SubscriptionPlan {
                 <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800">
                     <div class="flex items-center gap-2">
                         <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-sm"></i>
-                        <p class="text-xs text-blue-700 dark:text-blue-300 m-0">Las features tecnicas y los beneficios comerciales se administran por separado.</p>
+                        <p class="text-xs text-blue-700 dark:text-blue-300 m-0">Las funciones técnicas y los beneficios comerciales se administran por separado.</p>
                     </div>
                 </div>
             </ng-template>
@@ -98,7 +98,7 @@ interface SubscriptionPlan {
         >
             <ng-template #caption>
                 <div class="flex items-center justify-between p-4 bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20">
-                    <h5 class="m-0 font-bold text-lg">Gestionar Planes de Suscripcion</h5>
+                    <h5 class="m-0 font-bold text-lg">Gestionar Planes de Suscripción</h5>
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
                         <input
@@ -114,21 +114,22 @@ interface SubscriptionPlan {
             <ng-template #header>
                 <tr>
                     <th pSortableColumn="name" style="min-width:12rem">
-                        Name
+                        Plan
                         <p-sortIcon field="name" />
                     </th>
-                    <th style="min-width:18rem">Description</th>
+                    <th style="min-width:18rem">Descripción</th>
                     <th pSortableColumn="price" style="min-width:8rem">
-                        Price
+                        Precio
                         <p-sortIcon field="price" />
                     </th>
-                    <th style="min-width:8rem">Max-Employees</th>
-                    <th style="min-width:10rem">Max-Users</th>
+                    <th style="min-width:8rem">Duración</th>
+                    <th style="min-width:8rem">Máx. empleados</th>
+                    <th style="min-width:10rem">Máx. usuarios</th>
                     <th style="min-width:8rem">Multi-Sucursal</th>
-                    <th style="min-width:15rem">Features</th>
-                    <th style="min-width:15rem">Benefits</th>
+                    <th style="min-width:15rem">Funciones</th>
+                    <th style="min-width:15rem">Beneficios</th>
                     <th pSortableColumn="is_active" style="min-width:8rem">
-                        Status
+                        Estado
                         <p-sortIcon field="is_active" />
                     </th>
                     <th style="min-width: 12rem"></th>
@@ -136,22 +137,36 @@ interface SubscriptionPlan {
             </ng-template>
             <ng-template #body let-plan>
                 <tr>
-                    <td>{{ plan.name }}</td>
+                    <td>
+                        <div class="font-semibold">{{ plan.display_name || plan.name }}</div>
+                        <div class="text-sm text-gray-500">{{ plan.name }}</div>
+                    </td>
                     <td>{{ plan.description }}</td>
                     <td>{{ plan.price | currency:'USD' }}</td>
-                    <td>{{ plan.max_employees || 'Unlimited' }}</td>
-                    <td>{{ plan.max_users || 'Unlimited' }}</td>
+                    <td>{{ formatDuration(plan.duration_month) }}</td>
+                    <td>{{ plan.max_employees || 'Ilimitado' }}</td>
+                    <td>{{ plan.max_users || 'Ilimitado' }}</td>
                     <td>
                         <p-tag [value]="getMultiBranchText(plan)" [severity]="getMultiBranchSeverity(plan)" />
                     </td>
                     <td>
-                        <span *ngFor="let feature of getFeaturesList(plan.features || plan.features_list).slice(0, 2); trackBy: trackByFeature" class="badge bg-info me-1">{{ feature }}</span>
-                        <span *ngIf="getFeaturesList(plan.features || plan.features_list).length > 2" class="text-muted">+{{ getFeaturesList(plan.features || plan.features_list).length - 2 }} more</span>
+                        @for (feature of getFeaturesList(plan.features || plan.features_list).slice(0, 2); track feature) {
+                            <span class="badge bg-info me-1">{{ feature }}</span>
+                        }
+                        @if (getFeaturesList(plan.features || plan.features_list).length > 2) {
+                            <span class="text-muted">+{{ getFeaturesList(plan.features || plan.features_list).length - 2 }} más</span>
+                        }
                     </td>
                     <td>
-                        <span *ngFor="let benefit of (plan.commercial_benefits || []).slice(0, 2); trackBy: trackByFeature" class="badge bg-primary me-1">{{ benefit }}</span>
-                        <span *ngIf="(plan.commercial_benefits || []).length > 2" class="text-muted">+{{ (plan.commercial_benefits || []).length - 2 }} more</span>
-                        <span *ngIf="!(plan.commercial_benefits || []).length" class="text-muted">-</span>
+                        @for (benefit of (plan.commercial_benefits || []).slice(0, 2); track benefit) {
+                            <span class="badge bg-primary me-1">{{ benefit }}</span>
+                        }
+                        @if ((plan.commercial_benefits || []).length > 2) {
+                            <span class="text-muted">+{{ (plan.commercial_benefits || []).length - 2 }} más</span>
+                        }
+                        @if (!(plan.commercial_benefits || []).length) {
+                            <span class="text-muted">-</span>
+                        }
                     </td>
                     <td>
                         <p-tag [value]="plan.is_active ? 'Activo' : 'Inactivo'" [severity]="plan.is_active ? 'success' : 'danger'" />
@@ -170,52 +185,69 @@ interface SubscriptionPlan {
             </ng-template>
         </p-table>
 
-        <p-dialog [(visible)]="planDialog" [style]="{ width: '640px' }" header="Subscription Plan Details" [modal]="true">
+        <p-dialog [(visible)]="planDialog" [style]="{ width: '640px' }" header="Detalle del plan" [modal]="true">
             <ng-template #content>
                 <div class="flex flex-col gap-6">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label for="name" class="block font-bold mb-3">Name</label>
+                            <label for="name" class="block font-bold mb-3">Nombre técnico</label>
                             <input type="text" pInputText id="name" [(ngModel)]="plan.name" [disabled]="true" fluid />
-                            <small class="text-red-500" *ngIf="submitted && !plan.name">Name is required.</small>
+                            @if (submitted && !plan.name) {
+                                <small class="text-red-500">El nombre es obligatorio.</small>
+                            }
                         </div>
 
                         <div>
-                            <label for="price" class="block font-bold mb-3">Price (USD)</label>
+                            <label for="price" class="block font-bold mb-3">Precio (USD)</label>
                             <p-inputnumber id="price" [(ngModel)]="plan.price" mode="currency" currency="USD" locale="en-US" fluid />
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="display_name" class="block font-bold mb-3">Nombre visible</label>
+                            <input type="text" pInputText id="display_name" [ngModel]="plan.display_name || plan.name" [disabled]="true" fluid />
+                            <small class="text-muted">Se deriva del tipo de plan y no se edita desde este panel.</small>
+                        </div>
+
+                        <div>
+                            <label for="duration_month" class="block font-bold mb-3">Duración (meses)</label>
+                            <p-inputnumber id="duration_month" [(ngModel)]="plan.duration_month" [min]="1" fluid />
+                        </div>
+                    </div>
+
                     <div>
-                        <label for="description" class="block font-bold mb-3">Description</label>
+                        <label for="description" class="block font-bold mb-3">Descripción</label>
                         <textarea id="description" pTextarea [(ngModel)]="plan.description" rows="3" fluid></textarea>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label for="max_employees" class="block font-bold mb-3">Max Employees</label>
+                            <label for="max_employees" class="block font-bold mb-3">Máximo de empleados</label>
                             <p-inputnumber id="max_employees" [(ngModel)]="plan.max_employees" [min]="1" fluid />
-                            <small class="text-muted">Leave empty for unlimited</small>
+                            <small class="text-muted">Déjalo vacío para ilimitado</small>
                         </div>
 
                         <div>
-                            <label for="max_users" class="block font-bold mb-3">Max Users</label>
+                            <label for="max_users" class="block font-bold mb-3">Máximo de usuarios</label>
                             <p-inputnumber id="max_users" [(ngModel)]="plan.max_users" [min]="1" fluid />
-                            <small class="text-muted">Leave empty for unlimited</small>
+                            <small class="text-muted">Déjalo vacío para ilimitado</small>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block font-bold mb-3">Features tecnicas</label>
+                        <label class="block font-bold mb-3">Funciones técnicas</label>
                         <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Capacidades del sistema controladas por el plan:</p>
                             <div class="grid grid-cols-2 gap-2">
-                                <div *ngFor="let feature of getFeaturesList(plan.features || plan.features_list); trackBy: trackByFeature" class="flex items-center gap-2">
-                                    <i class="pi pi-check text-green-500"></i>
-                                    <span class="text-sm">{{ feature }}</span>
-                                </div>
+                                @for (feature of getFeaturesList(plan.features || plan.features_list); track feature) {
+                                    <div class="flex items-center gap-2">
+                                        <i class="pi pi-check text-green-500"></i>
+                                        <span class="text-sm">{{ feature }}</span>
+                                    </div>
+                                }
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">Las features tecnicas se configuran automaticamente.</p>
+                            <p class="text-xs text-gray-500 mt-2">Las funciones técnicas se configuran automáticamente.</p>
                         </div>
                     </div>
 
@@ -223,28 +255,36 @@ interface SubscriptionPlan {
                         <label class="block font-bold mb-3">Beneficios comerciales</label>
                         <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/40">
                             <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Beneficios operativos o comerciales no gobernados por feature flags:</p>
-                            <div *ngIf="(plan.commercial_benefits || []).length; else noBenefits" class="flex flex-col gap-2">
-                                <div *ngFor="let benefit of plan.commercial_benefits || []; trackBy: trackByFeature" class="flex items-center gap-2">
-                                    <i class="pi pi-briefcase text-blue-500"></i>
-                                    <span class="text-sm">{{ benefit }}</span>
+                            @if ((plan.commercial_benefits || []).length) {
+                                <div class="flex flex-col gap-2">
+                                    @for (benefit of plan.commercial_benefits || []; track benefit) {
+                                        <div class="flex items-center gap-2">
+                                            <i class="pi pi-briefcase text-blue-500"></i>
+                                            <span class="text-sm">{{ benefit }}</span>
+                                        </div>
+                                    }
                                 </div>
-                            </div>
-                            <ng-template #noBenefits>
+                            } @else {
                                 <p class="text-sm text-gray-500 m-0">Este plan no tiene beneficios comerciales adicionales definidos.</p>
-                            </ng-template>
+                            }
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2">
+                        <input type="checkbox" id="allows_multiple_branches" [(ngModel)]="plan.allows_multiple_branches" />
+                        <label for="allows_multiple_branches">Permite múltiples sucursales</label>
+                    </div>
+
+                    <div class="flex items-center gap-2">
                         <input type="checkbox" id="is_active" [(ngModel)]="plan.is_active" />
-                        <label for="is_active">Active</label>
+                        <label for="is_active">Activo</label>
                     </div>
                 </div>
             </ng-template>
 
             <ng-template #footer>
-                <p-button label="Cancel" icon="pi pi-times" text (click)="hideDialog()" />
-                <p-button label="Save" icon="pi pi-check" (click)="savePlan()" [loading]="saving()" />
+                <p-button label="Cancelar" icon="pi pi-times" text (click)="hideDialog()" />
+                <p-button label="Guardar" icon="pi pi-check" (click)="savePlan()" [loading]="saving()" />
             </ng-template>
         </p-dialog>
 
@@ -323,11 +363,11 @@ export class SubscriptionPlans implements OnInit {
 
     private translateFeature(key: string): string {
         const translations: { [key: string]: string } = {
-            appointments: 'Gestion de Citas',
-            basic_reports: 'Reportes Basicos',
-            inventory: 'Gestion de Inventario',
+            appointments: 'Gestión de Citas',
+            basic_reports: 'Reportes Básicos',
+            inventory: 'Gestión de Inventario',
             advanced_reports: 'Reportes Avanzados',
-            multi_location: 'Multiples Ubicaciones',
+            multi_location: 'Múltiples Ubicaciones',
             api_access: 'Acceso a API',
             custom_branding: 'Marca Personalizada',
             priority_support: 'Soporte Prioritario',
@@ -345,6 +385,13 @@ export class SubscriptionPlans implements OnInit {
         return plan.allows_multiple_branches ? 'success' : 'secondary';
     }
 
+    formatDuration(durationMonths?: number): string {
+        if (!durationMonths || durationMonths <= 1) {
+            return '1 mes';
+        }
+        return `${durationMonths} meses`;
+    }
+
     savePlan() {
         this.submitted = true;
 
@@ -355,8 +402,10 @@ export class SubscriptionPlans implements OnInit {
                 this.subscriptionService.updatePlan(this.plan.id, {
                     description: this.plan.description,
                     price: this.plan.price,
+                    duration_month: this.plan.duration_month,
                     max_employees: this.plan.max_employees,
                     max_users: this.plan.max_users,
+                    allows_multiple_branches: this.plan.allows_multiple_branches,
                     is_active: this.plan.is_active
                 }).subscribe({
                     next: (updatedPlan: any) => {

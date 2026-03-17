@@ -1,5 +1,4 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -7,7 +6,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 @Component({
   selector: 'video-modal',
   standalone: true,
-  imports: [CommonModule, DialogModule, ButtonModule],
+  imports: [DialogModule, ButtonModule],
   template: `
     <p-dialog
       [(visible)]="visible"
@@ -31,9 +30,11 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
       <div class="video-container">
         <div class="aspect-video bg-gray-900 rounded-lg overflow-hidden relative">
           <!-- Loader -->
-          <div *ngIf="!videoUrl" class="absolute inset-0 flex items-center justify-center bg-gray-800">
-            <i class="pi pi-spin pi-spinner text-4xl text-white opacity-80"></i>
-          </div>
+          @if (!videoUrl) {
+            <div class="absolute inset-0 flex items-center justify-center bg-gray-800">
+              <i class="pi pi-spin pi-spinner text-4xl text-white opacity-80"></i>
+            </div>
+          }
 
           <!-- Video Embed -->
           @if (videoUrl) {

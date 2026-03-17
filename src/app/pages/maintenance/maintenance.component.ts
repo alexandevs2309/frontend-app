@@ -1,12 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-maintenance',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="maintenance-container">
       <div class="maintenance-content">
@@ -46,8 +45,12 @@ import { interval, Subscription } from 'rxjs';
         </div>
         
         <button class="retry-button" (click)="checkStatus()">
-          <span *ngIf="!checking">🔄 Verificar Estado</span>
-          <span *ngIf="checking">⏳ Verificando...</span>
+          @if (!checking) {
+            <span>🔄 Verificar Estado</span>
+          }
+          @if (checking) {
+            <span>⏳ Verificando...</span>
+          }
         </button>
         
         <div class="maintenance-footer">

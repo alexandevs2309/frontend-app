@@ -1,10 +1,10 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgClass } from '@angular/common';
 
 @Component({
   selector: 'app-metric-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [NgClass],
   template: `
     <div class="surface-card shadow-2 p-3 border-1 border-round">
       <div class="flex justify-content-between mb-3">
@@ -18,7 +18,9 @@ import { CommonModule } from '@angular/common';
           <i [ngClass]="iconClass" class="text-xl"></i>
         </div>
       </div>
-      <div *ngIf="subtitle" class="text-color-secondary text-sm">{{ subtitle }}</div>
+      @if (subtitle) {
+        <div class="text-color-secondary text-sm">{{ subtitle }}</div>
+      }
     </div>
   `,
   styles: [`

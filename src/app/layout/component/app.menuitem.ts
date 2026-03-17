@@ -3,7 +3,7 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { CommonModule } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { RippleModule } from 'primeng/ripple';
 import { MenuItem } from 'primeng/api';
 import { LayoutService } from '../service/layout.service';
@@ -11,17 +11,20 @@ import { LayoutService } from '../service/layout.service';
 @Component({
     // eslint-disable-next-line @angular-eslint/component-selector
     selector: '[app-menuitem]',
-    imports: [CommonModule, RouterModule, RippleModule],
+    imports: [NgClass, RouterModule, RippleModule],
     template: `
-        <ng-container>
-            <div *ngIf="root && item.visible !== false" class="layout-menuitem-root-text">{{ item.label }}</div>
-            <a *ngIf="(!item.routerLink || item.items) && item.visible !== false" [attr.href]="item.url" (click)="itemClick($event)" [ngClass]="item.styleClass" [attr.target]="item.target" tabindex="0" pRipple>
+        @if (root && item.visible !== false) {
+            <div class="layout-menuitem-root-text">{{ item.label }}</div>
+        }
+        @if ((!item.routerLink || item.items) && item.visible !== false) {
+            <a [attr.href]="item.url" (click)="itemClick($event)" [ngClass]="item.styleClass" [attr.target]="item.target" tabindex="0" pRipple>
                 <i [ngClass]="item.icon" class="layout-menuitem-icon"></i>
                 <span class="layout-menuitem-text">{{ item.label }}</span>
-                <i class="pi pi-fw pi-angle-down layout-submenu-toggler" *ngIf="item.items"></i>
+                @if (item.items) { <i class="pi pi-fw pi-angle-down layout-submenu-toggler"></i> }
             </a>
+        }
+        @if (item.routerLink && !item.items && item.visible !== false) {
             <a
-                *ngIf="item.routerLink && !item.items && item.visible !== false"
                 (click)="itemClick($event)"
                 [ngClass]="item.styleClass"
                 [routerLink]="item.routerLink"
@@ -41,15 +44,16 @@ import { LayoutService } from '../service/layout.service';
             >
                 <i [ngClass]="item.icon" class="layout-menuitem-icon"></i>
                 <span class="layout-menuitem-text">{{ item.label }}</span>
-                <i class="pi pi-fw pi-angle-down layout-submenu-toggler" *ngIf="item.items"></i>
+                @if (item.items) { <i class="pi pi-fw pi-angle-down layout-submenu-toggler"></i> }
             </a>
-
-            <ul *ngIf="item.items && item.visible !== false" [@children]="submenuAnimation">
-                <ng-template ngFor let-child let-i="index" [ngForOf]="item.items">
+        }
+        @if (item.items && item.visible !== false) {
+            <ul [@children]="submenuAnimation">
+                @for (child of item.items; track child; let i = $index) {
                     <li app-menuitem [item]="child" [index]="i" [parentKey]="key" [class]="child['badgeClass']"></li>
-                </ng-template>
+                }
             </ul>
-        </ng-container>
+        }
     `,
     animations: [
         trigger('children', [
@@ -131,18 +135,15 @@ export class AppMenuitem {
     }
 
     itemClick(event: Event) {
-        // avoid processing disabled items
         if (this.item.disabled) {
             event.preventDefault();
             return;
         }
 
-        // execute command
         if (this.item.command) {
             this.item.command({ originalEvent: event, item: this.item });
         }
 
-        // toggle active state
         if (this.item.items) {
             this.active = !this.active;
         }

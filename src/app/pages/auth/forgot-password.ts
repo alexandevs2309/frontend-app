@@ -22,6 +22,7 @@ export class ForgotPassword {
     forgotForm: FormGroup;
     isLoading = signal(false);
     emailSent = signal(false);
+    tenantRequired = signal(false);
     platformName = environment.appName;
 
     constructor(
@@ -32,7 +33,8 @@ export class ForgotPassword {
         private localeService: LocaleService
     ) {
         this.forgotForm = this.fb.group({
-            email: ['', [Validators.required, Validators.email]]
+            email: ['', [Validators.required, Validators.email]],
+            tenant_subdomain: ['']
         });
     }
 
@@ -40,15 +42,23 @@ export class ForgotPassword {
         return this.forgotForm.get('email')!;
     }
 
+    get tenantSubdomain() {
+        return this.forgotForm.get('tenant_subdomain')!;
+    }
+
     onSubmit() {
         if (this.forgotForm.invalid) return;
 
         this.isLoading.set(true);
-        const email = this.forgotForm.value.email;
+        const { email, tenant_subdomain } = this.forgotForm.value;
 
-        this.authService.requestPasswordReset(email).subscribe({
+        const storedTenant = JSON.parse(localStorage.getItem('tenant') || 'null');
+        const resolvedSubdomain = (tenant_subdomain || '').trim() || storedTenant?.subdomain || undefined;
+
+        this.authService.requestPasswordReset(email, resolvedSubdomain).subscribe({
             next: () => {
                 this.emailSent.set(true);
+                this.tenantRequired.set(false);
                 this.messageService.add({
                     severity: 'success',
                     summary: this.t('auth.forgot.email_sent'),
@@ -56,11 +66,22 @@ export class ForgotPassword {
                 });
             },
             error: (error) => {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: this.t('common.error'),
-                    detail: getHttpErrorMessage(error, this.t('auth.forgot.could_not_send'))
-                });
+                if (error?.error?.code === 'tenant_required') {
+                    this.tenantRequired.set(true);
+                    this.forgotForm.get('tenant_subdomain')?.setValidators([Validators.required]);
+                    this.forgotForm.get('tenant_subdomain')?.updateValueAndValidity();
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Tenant requerido',
+                        detail: 'Tu correo está asociado a varias cuentas. Ingresa el subdominio de tu negocio.'
+                    });
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: this.t('common.error'),
+                        detail: getHttpErrorMessage(error, this.t('auth.forgot.could_not_send'))
+                    });
+                }
                 this.isLoading.set(false);
             },
             complete: () => this.isLoading.set(false)

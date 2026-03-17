@@ -15,83 +15,96 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto pricing-grid">
-            <div *ngFor="let plan of plans; let i = index"
-                 class="relative pricing-card bg-white dark:bg-slate-900 rounded-[28px] border border-slate-200 dark:border-slate-700 p-8 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] hover:-translate-y-1 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300"
-                 [ngClass]="getCardClass(plan.name)"
-                 [class.ring-2]="isPopularPlan(plan.name)"
-                 [class.ring-indigo-500]="isPopularPlan(plan.name)"
-                 [class.border-indigo-500]="isPopularPlan(plan.name)"
-                 [class.dark:border-indigo-400]="isPopularPlan(plan.name)">
+            @for (plan of plans; track plan.name) {
+                <div class="relative pricing-card bg-white dark:bg-slate-900 rounded-[28px] border border-slate-200 dark:border-slate-700 p-8 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] hover:-translate-y-1 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300"
+                     [ngClass]="getCardClass(plan.name)"
+                     [class.ring-2]="isPopularPlan(plan.name)"
+                     [class.ring-indigo-500]="isPopularPlan(plan.name)"
+                     [class.border-indigo-500]="isPopularPlan(plan.name)"
+                     [class.dark:border-indigo-400]="isPopularPlan(plan.name)">
 
-                <div *ngIf="isPopularPlan(plan.name)" class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
-                    <span class="pricing-popular-badge px-4 py-1.5 rounded-full text-sm font-semibold">
-                        Mas popular
-                    </span>
-                </div>
+                    @if (isPopularPlan(plan.name)) {
+                        <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+                            <span class="pricing-popular-badge px-4 py-1.5 rounded-full text-sm font-semibold">
+                                Mas popular
+                            </span>
+                        </div>
+                    }
 
-                <div class="text-center mb-8 pricing-card__head" [class.pt-10]="isPopularPlan(plan.name)">
-                    <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center pricing-icon-wrap">
-                        <i [class]="getPlanIcon(plan.name)" class="text-2xl text-indigo-600"></i>
+                    <div class="text-center mb-8 pricing-card__head" [class.pt-10]="isPopularPlan(plan.name)">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center pricing-icon-wrap">
+                            <i [class]="getPlanIcon(plan.name)" class="text-2xl text-indigo-600"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">{{ getPlanDisplayName(plan.name) }}</h3>
+                        <div class="mb-4 pricing-price">
+                            <span class="text-4xl font-bold text-slate-900 dark:text-white">${{ +plan.price }}</span>
+                            <span class="text-slate-600 dark:text-slate-400 ml-2">/ mes</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm">{{ getPlanDescription(plan.name) }}</p>
                     </div>
-                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">{{ getPlanDisplayName(plan.name) }}</h3>
-                    <div class="mb-4 pricing-price">
-                        <span class="text-4xl font-bold text-slate-900 dark:text-white">${{ +plan.price }}</span>
-                        <span class="text-slate-600 dark:text-slate-400 ml-2">/ mes</span>
+
+                    <div class="mb-8">
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-3">
+                            Lo esencial
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            @for (highlight of getPlanHighlights(plan); track highlight) {
+                                <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 px-3 py-1 text-xs font-semibold">
+                                    {{ highlight }}
+                                </span>
+                            }
+                        </div>
                     </div>
-                    <p class="text-slate-600 dark:text-slate-400 text-sm">{{ getPlanDescription(plan.name) }}</p>
-                </div>
 
-                <div class="mb-8">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-3">
-                        Lo esencial
-                    </p>
-                    <div class="flex flex-wrap gap-2">
-                        <span *ngFor="let highlight of getPlanHighlights(plan)" class="inline-flex items-center rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 px-3 py-1 text-xs font-semibold">
-                            {{ highlight }}
-                        </span>
+                    <div class="mb-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-3">
+                            Capacidades tecnicas
+                        </p>
+                        <ul class="space-y-4">
+                            @for (feature of getPlanFeatures(plan); track feature) {
+                                <li class="flex items-center text-slate-700 dark:text-slate-300">
+                                    <i class="pi pi-check-circle text-emerald-500 mr-3"></i>
+                                    <span>{{ feature }}</span>
+                                </li>
+                            }
+                        </ul>
                     </div>
-                </div>
 
-                <div class="mb-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-3">
-                        Capacidades tecnicas
-                    </p>
-                    <ul class="space-y-4">
-                        <li *ngFor="let feature of getPlanFeatures(plan)" class="flex items-center text-slate-700 dark:text-slate-300">
-                            <i class="pi pi-check-circle text-emerald-500 mr-3"></i>
-                            <span>{{ feature }}</span>
-                        </li>
-                    </ul>
-                </div>
+                    @if (getPlanBenefits(plan).length) {
+                        <div class="mb-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">
+                                Beneficios comerciales
+                            </p>
+                            <ul class="space-y-3">
+                                @for (benefit of getPlanBenefits(plan); track benefit) {
+                                    <li class="flex items-center text-slate-700 dark:text-slate-300">
+                                        <i class="pi pi-briefcase text-indigo-500 mr-3"></i>
+                                        <span>{{ benefit }}</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
 
-                <div *ngIf="getPlanBenefits(plan).length" class="mb-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">
-                        Beneficios comerciales
-                    </p>
-                    <ul class="space-y-3">
-                        <li *ngFor="let benefit of getPlanBenefits(plan)" class="flex items-center text-slate-700 dark:text-slate-300">
-                            <i class="pi pi-briefcase text-indigo-500 mr-3"></i>
-                            <span>{{ benefit }}</span>
-                        </li>
-                    </ul>
-                </div>
+                    <button pButton pRipple
+                            [label]="getPlanButtonText(plan.name)"
+                            (click)="selectPlan(plan.name, +plan.price)"
+                            class="w-full py-3 text-base font-semibold transition-colors"
+                            [class]="isPopularPlan(plan.name) ?
+                                'bg-indigo-600! text-white! hover:bg-indigo-700! border-0!' :
+                                'bg-slate-100! dark:bg-slate-800! text-slate-900! dark:text-white! border! border-slate-300! dark:border-slate-600! hover:bg-slate-200! dark:hover:bg-slate-700!'">
+                    </button>
 
-                <button pButton pRipple
-                        [label]="getPlanButtonText(plan.name)"
-                        (click)="selectPlan(plan.name, +plan.price)"
-                        class="w-full py-3 text-base font-semibold transition-colors"
-                        [class]="isPopularPlan(plan.name) ?
-                            'bg-indigo-600! text-white! hover:bg-indigo-700! border-0!' :
-                            'bg-slate-100! dark:bg-slate-800! text-slate-900! dark:text-white! border! border-slate-300! dark:border-slate-600! hover:bg-slate-200! dark:hover:bg-slate-700!'">
-                </button>
-
-                <div *ngIf="showGuarantee(plan.name)" class="text-center mt-4">
-                    <span class="text-slate-500 dark:text-slate-400 text-xs">
-                        <i class="pi pi-shield-check mr-1"></i>
-                        Garantia de 30 dias
-                    </span>
+                    @if (showGuarantee(plan.name)) {
+                        <div class="text-center mt-4">
+                            <span class="text-slate-500 dark:text-slate-400 text-xs">
+                                <i class="pi pi-shield-check mr-1"></i>
+                                Garantia de 30 dias
+                            </span>
+                        </div>
+                    }
                 </div>
-            </div>
+            }
         </div>
 
         <div class="mt-16 text-center">

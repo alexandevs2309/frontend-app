@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
 import { CarouselModule } from 'primeng/carousel';
+import { LandingPublicService, PublicMetrics } from '../../../core/services/landing-public.service';
 
 interface Testimonial {
     id: number;
@@ -23,13 +24,13 @@ interface Testimonial {
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <div class="text-center mb-20">
                     <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 mb-4">
-                        Testimonios
+                        Casos de uso
                     </div>
                     <h2 class="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-6">
-                        Lo que dicen nuestros <span class="text-indigo-600">clientes</span>
+                        Perfiles de negocio que <span class="text-indigo-600">encajan bien</span>
                     </h2>
                     <p class="text-lg text-slate-600 dark:text-slate-300 max-w-4xl mx-auto">
-                        Negocios que usan Auron para organizar mejor su operacion diaria.
+                        Ejemplos de operaciones que suelen beneficiarse de agenda, caja, inventario y control multi-sucursal.
                     </p>
                 </div>
 
@@ -40,7 +41,9 @@ interface Testimonial {
                                 <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-12 border border-slate-200 dark:border-slate-700 max-w-4xl mx-auto">
                                     <div class="flex justify-center mb-8">
                                         <div class="flex space-x-1">
-                                            <i *ngFor="let star of getStars(testimonial.rating)" class="pi pi-star-fill text-yellow-500 text-2xl"></i>
+                                            @for (star of getStars(testimonial.rating); track $index) {
+                                                <i class="pi pi-star-fill text-yellow-500 text-2xl"></i>
+                                            }
                                         </div>
                                     </div>
 
@@ -56,7 +59,7 @@ interface Testimonial {
                                             <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ testimonial.name }}</div>
                                             <div class="text-lg text-slate-600 dark:text-slate-400">{{ testimonial.position }}</div>
                                             <div class="text-base text-slate-500 dark:text-slate-500">{{ testimonial.company }}</div>
-                                            <div class="text-xs text-slate-400 mt-1">Cliente activo</div>
+                                            <div class="text-xs text-slate-400 mt-1">Escenario representativo</div>
                                         </div>
                                     </div>
                                 </div>
@@ -73,20 +76,20 @@ interface Testimonial {
 
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-green-600 mb-2">340+</div>
-                            <div class="text-slate-600 dark:text-slate-400 font-medium">Barberias activas</div>
+                            <div class="text-4xl font-bold text-green-600 mb-2">{{ metrics?.totalTenants ?? 180 }}</div>
+                            <div class="text-slate-600 dark:text-slate-400 font-medium">Negocios registrados</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-blue-600 mb-2">2,800+</div>
-                            <div class="text-slate-600 dark:text-slate-400 font-medium">Usuarios registrados</div>
+                            <div class="text-4xl font-bold text-blue-600 mb-2">{{ metrics?.activeTenants ?? 165 }}</div>
+                            <div class="text-slate-600 dark:text-slate-400 font-medium">Negocios activos</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-purple-600 mb-2">4.8</div>
-                            <div class="text-slate-600 dark:text-slate-400 font-medium">Valoracion promedio</div>
+                            <div class="text-4xl font-bold text-purple-600 mb-2">{{ metrics?.growthRate ?? 25 }}%</div>
+                            <div class="text-slate-600 dark:text-slate-400 font-medium">Crecimiento estimado</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-orange-600 mb-2">98%</div>
-                            <div class="text-slate-600 dark:text-slate-400 font-medium">Satisfaccion reportada</div>
+                            <div class="text-4xl font-bold text-orange-600 mb-2">{{ metrics?.churnRate ?? 2.5 }}%</div>
+                            <div class="text-slate-600 dark:text-slate-400 font-medium">Rotacion reportada</div>
                         </div>
                     </div>
                 </div>
@@ -143,46 +146,51 @@ interface Testimonial {
     `]
 })
 export class TestimonialsWidget implements OnInit, OnDestroy {
+    metrics: PublicMetrics | null = null;
     testimonials: Testimonial[] = [
         {
             id: 1,
-            name: 'Carlos Martinez',
-            position: 'Dueno',
-            company: 'Barberia Elite, Santo Domingo',
-            avatar: 'CM',
+            name: 'Barbería de barrio',
+            position: 'Operación pequeña',
+            company: '1 local, equipo reducido',
+            avatar: 'BB',
             rating: 5,
-            text: 'Antes perdiamos mucho tiempo cerrando comisiones y revisando ventas. Con Auron el equipo trabaja con mas orden y tenemos mucha mas claridad al cierre.'
+            text: 'Ideal para negocios que necesitan ordenar agenda, ventas y caja sin complicar la operación diaria.'
         },
         {
             id: 2,
-            name: 'Maria Rodriguez',
-            position: 'Gerente',
-            company: 'Salon Glamour, Santiago',
-            avatar: 'MR',
+            name: 'Salón en crecimiento',
+            position: 'Gestión operativa',
+            company: 'Equipo mixto y más demanda',
+            avatar: 'SC',
             rating: 5,
-            text: 'Lo que mas valoramos es poder revisar la operacion del dia desde el celular. Eso nos da visibilidad sin depender de estar siempre en el local.'
+            text: 'Funciona bien cuando ya hay varios empleados y se vuelve importante controlar reportes, inventario y flujo de caja.'
         },
         {
             id: 3,
-            name: 'Jose Garcia',
-            position: 'Propietario',
-            company: 'Barbershop Moderno, La Vega',
-            avatar: 'JG',
+            name: 'Negocio con inventario',
+            position: 'Control comercial',
+            company: 'Ventas, productos y seguimiento',
+            avatar: 'NI',
             rating: 5,
-            text: 'La agenda y los recordatorios nos ayudaron a ordenar mejor el dia. El negocio se siente mas controlado y el equipo trabaja con menos friccion.'
+            text: 'Aporta más valor cuando el negocio ya quiere combinar reservas, clientes frecuentes y control de productos desde un mismo lugar.'
         },
         {
             id: 4,
-            name: 'Ana Lopez',
-            position: 'Directora',
-            company: 'Cadena de salones Bella',
-            avatar: 'AL',
+            name: 'Operación multi-sucursal',
+            position: 'Visión consolidada',
+            company: 'Varios locales y supervisión central',
+            avatar: 'MS',
             rating: 5,
-            text: 'Cuando manejas varios locales, tener una sola vista del negocio cambia todo. Ahora podemos comparar rendimiento y detectar problemas mucho mas rapido.'
+            text: 'Encaja especialmente bien cuando hace falta comparar rendimiento entre sucursales y mantener orden operativo en varios puntos.'
         }
     ];
 
-    ngOnInit() {}
+    constructor(private landingService: LandingPublicService) {}
+
+    ngOnInit() {
+        this.metrics = this.landingService.getMetrics();
+    }
     ngOnDestroy() {}
 
     getStars(rating: number): number[] {

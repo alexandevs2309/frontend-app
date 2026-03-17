@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { Router } from '@angular/router';
 import { SubscriptionService } from '../../core/services/subscription/subscription.service';
@@ -7,23 +7,21 @@ import { SubscriptionService } from '../../core/services/subscription/subscripti
 @Component({
   selector: 'app-subscription-status',
   standalone: true,
-  imports: [CommonModule, ButtonModule],
+  imports: [NgClass, ButtonModule],
   template: `
-    <div *ngIf="subscriptionInfo && !isSuperAdmin()" class="subscription-status" [ngClass]="getStatusClass()">
+    @if (subscriptionInfo && !isSuperAdmin()) {
+    <div class="subscription-status" [ngClass]="getStatusClass()">
       <div class="status-content">
         <div class="status-info">
           <span class="plan-name">{{ subscriptionInfo.plan_display }}</span>
           <span class="status-text">{{ getStatusText() }}</span>
         </div>
-        <button *ngIf="shouldShowUpgrade()" 
-                pButton 
-                label="Renovar" 
-                size="small"
-                class="p-button-sm"
-                (click)="upgrade()">
-        </button>
+        @if (shouldShowUpgrade()) {
+          <button pButton label="Renovar" size="small" class="p-button-sm" (click)="upgrade()"></button>
+        }
       </div>
     </div>
+    }
   `,
   styles: [`
     .subscription-status {

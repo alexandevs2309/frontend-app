@@ -1,5 +1,4 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
 import { DashboardService } from '../../../core/services/dashboard/dashboard.service';
@@ -8,14 +7,15 @@ import { AppCurrencyPipe } from '../../../core/pipes/app-currency.pipe';
 @Component({
     standalone: true,
     selector: 'app-best-selling-widget',
-    imports: [CommonModule, ButtonModule, MenuModule, AppCurrencyPipe],
+    imports: [ButtonModule, MenuModule, AppCurrencyPipe],
     template: `
         <div class="card">
             <div class="flex justify-between items-center mb-6">
                 <div class="font-semibold text-xl">Servicios Más Populares</div>
             </div>
             <ul class="list-none p-0 m-0">
-                <li *ngFor="let service of topServices(); let i = index" class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                @for (service of topServices(); track service.name; let i = $index) {
+                <li class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
                     <div>
                         <span class="text-surface-900 dark:text-surface-0 font-medium mr-2 mb-1 md:mb-0">{{service.name}}</span>
                         <div class="mt-1 text-muted-color">{{service.count}} veces solicitado</div>
@@ -27,9 +27,12 @@ import { AppCurrencyPipe } from '../../../core/pipes/app-currency.pipe';
                         <span class="text-indigo-600 ml-4 font-medium">{{(service.revenue || 0) | appCurrency}}</span>
                     </div>
                 </li>
-                <li *ngIf="topServices().length === 0" class="text-center py-4 text-muted-color">
+                }
+                @if (topServices().length === 0) {
+                <li class="text-center py-4 text-muted-color">
                     No hay datos de servicios disponibles
                 </li>
+                }
             </ul>
         </div>
     `

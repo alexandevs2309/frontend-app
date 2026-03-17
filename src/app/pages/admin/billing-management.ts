@@ -1,5 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -17,6 +16,7 @@ import { TenantService } from '../../core/services/tenant/tenant.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { AdminErrorLogService } from '../../core/services/admin-error-log.service';
 
 interface Invoice {
     id?: number;
@@ -57,20 +57,21 @@ interface BillingStats {
     selector: 'app-billing-management',
     standalone: true,
     imports: [
-        CommonModule, FormsModule, ButtonModule, TableModule, TagModule,
+        FormsModule, ButtonModule, TableModule, TagModule,
         InputIconModule, IconFieldModule, InputTextModule, SelectModule,
         DialogModule, ToolbarModule, CardModule, DatePipe, CurrencyPipe, ToastModule, TooltipModule
     ],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
+
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <p-card>
                 <div class="flex items-center justify-between">
                     <div>
                         <div class="text-2xl font-bold text-green-600">{{ stats().total_revenue | currency:'USD' }}</div>
-                        <div class="text-sm text-gray-600">Total Revenue</div>
+                        <div class="text-sm text-gray-600">Ingresos totales</div>
                     </div>
                     <i class="pi pi-dollar text-3xl text-green-600"></i>
                 </div>
@@ -80,7 +81,7 @@ interface BillingStats {
                 <div class="flex items-center justify-between">
                     <div>
                         <div class="text-2xl font-bold text-orange-600">{{ stats().pending_payments | currency:'USD' }}</div>
-                        <div class="text-sm text-gray-600">Pending Payments</div>
+                        <div class="text-sm text-gray-600">Pagos pendientes</div>
                     </div>
                     <i class="pi pi-clock text-3xl text-orange-600"></i>
                 </div>
@@ -90,7 +91,7 @@ interface BillingStats {
                 <div class="flex items-center justify-between">
                     <div>
                         <div class="text-2xl font-bold text-red-600">{{ stats().overdue_invoices }}</div>
-                        <div class="text-sm text-gray-600">Overdue Invoices</div>
+                        <div class="text-sm text-gray-600">Facturas vencidas</div>
                     </div>
                     <i class="pi pi-exclamation-triangle text-3xl text-red-600"></i>
                 </div>
@@ -100,7 +101,7 @@ interface BillingStats {
                 <div class="flex items-center justify-between">
                     <div>
                         <div class="text-2xl font-bold text-blue-600">{{ stats().active_subscriptions }}</div>
-                        <div class="text-sm text-gray-600">Active Subscriptions</div>
+                        <div class="text-sm text-gray-600">Suscripciones activas</div>
                     </div>
                     <i class="pi pi-users text-3xl text-blue-600"></i>
                 </div>
@@ -109,130 +110,127 @@ interface BillingStats {
 
         <p-toolbar styleClass="mb-6">
             <ng-template #start>
-                <h4 class="m-0">Billing & Invoices</h4>
+                <h4 class="m-0">Facturación y facturas</h4>
             </ng-template>
 
             <ng-template #end>
                 <div class="flex gap-2">
-                    <p-select [(ngModel)]="selectedStatus" [options]="statusOptions" placeholder="Filter by Status" (onChange)="filterInvoices()" />
-                    <p-button label="Generate Invoice" icon="pi pi-plus" (click)="showGenerateDialog = true" />
+                    <p-select [(ngModel)]="selectedStatus" [options]="statusOptions" placeholder="Filtrar por estado" (onChange)="filterInvoices()" />
+                    <p-button
+                        label="Generar factura"
+                        icon="pi pi-plus"
+                        (click)="showGenerateDialog = true" />
                 </div>
             </ng-template>
         </p-toolbar>
 
         <p-table
             [value]="filteredInvoices()"
-            [rows]="15"
-            [paginator]="true"
-            [globalFilterFields]="['user_email', 'tenant_name', 'plan_name', 'description']"
-            [tableStyle]="{ 'min-width': '75rem' }"
-            [rowHover]="true"
             [loading]="loading()"
-            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} invoices"
-            [showCurrentPageReport]="true"
-            [rowsPerPageOptions]="[10, 15, 25, 50]" >
+            [paginator]="true"
+            [rows]="10"
+            [rowsPerPageOptions]="[10, 25, 50]"
+            class="p-datatable-gridlines">
+
             <ng-template #caption>
-                <div class="flex items-center justify-between">
-                    <h5 class="m-0">Invoice Management</h5>
+                <div class="flex justify-end">
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
-                        <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search invoices..." />
+                        <input pInputText type="text" placeholder="Buscar facturas..." (input)="onGlobalFilter($event)" />
                     </p-iconfield>
                 </div>
             </ng-template>
 
             <ng-template #header>
                 <tr>
-                    <th style="min-width:12rem">Tenant</th>
-                    <th style="min-width:10rem">Plan</th>
-                    <th style="min-width:8rem">Amount</th>
-                    <th style="min-width:10rem">Status</th>
-                    <th style="min-width:12rem">Billing Period</th>
-                    <th style="min-width:10rem">Due Date</th>
-                    <th style="min-width:10rem">Paid Date</th>
-                    <th style="min-width:10rem">Actions</th>
+                    <th>ID</th>
+                    <th>Tenant / User</th>
+                    <th>Plan</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                    <th>Emisión</th>
+                    <th>Vencimiento</th>
+                    <th>Acciones</th>
                 </tr>
             </ng-template>
 
             <ng-template #body let-invoice>
                 <tr>
+                    <td>#{{ invoice.id }}</td>
                     <td>
-                        <div>
-                            <div class="font-semibold">{{ invoice.tenant_name || invoice.user?.email || 'N/A' }}</div>
-                            <div class="text-sm text-gray-600">{{ invoice.description || 'Suscripción mensual - ' + (invoice.user_email || invoice.user?.email) }}</div>
-                        </div>
+                        <div class="font-medium">{{ invoice.tenant_name || invoice.user_name || '—' }}</div>
+                        <div class="text-sm text-gray-500">{{ invoice.user_email || invoice.user?.email || '' }}</div>
                     </td>
-                    <td>{{ invoice.plan_name || invoice.subscription?.plan?.name || 'N/A' }}</td>
-                    <td>{{ +invoice.amount | currency:'USD' }}</td>
+                    <td>{{ invoice.plan_name || invoice.subscription?.plan?.name || '—' }}</td>
+                    <td>{{ invoice.amount | currency:'USD' }}</td>
                     <td>
-                        <p-tag [value]="invoice.status" [severity]="getStatusSeverity(invoice.status)" />
+                        <p-tag
+                            [value]="getInvoiceDisplayStatus(invoice)"
+                            [severity]="getStatusSeverity(getInvoiceDisplayStatus(invoice))" />
                     </td>
-                    <td>{{ invoice.issued_at | date:'MMM yyyy' }}</td>
-                    <td>{{ invoice.due_date | date:'dd/MM/yyyy' }}</td>
-                    <td>{{ invoice.paid_at ? (invoice.paid_at | date:'dd/MM/yyyy') : '-' }}</td>
+                    <td>{{ invoice.issued_at | date:'mediumDate' }}</td>
+                    <td>{{ invoice.due_date | date:'mediumDate' }}</td>
                     <td>
                         <div class="flex gap-2">
-                            <p-button 
-                                icon="pi pi-eye" 
-                                size="small" 
-                                [outlined]="true" 
-                                (click)="viewInvoice(invoice)"
-                                pTooltip="Ver detalles" />
-                            <p-button 
-                                icon="pi pi-send" 
-                                size="small" 
-                                [outlined]="true" 
-                                (click)="sendInvoice(invoice)" 
-                                *ngIf="!invoice.is_paid"
-                                pTooltip="Enviar factura" />
-                            <p-button 
-                                icon="pi pi-check" 
-                                size="small" 
-                                severity="success" 
-                                [outlined]="true" 
-                                (click)="markAsPaid(invoice)" 
-                                *ngIf="!invoice.is_paid"
-                                pTooltip="Marcar como pagada" />
-                            <p-button 
-                                icon="pi pi-download" 
-                                size="small" 
-                                severity="secondary" 
-                                [outlined]="true" 
+                            @if (!invoice.is_paid) {
+                                <p-button
+                                    icon="pi pi-check"
+                                    size="small"
+                                    severity="success"
+                                    [outlined]="true"
+                                    (click)="markAsPaid(invoice)"
+                                    pTooltip="Marcar como pagada" />
+                            }
+                            <p-button
+                                icon="pi pi-print"
+                                size="small"
+                                severity="secondary"
+                                [outlined]="true"
                                 (click)="downloadInvoice(invoice)"
-                                pTooltip="Descargar PDF" />
+                                pTooltip="Imprimir o guardar como PDF" />
                         </div>
                     </td>
+                </tr>
+            </ng-template>
+
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="8" class="text-center py-8 text-gray-500">No se encontraron facturas.</td>
                 </tr>
             </ng-template>
         </p-table>
 
         <!-- Generate Invoice Dialog -->
-        <p-dialog [(visible)]="showGenerateDialog" [style]="{ width: '450px' }" header="Generate Invoice" [modal]="true">
+        <p-dialog [(visible)]="showGenerateDialog" [style]="{ width: '450px' }" header="Generar factura" [modal]="true">
             <ng-template #content>
                 <div class="flex flex-col gap-4">
                     <div>
                         <label class="block font-bold mb-2">Tenant</label>
-                        <p-select [(ngModel)]="newInvoice.tenant" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Select Tenant" fluid />
+                        <p-select [(ngModel)]="newInvoice.tenant" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Selecciona un tenant" fluid />
                     </div>
                     <div>
-                        <label class="block font-bold mb-2">Amount</label>
-                        <input type="number" pInputText [(ngModel)]="newInvoice.amount" placeholder="0.00" fluid />
+                        <label class="block font-bold mb-2">Descripción (opcional)</label>
+                        <input type="text" pInputText [(ngModel)]="newInvoice.description" placeholder="Factura manual de suscripción" fluid />
                     </div>
                     <div>
-                        <label class="block font-bold mb-2">Due Date</label>
+                        <label class="block font-bold mb-2">Fecha de vencimiento</label>
                         <input type="date" pInputText [(ngModel)]="newInvoice.due_date" fluid />
                     </div>
+                    <small class="text-gray-500">
+                        El monto se calcula automáticamente usando el plan activo del tenant.
+                    </small>
                 </div>
             </ng-template>
 
             <ng-template #footer>
-                <p-button label="Cancel" icon="pi pi-times" text (click)="showGenerateDialog = false" />
-                <p-button label="Generate" icon="pi pi-check" (click)="generateInvoice()" />
+                <p-button label="Cancelar" icon="pi pi-times" text (click)="showGenerateDialog = false" />
+                <p-button label="Generar" icon="pi pi-check" (click)="generateInvoice()" />
             </ng-template>
         </p-dialog>
     `
 })
 export class BillingManagement implements OnInit {
+    private readonly errorLogger = inject(AdminErrorLogService);
     invoices = signal<Invoice[]>([]);
     filteredInvoices = signal<Invoice[]>([]);
     stats = signal<BillingStats>({ total_revenue: 0, pending_payments: 0, overdue_invoices: 0, active_subscriptions: 0 });
@@ -242,18 +240,19 @@ export class BillingManagement implements OnInit {
 
     newInvoice = {
         tenant: null,
-        amount: null,
+        description: '',
         due_date: null
     };
 
     tenantOptions = signal<any[]>([]);
 
     statusOptions = [
-        { label: 'All Status', value: null },
-        { label: 'Pending', value: 'pending' },
-        { label: 'Paid', value: 'paid' },
-        { label: 'Overdue', value: 'overdue' },
-        { label: 'Cancelled', value: 'cancelled' }
+        { label: 'Todos los estados', value: null },
+        { label: 'Pendiente', value: 'pending' },
+        { label: 'Pagada', value: 'paid' },
+        { label: 'Fallida', value: 'failed' },
+        { label: 'Vencida', value: 'overdue' },
+        { label: 'Cancelada', value: 'canceled' }
     ];
 
     constructor(
@@ -287,8 +286,7 @@ export class BillingManagement implements OnInit {
                 const tenants = Array.isArray(data) ? data : data.results || [];
                 this.tenantOptions.set(tenants.map((t: any) => ({ name: t.name, id: t.id })));
             },
-            error: (error) => {
-                
+            error: () => {
                 this.tenantOptions.set([]);
             }
         });
@@ -305,7 +303,6 @@ export class BillingManagement implements OnInit {
                 });
             },
             error: () => {
-                // Fallback local calculation
                 const invoices = this.invoices();
                 const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + (+(i.amount ?? 0)), 0);
                 const pendingPayments = invoices.filter(i => i.status === 'pending').reduce((sum, i) => sum + (+(i.amount ?? 0)), 0);
@@ -315,7 +312,11 @@ export class BillingManagement implements OnInit {
                     total_revenue: totalRevenue,
                     pending_payments: pendingPayments,
                     overdue_invoices: overdueInvoices,
-                    active_subscriptions: invoices.length
+                    active_subscriptions: new Set(
+                        invoices
+                            .map(invoice => invoice.subscription?.id)
+                            .filter((id): id is number => typeof id === 'number')
+                    ).size
                 });
             }
         });
@@ -325,7 +326,7 @@ export class BillingManagement implements OnInit {
         let filtered = this.invoices();
 
         if (this.selectedStatus) {
-            filtered = filtered.filter(invoice => invoice.status === this.selectedStatus);
+            filtered = filtered.filter(invoice => this.getInvoiceDisplayStatus(invoice) === this.selectedStatus);
         }
 
         this.filteredInvoices.set(filtered);
@@ -351,29 +352,28 @@ export class BillingManagement implements OnInit {
         switch (status) {
             case 'paid': return 'success';
             case 'pending': return 'warn';
+            case 'failed': return 'danger';
             case 'overdue': return 'danger';
-            case 'cancelled': return 'secondary';
+            case 'canceled': return 'secondary';
             default: return 'info';
         }
+    }
+
+    getInvoiceDisplayStatus(invoice: Invoice): string {
+        if (!invoice.is_paid && invoice.status === 'pending' && invoice.due_date && new Date(invoice.due_date) < new Date()) {
+            return 'overdue';
+        }
+
+        return invoice.status || 'pending';
     }
 
     viewInvoice(invoice: Invoice) {
         const userInfo = invoice.user_name || invoice.user?.full_name || invoice.user_email || invoice.user?.email || 'Usuario desconocido';
         this.messageService.add({
             severity: 'info',
-            summary: 'Invoice Details',
+            summary: 'Detalle de factura',
             detail: `Invoice #${invoice.id} - ${userInfo} - $${invoice.amount}`,
             life: 5000
-        });
-    }
-
-    sendInvoice(invoice: Invoice) {
-        const userEmail = invoice.user_email || invoice.user?.email || 'usuario';
-        this.messageService.add({
-            severity: 'success',
-            summary: 'Invoice Sent',
-            detail: `Invoice sent to ${userEmail}`,
-            life: 3000
         });
     }
 
@@ -384,7 +384,7 @@ export class BillingManagement implements OnInit {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Popup bloqueado',
-                detail: 'Permite popups para descargar la factura en PDF'
+                detail: 'Permite popups para imprimir o guardar la factura como PDF'
             });
             return;
         }
@@ -406,12 +406,14 @@ export class BillingManagement implements OnInit {
             this.billingService.markInvoiceAsPaid(invoice.id).subscribe({
                 next: () => {
                     invoice.status = 'paid';
+                    invoice.is_paid = true;
                     (invoice as any).paid_at = new Date().toISOString();
                     this.loadStats();
+                    this.filterInvoices();
                     this.messageService.add({
                         severity: 'success',
-                        summary: 'Success',
-                        detail: 'Invoice marked as paid'
+                        summary: 'Éxito',
+                        detail: 'Factura marcada como pagada'
                     });
                 },
                 error: (error) => this.showErrorMessage('Error al marcar la factura como pagada', error)
@@ -420,24 +422,32 @@ export class BillingManagement implements OnInit {
     }
 
     generateInvoice() {
-        if (!this.newInvoice.tenant || !this.newInvoice.amount || !this.newInvoice.due_date) {
+        if (!this.newInvoice.tenant || !this.newInvoice.due_date) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
-                detail: 'Please fill all required fields'
+                detail: 'Selecciona un tenant y una fecha de vencimiento'
             });
             return;
         }
 
-        this.messageService.add({
-            severity: 'success',
-            summary: 'Invoice Generated',
-            detail: `Invoice for $${this.newInvoice.amount} created successfully`
+        this.billingService.generateInvoiceForTenant({
+            tenant_id: this.newInvoice.tenant,
+            due_date: this.newInvoice.due_date,
+            description: this.newInvoice.description?.trim() || undefined
+        }).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Factura generada',
+                    detail: 'La factura se creó correctamente usando la suscripción activa del tenant'
+                });
+                this.newInvoice = { tenant: null, description: '', due_date: null };
+                this.showGenerateDialog = false;
+                this.loadInvoices();
+            },
+            error: (error) => this.showErrorMessage('Error al generar la factura', error)
         });
-
-        this.newInvoice = { tenant: null, amount: null, due_date: null };
-        this.showGenerateDialog = false;
-        this.loadInvoices();
     }
 
     trackByInvoice(index: number, invoice: Invoice): any {
@@ -467,13 +477,7 @@ export class BillingManagement implements OnInit {
     }
 
     private logError(context: string, error: any): void {
-        const errorInfo = {
-            context,
-            timestamp: new Date().toISOString(),
-            error: error?.message || 'Unknown error',
-            component: 'BillingManagement'
-        };
-        
+        this.errorLogger.log('BillingManagement', context, error);
     }
 
     private buildInvoicePrintHtml(invoice: Invoice): string {

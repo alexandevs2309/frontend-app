@@ -48,7 +48,7 @@ function optionalEmailValidator(): ValidatorFn {
 
                     <div class="p-12 border-b border-gray-200 dark:border-gray-700">
                         <h1 class="text-5xl font-bold  bg-clip-text text-transparent text-center mb-4">
-                            Configuración del Sistema
+                            Configuracion del Sistema
                         </h1>
                         <p class="text-xl text-gray-600 dark:text-gray-400 text-center leading-relaxed">
                             Gestiona las preferencias clave de tu aplicación de forma segura.
@@ -192,7 +192,7 @@ function optionalEmailValidator(): ValidatorFn {
                                         <!-- Stripe Configuration -->
                                         <div class="space-y-6">
                                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                                                <i class="pi pi-credit-card text-purple-500"></i> Configuración de Stripe
+                                                <i class="pi pi-credit-card text-purple-500"></i> Configuracion de Stripe
                                             </h3>
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
@@ -223,7 +223,7 @@ function optionalEmailValidator(): ValidatorFn {
                                         <!-- PayPal Configuration -->
                                         <div class="space-y-6 border-t border-gray-200 dark:border-gray-700 pt-8">
                                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                                                <i class="pi pi-paypal text-blue-600"></i> Configuración de PayPal
+                                                <i class="pi pi-paypal text-blue-600"></i> Configuracion de PayPal
                                             </h3>
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
@@ -252,7 +252,7 @@ function optionalEmailValidator(): ValidatorFn {
                                         <!-- Twilio Configuration -->
                                         <div class="space-y-6 border-t border-gray-200 dark:border-gray-700 pt-8">
                                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                                                <i class="pi pi-mobile text-green-600"></i> Configuración de SMS (Twilio)
+                                                <i class="pi pi-mobile text-green-600"></i> Configuracion de SMS (Twilio)
                                             </h3>
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
@@ -680,7 +680,7 @@ export class SystemSettings implements OnInit {
                     this.messageService.add({
                         severity: 'success',
                         summary: '¡Éxito!',
-                        detail: 'Configuración general actualizada correctamente.',
+                        detail: 'Configuracion general actualizada correctamente.',
                         life: 3000
                     });
                     // Refresh platform name in app
@@ -702,7 +702,7 @@ export class SystemSettings implements OnInit {
                     this.messageService.add({
                         severity: 'success',
                         summary: '¡Éxito!',
-                        detail: 'Configuración de correo actualizada correctamente.',
+                        detail: 'Configuracion de correo actualizada correctamente.',
                         life: 3000
                     });
                 },
@@ -720,7 +720,7 @@ export class SystemSettings implements OnInit {
                     this.messageService.add({
                         severity: 'success',
                         summary: '¡Éxito!',
-                        detail: 'Configuración de pagos actualizada correctamente.',
+                        detail: 'Configuracion de pagos actualizada correctamente.',
                         life: 3000
                     });
                 },
@@ -738,7 +738,7 @@ export class SystemSettings implements OnInit {
                     this.messageService.add({
                         severity: 'success',
                         summary: '¡Éxito!',
-                        detail: 'Configuración de seguridad actualizada correctamente.',
+                        detail: 'Configuracion de seguridad actualizada correctamente.',
                         life: 3000
                     });
                 },
@@ -772,7 +772,7 @@ export class SystemSettings implements OnInit {
                     this.messageService.add({
                         severity: 'info',
                         summary: 'Auto-guardado',
-                        detail: 'Configuración guardada automáticamente tras prueba exitosa',
+                        detail: 'Configuracion guardada automáticamente tras prueba exitosa',
                         life: 3000
                     });
                     this.saveEmail();
@@ -1033,3 +1033,4 @@ export class SystemSettings implements OnInit {
         this.errorLogger.log('SystemSettings', context, error);
     }
 }
+

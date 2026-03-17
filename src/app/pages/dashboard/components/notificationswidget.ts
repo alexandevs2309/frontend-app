@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgClass, DatePipe } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
 import { BaseApiService } from '../../../core/services/base-api.service';
@@ -8,17 +8,18 @@ import { API_CONFIG } from '../../../core/config/api.config';
 @Component({
     standalone: true,
     selector: 'app-notifications-widget',
-    imports: [CommonModule, ButtonModule, MenuModule],
+    imports: [NgClass, DatePipe, ButtonModule, MenuModule],
     template: `
         <div class="card">
             <div class="flex items-center justify-between mb-6">
                 <div class="font-semibold text-xl">Notificaciones</div>
             </div>
 
-            <div *ngIf="notifications().length > 0; else noNotifications">
+            @if (notifications().length > 0) {
                 <ul class="p-0 m-0 list-none">
-                    <li *ngFor="let notification of notifications()" class="flex items-center py-3 border-b border-surface">
-                        <div class="w-12 h-12 flex items-center justify-center rounded-full mr-4 shrink-0" 
+                    @for (notification of notifications(); track notification) {
+                    <li class="flex items-center py-3 border-b border-surface">
+                        <div class="w-12 h-12 flex items-center justify-center rounded-full mr-4 shrink-0"
                              [ngClass]="getNotificationStyle(notification.type)">
                             <i [class]="getNotificationIcon(notification.type)"></i>
                         </div>
@@ -28,15 +29,14 @@ import { API_CONFIG } from '../../../core/config/api.config';
                             <div class="text-xs text-muted-color mt-1">{{notification.created_at | date:'short'}}</div>
                         </div>
                     </li>
+                    }
                 </ul>
-            </div>
-            
-            <ng-template #noNotifications>
+            } @else {
                 <div class="text-center py-6 text-muted-color">
                     <i class="pi pi-bell-slash text-4xl mb-3"></i>
                     <p>No hay notificaciones</p>
                 </div>
-            </ng-template>
+            }
         </div>
     `
 })

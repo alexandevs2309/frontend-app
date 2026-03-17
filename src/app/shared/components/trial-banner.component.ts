@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { Router } from '@angular/router';
 import { TrialService, TrialStatus } from '../../core/services/trial.service';
@@ -9,75 +9,57 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-trial-banner',
   standalone: true,
-  imports: [CommonModule, ButtonModule],
+  imports: [NgClass, ButtonModule],
   template: `
-    <div *ngIf="shouldShowBanner" 
-         class="trial-banner"
-         [ngClass]="{
-           'trial-warning': daysRemaining <= 3 && daysRemaining > 0 && !isGracePeriod,
-           'trial-expired': daysRemaining <= 0 && !isGracePeriod,
-           'trial-active': daysRemaining > 3 && !isGracePeriod,
-           'grace-period': isGracePeriod
-         }">
-      
-      <!-- Período de Gracia -->
-      <div *ngIf="isGracePeriod && daysRemaining > 0" class="banner-content">
-        <div class="banner-icon">
-          <i class="pi pi-exclamation-triangle animate-pulse"></i>
-        </div>
-        <div class="banner-text">
-          <span class="banner-title">⚠️ Período de Gracia Activo</span>
-          <span class="banner-message">
-            Tu suscripción expiró. Te quedan <strong>{{daysRemaining}} días</strong> para renovar.
-          </span>
-        </div>
-        <button pButton 
-                type="button" 
-                label="Renovar Ahora" 
-                class="p-button-sm p-button-danger"
-                (click)="upgradeNow()">
-        </button>
-      </div>
+    @if (shouldShowBanner) {
+      <div class="trial-banner"
+           [ngClass]="{
+             'trial-warning': daysRemaining <= 3 && daysRemaining > 0 && !isGracePeriod,
+             'trial-expired': daysRemaining <= 0 && !isGracePeriod,
+             'trial-active': daysRemaining > 3 && !isGracePeriod,
+             'grace-period': isGracePeriod
+           }">
 
-      <!-- Trial Activo -->
-      <div *ngIf="!isGracePeriod && daysRemaining > 0" class="banner-content">
-        <div class="banner-icon">
-          <i class="pi pi-clock" *ngIf="daysRemaining > 3"></i>
-          <i class="pi pi-exclamation-triangle" *ngIf="daysRemaining <= 3"></i>
-        </div>
-        <div class="banner-text">
-          <span class="banner-title">Prueba Gratuita</span>
-          <span class="banner-message">
-            Te quedan <strong>{{daysRemaining}} días</strong> de prueba gratuita
-          </span>
-        </div>
-        <button pButton 
-                type="button" 
-                label="Actualizar Plan" 
-                class="p-button-sm"
-                (click)="upgradeNow()">
-        </button>
-      </div>
+        @if (isGracePeriod && daysRemaining > 0) {
+          <div class="banner-content">
+            <div class="banner-icon"><i class="pi pi-exclamation-triangle animate-pulse"></i></div>
+            <div class="banner-text">
+              <span class="banner-title">⚠️ Período de Gracia Activo</span>
+              <span class="banner-message">Tu suscripción expiró. Te quedan <strong>{{daysRemaining}} días</strong> para renovar.</span>
+            </div>
+            <button pButton type="button" label="Renovar Ahora" class="p-button-sm p-button-danger" (click)="upgradeNow()"></button>
+          </div>
+        }
 
-      <!-- Trial Expirado -->
-      <div *ngIf="!isGracePeriod && daysRemaining <= 0" class="banner-content">
-        <div class="banner-icon">
-          <i class="pi pi-times-circle"></i>
-        </div>
-        <div class="banner-text">
-          <span class="banner-title">Prueba Expirada</span>
-          <span class="banner-message">
-            Tu prueba gratuita ha terminado. Actualiza para continuar.
-          </span>
-        </div>
-        <button pButton 
-                type="button" 
-                label="Actualizar Ahora" 
-                class="p-button-sm p-button-danger"
-                (click)="upgradeNow()">
-        </button>
+        @if (!isGracePeriod && daysRemaining > 0) {
+          <div class="banner-content">
+            <div class="banner-icon">
+              @if (daysRemaining > 3) {
+                <i class="pi pi-clock"></i>
+              } @else {
+                <i class="pi pi-exclamation-triangle"></i>
+              }
+            </div>
+            <div class="banner-text">
+              <span class="banner-title">Prueba Gratuita</span>
+              <span class="banner-message">Te quedan <strong>{{daysRemaining}} días</strong> de prueba gratuita</span>
+            </div>
+            <button pButton type="button" label="Actualizar Plan" class="p-button-sm" (click)="upgradeNow()"></button>
+          </div>
+        }
+
+        @if (!isGracePeriod && daysRemaining <= 0) {
+          <div class="banner-content">
+            <div class="banner-icon"><i class="pi pi-times-circle"></i></div>
+            <div class="banner-text">
+              <span class="banner-title">Prueba Expirada</span>
+              <span class="banner-message">Tu prueba gratuita ha terminado. Actualiza para continuar.</span>
+            </div>
+            <button pButton type="button" label="Actualizar Ahora" class="p-button-sm p-button-danger" (click)="upgradeNow()"></button>
+          </div>
+        }
       </div>
-    </div>
+    }
   `,
   styles: [`
     .trial-banner {

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
@@ -9,7 +9,7 @@ import { AnimationService } from '../../../shared/services/animation.service';
 @Component({
     selector: 'pricing-widget',
     standalone: true,
-    imports: [ButtonModule, RippleModule, RouterModule, CommonModule],
+    imports: [ButtonModule, RippleModule, RouterModule, NgClass],
     templateUrl: './pricingwidget.html',
     styleUrls: ['./pricingwidget.scss']
 })

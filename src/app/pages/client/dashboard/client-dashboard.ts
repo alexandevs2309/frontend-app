@@ -1,5 +1,4 @@
 import { Component, signal, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth/auth.service';
 import { TrialService } from '../../../core/services/trial.service';
 import { NotificationBadgeService } from '../../../core/services/notification/notification-badge.service';
@@ -17,7 +16,7 @@ import { LocaleService } from '../../../core/services/locale/locale.service';
 @Component({
     selector: 'app-client-dashboard',
     standalone: true,
-    imports: [CommonModule, ToastModule, TrialBannerComponent, StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget],
+    imports: [ToastModule, TrialBannerComponent, StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget],
     providers: [MessageService],
     template: `
         <p-toast position="top-right" />
@@ -56,7 +55,11 @@ import { LocaleService } from '../../../core/services/locale/locale.service';
                     @if (showAdminWidgets()) {
                         <app-revenue-stream-widget />
                     }
-                    <app-notifications-widget />
+                    @defer (on viewport) {
+                        <app-notifications-widget />
+                    } @placeholder {
+                        <div class="card h-32 animate-pulse bg-surface-100 dark:bg-surface-800 rounded-xl"></div>
+                    }
                 </div>
             </div>
         }
