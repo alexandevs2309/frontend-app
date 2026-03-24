@@ -17,6 +17,7 @@ import { ServiceService } from '../../../core/services/service/service.service';
 import { InventoryService } from '../../../core/services/inventory/inventory.service';
 import { ClientService } from '../../../core/services/client/client.service';
 import { EmployeeService } from '../../../core/services/employee/employee.service';
+import { SettingsService } from '../../../core/services/settings/settings.service';
 import { environment } from '../../../../environments/environment';
 import { SaleDto, SaleWithDetailsDto, CreateSaleDto } from '../../../core/dto/sale.dto';
 import { SaleDetailDto, CartItemDto } from '../../../core/dto/sale-detail.dto';
@@ -66,6 +67,7 @@ export class PosSystem implements OnInit, OnDestroy {
     private readonly clientsService = inject(ClientService);
     private readonly employeesService = inject(EmployeeService);
     private readonly messageService = inject(MessageService);
+    private readonly settingsService = inject(SettingsService);
 
     // Signals principales
     carrito = signal<CartItem[]>([]);
@@ -75,6 +77,8 @@ export class PosSystem implements OnInit, OnDestroy {
 
     // Computed signals para cálculos automáticos
     subtotal = computed(() => calculateCartSubtotal(this.carrito()));
+    currencyCode = computed(() => this.settingsService.settings().currency || 'DOP');
+    currencyLocale = computed(() => this.settingsService.getCurrencyLocale());
     total = computed(() => {
         return calculateTotalFromDiscount(
             this.subtotal(),
@@ -147,6 +151,7 @@ export class PosSystem implements OnInit, OnDestroy {
     nombreUsuarioActual = '';
     rolUsuarioActual = '';
     permisosUsuario: string[] = [];
+    nombreCajeroTurno = '';
 
     // Método público para template
     private mapCartItemToSaleDetail(item: CartItem): SaleDetailDto {
@@ -172,7 +177,9 @@ export class PosSystem implements OnInit, OnDestroy {
             details: backendSale.details || [],
             payments: backendSale.payments || [],
             client_name: backendSale.client_name,
-            employee_name: backendSale.employee_name
+            employee_name: backendSale.employee_name,
+            user_name: backendSale.user_name,
+            cashier_name: backendSale.cashier_name || backendSale.user_name
         };
     }
 
@@ -527,7 +534,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'Descuento inválido',
-                    detail: `El descuento no puede ser mayor al subtotal ($${subtotal.toFixed(2)})`
+                    detail: `El descuento no puede ser mayor al subtotal (${this.formatearMoneda(subtotal)})`
                 });
                 this.descuento.set(subtotal);
             }
@@ -720,6 +727,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         try {
             const register = await this.posService.getCurrentCashRegister().toPromise();
             this.cajaAbierta.set(!!register);
+            this.nombreCajeroTurno = register?.user_name || this.nombreUsuarioActual || '';
 
             // Cargar pagos no cash al verificar estado de caja
             if (this.cajaAbierta()) {
@@ -728,6 +736,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             }
         } catch (error) {
             this.cajaAbierta.set(false);
+            this.nombreCajeroTurno = '';
         }
     }
 
@@ -742,10 +751,11 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             return;
         }
         try {
-            await this.posService.openCashRegister({
+            const register = await this.posService.openCashRegister({
                 initial_cash: this.montoInicialCaja
             }).toPromise();
             this.cajaAbierta.set(true);
+            this.nombreCajeroTurno = register?.user_name || this.nombreUsuarioActual || '';
             this.mostrarDialogoAbrirCaja = false;
 
             // NO resetear estadísticas - se mantienen del día
@@ -858,7 +868,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         const diferencia = getDifferenceToConfirm(this.diferenciaCaja);
 
         if (diferencia > 0) {
-            const confirmar = confirm(`Hay una diferencia de $${diferencia.toFixed(2)}. ¿Está seguro de cerrar la caja?`);
+            const confirmar = confirm(`Hay una diferencia de ${this.formatearMoneda(diferencia)}. ¿Está seguro de cerrar la caja?`);
             if (!confirmar) return;
         }
 
@@ -873,6 +883,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 await this.generarReporteCuadre(cajaActual);
             }
             this.cajaAbierta.set(false);
+            this.nombreCajeroTurno = '';
             this.mostrarDialogoCerrarCaja = false;
 
             // Limpiar datos del cuadre
@@ -969,7 +980,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Monto excesivo',
-                detail: `Solo falta $${restante.toFixed(2)}. Ajuste el monto.`
+                detail: `Solo falta ${this.formatearMoneda(restante)}. Ajuste el monto.`
             });
             return;
         }
@@ -981,7 +992,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         this.messageService.add({
             severity: 'success',
             summary: 'Pago agregado',
-            detail: `${this.getPaymentMethodName(metodo as PaymentMethod)}: $${monto.toFixed(2)}`
+            detail: `${this.getPaymentMethodName(metodo as PaymentMethod)}: ${this.formatearMoneda(monto)}`
         });
     }
 
@@ -1179,7 +1190,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             this.messageService.add({
                 severity: diferencia === 0 ? 'success' : 'warn',
                 summary: 'Arqueo completado',
-                detail: `Total contado: $${totalContado.toFixed(2)}. Diferencia: $${diferencia.toFixed(2)}`
+                detail: `Total contado: ${this.formatearMoneda(totalContado)}. Diferencia: ${this.formatearMoneda(diferencia)}`
             });
             this.mostrarDialogoArqueo = false;
         } catch (error: any) {
@@ -1288,7 +1299,10 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     formatearMoneda(valor: any): string {
         const num = Number(valor) || 0;
-        return `$${num.toFixed(2)}`;
+        return new Intl.NumberFormat(this.currencyLocale(), {
+            style: 'currency',
+            currency: this.currencyCode()
+        }).format(num);
     }
 
     @ViewChild('qrCanvas') qrCanvas!: ElementRef<HTMLCanvasElement>;
@@ -1305,7 +1319,12 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             details: this.carrito().map(item => this.mapCartItemToSaleDetail(item)),
             mixedPayments: this.pagosMixtos,
             clientName: this.clienteSeleccionado?.full_name,
-            employeeName: this.empleadoSeleccionado()?.display_name
+            employeeName:
+                this.empleadoSeleccionado()?.displayName ||
+                this.empleadoSeleccionado()?.display_name ||
+                this.empleadoSeleccionado()?.user?.full_name ||
+                this.empleadoSeleccionado()?.full_name,
+            cashierName: this.nombreCajeroTurno || this.nombreUsuarioActual
         });
         this.mostrarDialogoTicket = true;
         setTimeout(() => this.generarQR(), 100);

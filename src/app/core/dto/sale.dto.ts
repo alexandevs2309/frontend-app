@@ -14,6 +14,8 @@ export interface SaleWithDetailsDto extends SaleDto {
   payments: any[];
   client_name?: string;
   employee_name?: string;
+  user_name?: string;
+  cashier_name?: string;
 }
 
 export interface CreateSaleDto {

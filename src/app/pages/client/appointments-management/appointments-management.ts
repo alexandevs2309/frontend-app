@@ -1,38 +1,36 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { TextareaModule } from 'primeng/textarea';
-import { SelectModule } from 'primeng/select';
+import { CardModule } from 'primeng/card';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DatePickerModule } from 'primeng/datepicker';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { CardModule } from 'primeng/card';
 import { AppointmentService, AppointmentWithDetails } from '../../../core/services/appointment/appointment.service';
-import { ServiceService, Service } from '../../../core/services/service/service.service';
-import { EmployeeService } from '../../../core/services/employee/employee.service';
-import { ClientService } from '../../../core/services/client/client.service';
 import { AuthService } from '../../../core/services/auth/auth.service';
 import { environment } from '../../../../environments/environment';
+import { AppointmentDialogComponent, AppointmentDialogValue } from './appointment-dialog.component';
+import { AppointmentsDataService } from './appointments-data.service';
+import { AppointmentsUiService } from './appointments-ui.service';
 
 @Component({
     selector: 'app-appointments-management',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, FormsModule, TableModule, ButtonModule, DialogModule, InputTextModule, TextareaModule, SelectModule, DatePickerModule, TagModule, ToastModule, ConfirmDialogModule, TooltipModule, CardModule],
+    imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, SelectModule, DatePickerModule, TagModule, ToastModule, ConfirmDialogModule, TooltipModule, CardModule, AppointmentDialogComponent],
     providers: [MessageService, ConfirmationService],
     template: `
         <div class="p-4 md:p-6">
-            <!-- Hero Header -->
             <div class="relative overflow-hidden bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
                 <div class="absolute inset-0 bg-black/10"></div>
                 <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-24 -mt-24"></div>
-                
+
                 <div class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div class="flex items-center gap-4">
                         <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
@@ -46,36 +44,56 @@ import { environment } from '../../../../environments/environment';
                 </div>
             </div>
 
-            <!-- Filtros -->
-           <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 w-full">
-  <div class="flex flex-wrap gap-3 flex-1">
-    <div class="w-full sm:w-1/2 md:w-auto">
-      <label class="block font-medium mb-1">Fecha</label>
-      <p-datepicker [(ngModel)]="fechaFiltro" dateFormat="dd/mm/yy"
-                  (onSelect)="filtrarPorFecha()" class="w-full" [showClear]="true">
-      </p-datepicker>
-    </div>
-    <div class="w-full sm:w-1/2 md:w-auto">
-      <label class="block font-medium mb-1">Estado</label>
-      <p-select [(ngModel)]="estadoFiltro" [options]="estadosOptions"
-                optionLabel="label" optionValue="value" (onChange)="filtrarPorEstado()"
-                class="w-full" [showClear]="true"></p-select>
-    </div>
-    <div class="w-full sm:w-1/2 md:w-auto">
-      <label class="block font-medium mb-1">Empleado</label>
-      <p-select [(ngModel)]="empleadoFiltro" [options]="empleadosOptions"
-                optionLabel="label" optionValue="value" (onChange)="filtrarPorEmpleado()"
-                class="w-full" [showClear]="true"></p-select>
-    </div>
-  </div>
+            <div class="mb-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Vista de control detallado</div>
+                        <div class="text-sm text-slate-600 dark:text-slate-400">
+                            Usa esta vista cuando necesites filtrar por fecha, empleado o estado, y resolver pendientes uno por uno.
+                        </div>
+                    </div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400">
+                        {{ citasFiltradas().length }} resultado{{ citasFiltradas().length === 1 ? '' : 's' }} visibles
+                    </div>
+                </div>
+            </div>
 
-  <button pButton label="Limpiar Filtros" icon="pi pi-filter-slash"
-          (click)="limpiarFiltros()" class="p-button-outlined w-full md:w-auto"></button>
-</div>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 w-full">
+                <div class="flex flex-wrap gap-3 flex-1">
+                    <div class="w-full sm:w-1/2 md:w-auto">
+                        <label class="block font-medium mb-1">Fecha</label>
+                        <p-datepicker [(ngModel)]="fechaFiltro" dateFormat="dd/mm/yy" (onSelect)="filtrarPorFecha()" class="w-full" [showClear]="true"></p-datepicker>
+                    </div>
+                    <div class="w-full sm:w-1/2 md:w-auto">
+                        <label class="block font-medium mb-1">Estado</label>
+                        <p-select
+                            [(ngModel)]="estadoFiltro"
+                            [options]="estadosOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            (onChange)="filtrarPorEstado()"
+                            class="w-full"
+                            [showClear]="true"
+                        ></p-select>
+                    </div>
+                    <div class="w-full sm:w-1/2 md:w-auto">
+                        <label class="block font-medium mb-1">Empleado</label>
+                        <p-select
+                            [(ngModel)]="empleadoFiltro"
+                            [options]="empleadosOptions()"
+                            optionLabel="label"
+                            optionValue="value"
+                            (onChange)="filtrarPorEmpleado()"
+                            class="w-full"
+                            [showClear]="true"
+                        ></p-select>
+                    </div>
+                </div>
 
-            <!-- Tabla / Grid -->
+                <button pButton label="Limpiar Filtros" icon="pi pi-filter-slash" (click)="limpiarFiltros()" class="p-button-outlined w-full md:w-auto"></button>
+            </div>
+
             <div class="block md:hidden space-y-4">
-                <!-- Móvil: tarjetas -->
                 <ng-container *ngFor="let cita of citasFiltradas()">
                     <div class="surface-card border-round shadow-md p-4">
                         <div class="flex justify-between items-center mb-2">
@@ -142,47 +160,16 @@ import { environment } from '../../../../environments/environment';
                 </ng-template>
             </p-table>
 
-            <!-- Dialogo de Cita -->
-            <p-dialog [header]="citaSeleccionada ? 'Editar Cita' : 'Nueva Cita'" [(visible)]="mostrarDialogo" [modal]="true" [style]="{ width: '95%', maxWidth: '600px' }" [closable]="!guardando()" [closeOnEscape]="!guardando()">
-                <form [formGroup]="formulario" class="grid gap-4">
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block font-medium mb-1">Cliente *</label>
-                            <p-select formControlName="client" [options]="clientesOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar cliente" class="w-full"> </p-select>
-                        </div>
-                        <div>
-                            <label class="block font-medium mb-1">Empleado *</label>
-                            <p-select formControlName="stylist" [options]="empleadosOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar empleado" class="w-full"> </p-select>
-                        </div>
-                    </div>
-
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block font-medium mb-1">Fecha *</label>
-                            <p-datepicker formControlName="date" dateFormat="dd/mm/yy" class="w-full"></p-datepicker>
-                        </div>
-                        <div>
-                            <label class="block font-medium mb-1">Hora *</label>
-                            <p-datepicker formControlName="time" hourFormat="24" [showTime]="true" [timeOnly]="true" class="w-full"></p-datepicker>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block font-medium mb-1">Servicio</label>
-                        <p-select formControlName="service" [options]="serviciosOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar servicio" class="w-full" [showClear]="true"> </p-select>
-                    </div>
-
-                    <div>
-                        <label class="block font-medium mb-1">Notas</label>
-                        <textarea pInputTextarea formControlName="description" class="w-full" rows="3" placeholder="Notas adicionales sobre la cita..."></textarea>
-                    </div>
-
-                    <div class="flex justify-end gap-2 mt-4">
-                        <button pButton label="Cancelar" type="button" class="p-button-text" (click)="cerrarDialogo()" [disabled]="guardando()"></button>
-                        <button pButton [label]="citaSeleccionada ? 'Actualizar' : 'Crear'" type="button" icon="pi pi-check" [loading]="guardando()" [disabled]="formulario.invalid" (click)="guardarCita()"></button>
-                    </div>
-                </form>
-            </p-dialog>
+            <app-appointment-dialog
+                [(visible)]="mostrarDialogo"
+                [saving]="guardando()"
+                [appointment]="citaSeleccionada"
+                [clientsOptions]="clientesOptions()"
+                [employeesOptions]="empleadosOptions()"
+                [servicesOptions]="serviciosOptions()"
+                (save)="guardarCita($event)"
+                (cancel)="cerrarDialogo()"
+            ></app-appointment-dialog>
 
             <p-confirmDialog></p-confirmDialog>
             <p-toast></p-toast>
@@ -190,189 +177,86 @@ import { environment } from '../../../../environments/environment';
     `
 })
 export class AppointmentsManagement implements OnInit {
-    private appointmentService = inject(AppointmentService);
-    private serviceService = inject(ServiceService);
-    private employeeService = inject(EmployeeService);
-    private clientService = inject(ClientService);
-    private authService = inject(AuthService);
-    private messageService = inject(MessageService);
-    private confirmationService = inject(ConfirmationService);
-    private fb = inject(FormBuilder);
+    private readonly appointmentService = inject(AppointmentService);
+    private readonly authService = inject(AuthService);
+    private readonly messageService = inject(MessageService);
+    private readonly confirmationService = inject(ConfirmationService);
+    private readonly appointmentsUiService = inject(AppointmentsUiService);
+    private readonly appointmentsDataService = inject(AppointmentsDataService);
+    private readonly destroyRef = inject(DestroyRef);
 
-    citas = signal<AppointmentWithDetails[]>([]);
+    citas = this.appointmentsDataService.appointments;
+    cargando = this.appointmentsDataService.loading;
+    clientesOptions = this.appointmentsDataService.clientsOptions;
+    empleadosOptions = this.appointmentsDataService.employeesOptions;
+    serviciosOptions = this.appointmentsDataService.servicesOptions;
+
     citasFiltradas = signal<AppointmentWithDetails[]>([]);
-    cargando = signal(false);
     guardando = signal(false);
     mostrarDialogo = false;
     citaSeleccionada: AppointmentWithDetails | null = null;
     canDeleteAppointments = false;
-    fechaMinima = new Date();
 
-    // Filtros
     fechaFiltro: Date | null = null;
     estadoFiltro: string | null = null;
     empleadoFiltro: number | null = null;
 
-    // Options
-    clientesOptions: any[] = [];
-    empleadosOptions: any[] = [];
-    serviciosOptions: any[] = [];
-
     estadosOptions = [
         { label: 'Programada', value: 'scheduled' },
         { label: 'Completada', value: 'completed' },
-        { label: 'Cancelada', value: 'cancelled' }
+        { label: 'Cancelada', value: 'cancelled' },
+        { label: 'No asistió', value: 'no_show' }
     ];
 
-    // Utility function to normalize API responses
-    private normalizeArray<T>(response: any): T[] {
-        if (!response) return [];
-        if (Array.isArray(response)) return response;
-        if (response.results && Array.isArray(response.results)) return response.results;
-        return [];
-    }
-
-    // Validador personalizado para fecha futura
-    fechaFuturaValidator = (control: any) => {
-        if (!control.value) return null;
-        const fechaSeleccionada = new Date(control.value);
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-        return fechaSeleccionada >= hoy ? null : { fechaPasada: true };
-    };
-
-    formulario: FormGroup = this.fb.group({
-        client: [null, [Validators.required]],
-        stylist: [null, [Validators.required]],
-        service: [null],
-        date: [null, [Validators.required, this.fechaFuturaValidator]],
-        time: [null, [Validators.required]],
-        description: ['']
-    });
-
-    ngOnInit() {
+    ngOnInit(): void {
         this.canDeleteAppointments = this.computeCanDeleteAppointments();
         this.cargarDatos();
-        // Escuchar evento de edición desde calendario
-        window.addEventListener('editAppointment', (e: any) => {
-            this.editarCita(e.detail);
+        this.appointmentsUiService.refresh$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.cargarDatos(true);
         });
     }
 
-    async cargarDatos() {
-        if (this.cargando()) return; // ✅ Prevenir llamadas concurrentes
-        this.cargando.set(true);
+    async cargarDatos(force = false): Promise<void> {
         try {
-            const [citasRes, serviciosRes, empleadosRes, clientesRes] = await Promise.all([
-                this.appointmentService.getAppointments().toPromise(),
-                this.serviceService.getActiveServices().toPromise(),
-                this.employeeService.getEmployees().toPromise(),
-                this.clientService.getClients().toPromise()
-            ]);
-
-            // Procesar citas
-            const citas = this.normalizeArray<any>(citasRes);
-            const servicios = this.normalizeArray<any>(serviciosRes);
-            const empleados = this.normalizeArray<any>(empleadosRes);
-            const usuarios = empleados
-                .map((e: any) => ({
-                    id: e.user_id_read || e.user?.id,
-                    full_name: e.user?.full_name || e.full_name || e.user?.email,
-                    role: e.user?.role
-                }))
-                .filter((u: any) => !!u.id);
-            const clientes = this.normalizeArray<any>(clientesRes);
-
-            // Enriquecer citas con información adicional
-            const citasEnriquecidas: AppointmentWithDetails[] = citas.map((cita: any) => {
-                const servicio = servicios.find((s: Service) => s.id === cita.service);
-                const empleado = usuarios.find((u: any) => u.id === cita.stylist);
-                const cliente = clientes.find((c: any) => c.id === cita.client);
-
-                return {
-                    ...cita,
-                    client_name: cliente?.name || cliente?.full_name,
-                    stylist_name: empleado?.full_name,
-                    service_name: servicio?.name,
-                    service_price: servicio?.price,
-                    service_duration: servicio?.duration
-                };
-            });
-
-            this.citas.set(citasEnriquecidas);
-            this.citasFiltradas.set(citasEnriquecidas);
-
-            // Configurar opciones para formularios
-            this.clientesOptions = clientes.map((c: any) => ({
-                label: c.name || c.full_name || `Cliente #${c.id}`,
-                value: c.id
-            }));
-
-            this.empleadosOptions = usuarios
-                .filter((u: any) => ['Estilista', 'Manager', 'Client-Staff', 'Cajera'].includes(u.role))
-                .map((u: any) => ({
-                    label: u.full_name || u.email,
-                    value: u.id
-                }));
-
-            this.serviciosOptions = servicios.map((s: Service) => ({
-                label: `${s.name} - $${s.price} (${s.duration || 30}min)`,
-                value: s.id
-            }));
+            await this.appointmentsDataService.load(force);
+            this.aplicarFiltros();
         } catch (error) {
             if (!environment.production) {
-                
             }
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
                 detail: 'No se pudieron cargar los datos'
             });
-        } finally {
-            this.cargando.set(false);
         }
     }
 
-    loadAppointments() {
+    loadAppointments(): void {
         this.cargarDatos();
     }
 
-    abrirDialogo() {
+    abrirDialogo(): void {
         this.citaSeleccionada = null;
-        this.formulario.reset({
-            client: null,
-            stylist: null,
-            service: null,
-            date: null,
-            time: null,
-            description: ''
-        });
         this.mostrarDialogo = true;
     }
 
-    editarCita(cita: AppointmentWithDetails) {
+    editarCita(cita: AppointmentWithDetails): void {
         this.citaSeleccionada = cita;
-        const fechaCita = new Date(cita.date_time);
-
-        this.formulario.patchValue({
-            client: cita.client,
-            stylist: cita.stylist,
-            service: cita.service,
-            date: fechaCita,
-            time: fechaCita,
-            description: cita.description || ''
-        });
         this.mostrarDialogo = true;
     }
 
-    async guardarCita() {
-        if (this.formulario.invalid) return;
+    async guardarCita(formData: AppointmentDialogValue): Promise<void> {
+        if (!formData.date || !formData.time) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Formulario incompleto',
+                detail: 'Debes seleccionar fecha y hora para la cita'
+            });
+            return;
+        }
 
         this.guardando.set(true);
         try {
-            const formData = this.formulario.value;
-
-            // Combinar fecha y hora
             const fecha = new Date(formData.date);
             const hora = new Date(formData.time);
             fecha.setHours(hora.getHours(), hora.getMinutes(), 0, 0);
@@ -380,7 +264,7 @@ export class AppointmentsManagement implements OnInit {
             const citaData = {
                 client: formData.client,
                 stylist: formData.stylist,
-                service: formData.service,
+                service: formData.service ?? undefined,
                 date_time: fecha.toISOString(),
                 description: formData.description,
                 status: 'scheduled' as const
@@ -388,27 +272,16 @@ export class AppointmentsManagement implements OnInit {
 
             if (this.citaSeleccionada) {
                 await this.appointmentService.updateAppointment(this.citaSeleccionada.id, citaData).toPromise();
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Cita actualizada correctamente'
-                });
+                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita actualizada correctamente' });
             } else {
                 await this.appointmentService.createAppointment(citaData).toPromise();
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Cita creada correctamente'
-                });
+                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita creada correctamente' });
             }
 
             this.cerrarDialogo();
-            this.cargarDatos();
-            // Notificar al componente padre para refrescar calendario
-            window.dispatchEvent(new CustomEvent('appointmentSaved'));
+            this.appointmentsUiService.requestRefresh();
         } catch (error: any) {
             if (!environment.production) {
-                
             }
             this.messageService.add({
                 severity: 'error',
@@ -420,15 +293,11 @@ export class AppointmentsManagement implements OnInit {
         }
     }
 
-    async completarCita(cita: AppointmentWithDetails) {
+    async completarCita(cita: AppointmentWithDetails): Promise<void> {
         try {
             await this.appointmentService.completeAppointment(cita.id).toPromise();
-            this.messageService.add({
-                severity: 'success',
-                summary: 'Éxito',
-                detail: 'Cita completada correctamente'
-            });
-            this.cargarDatos();
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita completada correctamente' });
+            this.appointmentsUiService.requestRefresh();
         } catch (error: any) {
             this.messageService.add({
                 severity: 'error',
@@ -438,15 +307,11 @@ export class AppointmentsManagement implements OnInit {
         }
     }
 
-    async cancelarCita(cita: AppointmentWithDetails) {
+    async cancelarCita(cita: AppointmentWithDetails): Promise<void> {
         try {
             await this.appointmentService.cancelAppointment(cita.id).toPromise();
-            this.messageService.add({
-                severity: 'success',
-                summary: 'Éxito',
-                detail: 'Cita cancelada correctamente'
-            });
-            this.cargarDatos();
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita cancelada correctamente' });
+            this.appointmentsUiService.requestRefresh();
         } catch (error: any) {
             this.messageService.add({
                 severity: 'error',
@@ -456,7 +321,7 @@ export class AppointmentsManagement implements OnInit {
         }
     }
 
-    confirmarEliminar(cita: AppointmentWithDetails) {
+    confirmarEliminar(cita: AppointmentWithDetails): void {
         if (!this.canDeleteAppointments) {
             this.messageService.add({
                 severity: 'warn',
@@ -465,6 +330,7 @@ export class AppointmentsManagement implements OnInit {
             });
             return;
         }
+
         this.confirmationService.confirm({
             message: `¿Estás seguro de eliminar la cita del ${new Date(cita.date_time).toLocaleDateString()}?`,
             header: 'Confirmar Eliminación',
@@ -475,18 +341,15 @@ export class AppointmentsManagement implements OnInit {
         });
     }
 
-    async eliminarCita(cita: AppointmentWithDetails) {
+    async eliminarCita(cita: AppointmentWithDetails): Promise<void> {
         if (!this.canDeleteAppointments) {
             return;
         }
+
         try {
             await this.appointmentService.deleteAppointment(cita.id).toPromise();
-            this.messageService.add({
-                severity: 'success',
-                summary: 'Éxito',
-                detail: 'Cita eliminada correctamente'
-            });
-            this.cargarDatos();
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita eliminada correctamente' });
+            this.appointmentsUiService.requestRefresh();
         } catch (error: any) {
             this.messageService.add({
                 severity: 'error',
@@ -496,27 +359,51 @@ export class AppointmentsManagement implements OnInit {
         }
     }
 
-    // Filtros
-    filtrarPorFecha() {
+    filtrarPorFecha(): void {
         this.aplicarFiltros();
     }
 
-    filtrarPorEstado() {
+    filtrarPorEstado(): void {
         this.aplicarFiltros();
     }
 
-    filtrarPorEmpleado() {
+    filtrarPorEmpleado(): void {
         this.aplicarFiltros();
     }
 
-    limpiarFiltros() {
+    limpiarFiltros(): void {
         this.fechaFiltro = null;
         this.estadoFiltro = null;
         this.empleadoFiltro = null;
         this.citasFiltradas.set(this.citas());
     }
 
-    private aplicarFiltros() {
+    getEstadoLabel(status: string): string {
+        const estado = this.estadosOptions.find((item) => item.value === status);
+        return estado?.label || status;
+    }
+
+    getEstadoSeverity(status: string): 'success' | 'info' | 'danger' | 'warn' | 'secondary' {
+        switch (status) {
+            case 'scheduled':
+                return 'info';
+            case 'completed':
+                return 'success';
+            case 'cancelled':
+                return 'danger';
+            case 'no_show':
+                return 'warn';
+            default:
+                return 'secondary';
+        }
+    }
+
+    cerrarDialogo(): void {
+        this.mostrarDialogo = false;
+        this.citaSeleccionada = null;
+    }
+
+    private aplicarFiltros(): void {
         let citasFiltradas = [...this.citas()];
 
         if (this.fechaFiltro) {
@@ -533,31 +420,6 @@ export class AppointmentsManagement implements OnInit {
         }
 
         this.citasFiltradas.set(citasFiltradas);
-    }
-
-    // Helpers
-    getEstadoLabel(status: string): string {
-        const estado = this.estadosOptions.find((e) => e.value === status);
-        return estado?.label || status;
-    }
-
-    getEstadoSeverity(status: string): 'success' | 'info' | 'danger' | 'secondary' {
-        switch (status) {
-            case 'scheduled':
-                return 'info';
-            case 'completed':
-                return 'success';
-            case 'cancelled':
-                return 'danger';
-            default:
-                return 'secondary';
-        }
-    }
-
-    cerrarDialogo() {
-        this.mostrarDialogo = false;
-        this.citaSeleccionada = null;
-        this.formulario.reset();
     }
 
     private computeCanDeleteAppointments(): boolean {

@@ -1,41 +1,61 @@
-import { Component, OnInit, signal, ViewChild, ElementRef, inject, AfterViewInit } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, OnInit, ViewChild, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
+import timeGridPlugin from '@fullcalendar/timegrid';
 import esLocale from '@fullcalendar/core/locales/es';
-import { AppointmentService, AppointmentWithDetails } from '../../../core/services/appointment/appointment.service';
-import { AppointmentValidationService } from '../../../core/services/appointment/appointment-validation.service';
-import { ServiceService, Service } from '../../../core/services/service/service.service';
-import { EmployeeService } from '../../../core/services/employee/employee.service';
-import { ClientService } from '../../../core/services/client/client.service';
-import { AuthService } from '../../../core/services/auth/auth.service';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { DatePickerModule } from 'primeng/datepicker';
-import { TextareaModule } from 'primeng/textarea';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { TagModule } from 'primeng/tag';
+import { ToastModule } from 'primeng/toast';
+import { AppointmentService, AppointmentWithDetails } from '../../../core/services/appointment/appointment.service';
+import { AuthService } from '../../../core/services/auth/auth.service';
+import { AppointmentDialogComponent, AppointmentDialogValue } from './appointment-dialog.component';
+import { AppointmentsDataService } from './appointments-data.service';
+import { AppointmentsUiService } from './appointments-ui.service';
 
 @Component({
     selector: 'app-appointments-calendar',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonModule, TagModule, InputTextModule, SelectModule, DatePickerModule, TextareaModule, ToastModule, ConfirmDialogModule],
+    imports: [CommonModule, DialogModule, ButtonModule, TagModule, InputTextModule, ToastModule, ConfirmDialogModule, AppointmentDialogComponent],
     providers: [MessageService, ConfirmationService],
     template: `
+        <div class="mb-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <div class="text-sm font-semibold text-slate-900 dark:text-white">Vista de agenda visual</div>
+                    <div class="text-sm text-slate-600 dark:text-slate-400">
+                        Aquí ves la carga horaria del día o la semana. Haz clic sobre una cita para revisar el detalle, editarla o eliminarla.
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <span class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                        <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span> Programada
+                    </span>
+                    <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span> Completada
+                    </span>
+                    <span class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+                        <span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span> Cancelada
+                    </span>
+                    <span class="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                        <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span> No asistió
+                    </span>
+                </div>
+            </div>
+        </div>
+
         <div class="calendar-wrapper">
             <div #calendarEl></div>
         </div>
 
-        <!-- Dialog Detalle -->
-        <p-dialog [(visible)]="mostrarDetalle" [modal]="true" [style]="{width: '450px'}" header="Detalle de Cita">
+        <p-dialog [(visible)]="mostrarDetalle" [modal]="true" [style]="{ width: '450px' }" header="Detalle de Cita">
             <div *ngIf="citaSeleccionada" class="space-y-4">
                 <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
                     <i class="pi pi-user text-2xl text-blue-600"></i>
@@ -63,7 +83,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
                     <i class="pi pi-clock text-2xl text-green-600"></i>
                     <div>
                         <label class="text-xs text-surface-500 dark:text-surface-400">Fecha y Hora</label>
-                        <p class="font-semibold">{{ citaSeleccionada.date_time | date:'dd/MM/yyyy HH:mm' }}</p>
+                        <p class="font-semibold">{{ citaSeleccionada.date_time | date: 'dd/MM/yyyy HH:mm' }}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
@@ -71,8 +91,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
                     <div class="flex-1">
                         <label class="text-xs text-surface-500 dark:text-surface-400">Estado</label>
                         <div class="mt-1">
-                            <p-tag [value]="getStatusLabel(citaSeleccionada.status)" 
-                                   [severity]="getStatusSeverity(citaSeleccionada.status)"></p-tag>
+                            <p-tag [value]="getStatusLabel(citaSeleccionada.status)" [severity]="getStatusSeverity(citaSeleccionada.status)"></p-tag>
                         </div>
                     </div>
                 </div>
@@ -84,65 +103,22 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
             <ng-template pTemplate="footer">
                 <div class="flex gap-2">
                     <button pButton label="Cerrar" class="p-button-text" (click)="mostrarDetalle = false"></button>
-                    <button pButton label="Editar" icon="pi pi-pencil" (click)="abrirEdicion()" 
-                            *ngIf="citaSeleccionada?.status === 'scheduled'"></button>
-                    <button pButton label="Eliminar" icon="pi pi-trash" severity="danger" (click)="confirmarEliminar()" 
-                            *ngIf="citaSeleccionada && canDeleteAppointments"></button>
+                    <button pButton label="Editar" icon="pi pi-pencil" (click)="abrirEdicion()" *ngIf="citaSeleccionada?.status === 'scheduled'"></button>
+                    <button pButton label="Eliminar" icon="pi pi-trash" severity="danger" (click)="confirmarEliminar()" *ngIf="citaSeleccionada && canDeleteAppointments"></button>
                 </div>
             </ng-template>
         </p-dialog>
 
-        <!-- Dialog Formulario -->
-        <p-dialog [(visible)]="mostrarFormulario" [modal]="true" [style]="{width: '600px'}" 
-                  [header]="editando ? 'Editar Cita' : 'Nueva Cita'">
-            <form [formGroup]="formulario" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block mb-2 font-semibold">Cliente *</label>
-                        <p-select formControlName="client" [options]="clientesOptions" 
-                                  optionLabel="label" optionValue="value" placeholder="Seleccionar" 
-                                  class="w-full" [filter]="true"></p-select>
-                    </div>
-                    <div>
-                        <label class="block mb-2 font-semibold">Empleado *</label>
-                        <p-select formControlName="stylist" [options]="empleadosOptions" 
-                                  optionLabel="label" optionValue="value" placeholder="Seleccionar" 
-                                  class="w-full"></p-select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block mb-2 font-semibold">Servicio</label>
-                    <p-select formControlName="service" [options]="serviciosOptions" 
-                              optionLabel="label" optionValue="value" placeholder="Seleccionar" 
-                              class="w-full" [showClear]="true"></p-select>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block mb-2 font-semibold">Fecha *</label>
-                        <p-datepicker formControlName="date" dateFormat="dd/mm/yy" 
-                                      [showIcon]="true" class="w-full"></p-datepicker>
-                    </div>
-                    <div>
-                        <label class="block mb-2 font-semibold">Hora *</label>
-                        <p-datepicker formControlName="time" [timeOnly]="true" [showIcon]="true" 
-                                      hourFormat="24" class="w-full"></p-datepicker>
-                    </div>
-                </div>
-                <div>
-                    <label class="block mb-2 font-semibold">Notas</label>
-                    <textarea pInputTextarea formControlName="description" rows="3" 
-                              class="w-full" placeholder="Notas adicionales..."></textarea>
-                </div>
-            </form>
-            <ng-template pTemplate="footer">
-                <div class="flex gap-2">
-                    <button pButton label="Cancelar" class="p-button-text" (click)="cerrarFormulario()"></button>
-                    <button pButton [label]="editando ? 'Actualizar' : 'Crear'" 
-                            [disabled]="formulario.invalid" [loading]="guardando()" 
-                            (click)="guardarCita()"></button>
-                </div>
-            </ng-template>
-        </p-dialog>
+        <app-appointment-dialog
+            [(visible)]="mostrarFormulario"
+            [saving]="guardando()"
+            [appointment]="citaSeleccionada"
+            [clientsOptions]="clientesOptions()"
+            [employeesOptions]="empleadosOptions()"
+            [servicesOptions]="servicesOptionsForDialog()"
+            (save)="guardarCita($event)"
+            (cancel)="cerrarFormulario()"
+        ></app-appointment-dialog>
 
         <p-toast></p-toast>
         <p-confirmDialog></p-confirmDialog>
@@ -187,51 +163,193 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 })
 export class AppointmentsCalendar implements OnInit, AfterViewInit {
     @ViewChild('calendarEl', { static: false }) calendarEl!: ElementRef;
-    private calendar!: Calendar;
-    private appointmentService = inject(AppointmentService);
-    private validationService = inject(AppointmentValidationService);
-    private serviceService = inject(ServiceService);
-    private employeeService = inject(EmployeeService);
-    private clientService = inject(ClientService);
-    private authService = inject(AuthService);
-    private messageService = inject(MessageService);
-    private confirmationService = inject(ConfirmationService);
-    private fb = inject(FormBuilder);
 
-    citas = signal<AppointmentWithDetails[]>([]);
+    private readonly appointmentService = inject(AppointmentService);
+    private readonly authService = inject(AuthService);
+    private readonly messageService = inject(MessageService);
+    private readonly confirmationService = inject(ConfirmationService);
+    private readonly appointmentsUiService = inject(AppointmentsUiService);
+    private readonly appointmentsDataService = inject(AppointmentsDataService);
+    private readonly destroyRef = inject(DestroyRef);
+
+    private calendar!: Calendar;
+
+    citas = this.appointmentsDataService.appointments;
+    clientesOptions = this.appointmentsDataService.clientsOptions;
+    empleadosOptions = this.appointmentsDataService.employeesOptions;
+    serviciosOptions = this.appointmentsDataService.servicesOptions;
+    loading = this.appointmentsDataService.loading;
+
     guardando = signal(false);
     mostrarDetalle = false;
     mostrarFormulario = false;
-    editando = false;
     citaSeleccionada: AppointmentWithDetails | null = null;
-    private overdueAlertShown = false;
     canDeleteAppointments = false;
 
-    clientesOptions: any[] = [];
-    empleadosOptions: any[] = [];
-    serviciosOptions: any[] = [];
+    constructor() {
+        effect(() => {
+            this.citas();
+            this.actualizarEventos();
+        });
+    }
 
-    formulario: FormGroup = this.fb.group({
-        client: [null, Validators.required],
-        stylist: [null, Validators.required],
-        service: [null],
-        date: [null, Validators.required],
-        time: [null, Validators.required],
-        description: ['']
-    });
-
-    ngOnInit() {
+    ngOnInit(): void {
         this.canDeleteAppointments = this.computeCanDeleteAppointments();
         this.cargarCitas();
-        this.cargarOpciones();
-        window.addEventListener('appointmentSaved', () => this.loadAppointments());
+        this.appointmentsUiService.refresh$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.cargarCitas(true);
+        });
     }
 
-    ngAfterViewInit() {
+    ngAfterViewInit(): void {
         this.initCalendar();
+        this.actualizarEventos();
     }
 
-    initCalendar() {
+    loadAppointments(): void {
+        this.cargarCitas();
+    }
+
+    abrirFormulario(): void {
+        this.citaSeleccionada = null;
+        this.mostrarFormulario = true;
+    }
+
+    abrirEdicion(): void {
+        if (!this.citaSeleccionada) {
+            return;
+        }
+        this.mostrarDetalle = false;
+        this.mostrarFormulario = true;
+    }
+
+    async guardarCita(formData: AppointmentDialogValue): Promise<void> {
+        if (!formData.date || !formData.time) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Formulario incompleto',
+                detail: 'Debes seleccionar fecha y hora para la cita'
+            });
+            return;
+        }
+
+        this.guardando.set(true);
+        try {
+            const fecha = new Date(formData.date);
+            const hora = new Date(formData.time);
+            fecha.setHours(hora.getHours(), hora.getMinutes(), 0, 0);
+
+            const payload = {
+                client: formData.client,
+                stylist: formData.stylist,
+                service: formData.service ?? undefined,
+                date_time: fecha.toISOString(),
+                description: formData.description,
+                status: 'scheduled' as const
+            };
+
+            if (this.citaSeleccionada) {
+                await this.appointmentService.updateAppointment(this.citaSeleccionada.id, payload).toPromise();
+                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita actualizada' });
+            } else {
+                await this.appointmentService.createAppointment(payload).toPromise();
+                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita creada' });
+            }
+
+            this.cerrarFormulario();
+            this.appointmentsUiService.requestRefresh();
+        } catch {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al guardar' });
+        } finally {
+            this.guardando.set(false);
+        }
+    }
+
+    confirmarEliminar(): void {
+        if (!this.canDeleteAppointments) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Acceso restringido',
+                detail: 'Tu rol no puede eliminar citas'
+            });
+            return;
+        }
+
+        this.confirmationService.confirm({
+            message: '¿Eliminar esta cita?',
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Sí',
+            rejectLabel: 'No',
+            accept: () => this.eliminarCita()
+        });
+    }
+
+    async eliminarCita(): Promise<void> {
+        if (!this.canDeleteAppointments || !this.citaSeleccionada) {
+            return;
+        }
+
+        try {
+            await this.appointmentService.deleteAppointment(this.citaSeleccionada.id).toPromise();
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita eliminada' });
+            this.mostrarDetalle = false;
+            this.appointmentsUiService.requestRefresh();
+        } catch {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar' });
+        }
+    }
+
+    cerrarFormulario(): void {
+        this.mostrarFormulario = false;
+        this.citaSeleccionada = null;
+    }
+
+    getStatusLabel(status: string): string {
+        const labels: Record<string, string> = {
+            scheduled: 'Programada',
+            completed: 'Completada',
+            cancelled: 'Cancelada',
+            no_show: 'No asistió'
+        };
+        return labels[status] || status;
+    }
+
+    getStatusSeverity(status: string): 'success' | 'info' | 'danger' | 'warn' | 'secondary' {
+        switch (status) {
+            case 'scheduled':
+                return 'info';
+            case 'completed':
+                return 'success';
+            case 'cancelled':
+                return 'danger';
+            case 'no_show':
+                return 'warn';
+            default:
+                return 'secondary';
+        }
+    }
+
+    servicesOptionsForDialog(): Array<{ label: string; value: number }> {
+        return this.serviciosOptions().map((service) => ({
+            label: service.label.replace(/ \(\d+min\)$/, ''),
+            value: service.value
+        }));
+    }
+
+    private async cargarCitas(force = false): Promise<void> {
+        try {
+            await this.appointmentsDataService.load(force);
+        } catch {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudieron cargar las citas'
+            });
+        }
+    }
+
+    private initCalendar(): void {
         this.calendar = new Calendar(this.calendarEl.nativeElement, {
             plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
             initialView: 'timeGridWeek',
@@ -266,66 +384,12 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
         this.calendar.render();
     }
 
-    async cargarCitas() {
-        try {
-            const [citasRes, serviciosRes, empleadosRes] = await Promise.all([
-                this.appointmentService.getAppointments().toPromise(),
-                this.serviceService.getActiveServices().toPromise(),
-                this.employeeService.getEmployees().toPromise()
-            ]);
-            const clientesRes = await this.cargarClientesSeguro();
-
-            const citas = (citasRes as any)?.results || citasRes || [];
-            const servicios = (serviciosRes as any)?.results || serviciosRes || [];
-            const empleados = (empleadosRes as any)?.results || empleadosRes || [];
-            const usuarios = empleados
-                .map((e: any) => ({
-                    id: e.user_id_read || e.user?.id,
-                    full_name: e.user?.full_name || e.full_name || e.user?.email,
-                    role: e.user?.role
-                }))
-                .filter((u: any) => !!u.id);
-            const clientes = clientesRes;
-
-            // Enriquecer citas con nombres
-            const citasEnriquecidas = citas.map((cita: any) => {
-                const servicio = servicios.find((s: any) => s.id === cita.service);
-                const empleado = usuarios.find((u: any) => u.id === cita.stylist);
-                const cliente = clientes.find((c: any) => c.id === cita.client);
-
-                return {
-                    ...cita,
-                    client_name: cliente?.name || cliente?.full_name || 'Sin nombre',
-                    stylist_name: empleado?.full_name || 'Sin nombre',
-                    service_name: servicio?.name || 'Sin servicio',
-                    service_duration: servicio?.duration || 30
-                };
-            });
-
-            this.citas.set(citasEnriquecidas);
-            this.actualizarEventos();
-            this.notifyOverdueAppointments(citasEnriquecidas);
-        } catch (error) {
-            this.messageService.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'No se pudieron cargar las citas'
-            });
+    private actualizarEventos(): void {
+        if (!this.calendar) {
+            return;
         }
-    }
 
-    loadAppointments() {
-        this.cargarCitas();
-    }
-
-    actualizarEventos() {
-        if (!this.calendar) return;
-
-        const now = new Date();
-        const eventos = this.citas()
-            .filter(cita => cita.status !== 'no_show')
-            .filter(cita => !(cita.status === 'scheduled' && new Date(cita.date_time) < now))
-            .map(cita => ({
+        const eventos = this.citas().map((cita) => ({
             id: cita.id.toString(),
             title: `${cita.client_name} - ${cita.service_name}`,
             start: cita.date_time,
@@ -339,227 +403,30 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
         this.calendar.addEventSource(eventos);
     }
 
-    calcularFechaFin(cita: AppointmentWithDetails): string {
+    private calcularFechaFin(cita: AppointmentWithDetails): string {
         const inicio = new Date(cita.date_time);
         const fin = new Date(inicio.getTime() + (cita.service_duration || 30) * 60000);
         return fin.toISOString();
     }
 
-    getColorByCita(cita: AppointmentWithDetails): string {
+    private getColorByCita(cita: AppointmentWithDetails): string {
         switch (cita.status) {
-            case 'scheduled': return '#3b82f6';
-            case 'completed': return '#10b981';
-            case 'cancelled': return '#ef4444';
-            default: return '#6b7280';
+            case 'scheduled':
+                return '#3b82f6';
+            case 'completed':
+                return '#10b981';
+            case 'cancelled':
+                return '#ef4444';
+            case 'no_show':
+                return '#f59e0b';
+            default:
+                return '#6b7280';
         }
     }
 
-    getStatusLabel(status: string): string {
-        const labels: any = {
-            'scheduled': 'Programada',
-            'completed': 'Completada',
-            'cancelled': 'Cancelada',
-            'no_show': 'No asistió'
-        };
-        return labels[status] || status;
-    }
-
-    getStatusSeverity(status: string): any {
-        switch (status) {
-            case 'scheduled': return 'info';
-            case 'completed': return 'success';
-            case 'cancelled': return 'danger';
-            case 'no_show': return 'warn';
-            default: return 'secondary';
-        }
-    }
-
-    onEventClick(info: any) {
-        const cita = info.event.extendedProps.cita;
-        this.citaSeleccionada = cita;
+    private onEventClick(info: any): void {
+        this.citaSeleccionada = info.event.extendedProps.cita;
         this.mostrarDetalle = true;
-    }
-
-    async cargarOpciones() {
-        try {
-            const [servicios, empleados] = await Promise.all([
-                this.serviceService.getActiveServices().toPromise(),
-                this.employeeService.getEmployees().toPromise()
-            ]);
-            const clientes = await this.cargarClientesSeguro();
-
-            const serviciosArray = (servicios as any)?.results || servicios || [];
-            const empleadosArray = (empleados as any)?.results || empleados || [];
-            const usuariosArray = empleadosArray
-                .map((e: any) => ({
-                    id: e.user_id_read || e.user?.id,
-                    full_name: e.user?.full_name || e.full_name || e.user?.email,
-                    role: e.user?.role
-                }))
-                .filter((u: any) => !!u.id);
-            const clientesArray = clientes;
-
-            this.serviciosOptions = serviciosArray.map((s: any) => ({
-                label: `${s.name} - $${s.price}`,
-                value: s.id
-            }));
-
-            this.empleadosOptions = usuariosArray
-                .filter((u: any) => ['Estilista', 'Manager', 'Client-Staff'].includes(u.role))
-                .map((u: any) => ({ label: u.full_name, value: u.id }));
-
-            this.clientesOptions = clientesArray.map((c: any) => ({
-                label: c.name || c.full_name,
-                value: c.id
-            }));
-        } catch (error) {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error cargando opciones' });
-        }
-    }
-
-    abrirFormulario() {
-        this.editando = false;
-        this.citaSeleccionada = null;
-        this.formulario.reset();
-        this.mostrarFormulario = true;
-    }
-
-    abrirEdicion() {
-        if (!this.citaSeleccionada) return;
-        this.editando = true;
-        const fecha = new Date(this.citaSeleccionada.date_time);
-        this.formulario.patchValue({
-            client: this.citaSeleccionada.client,
-            stylist: this.citaSeleccionada.stylist,
-            service: this.citaSeleccionada.service,
-            date: fecha,
-            time: fecha,
-            description: this.citaSeleccionada.description
-        });
-        this.mostrarDetalle = false;
-        this.mostrarFormulario = true;
-    }
-
-    async guardarCita() {
-        if (this.formulario.invalid) return;
-        this.guardando.set(true);
-        try {
-            const formData = this.formulario.value;
-            const fecha = new Date(formData.date);
-            const hora = new Date(formData.time);
-            fecha.setHours(hora.getHours(), hora.getMinutes(), 0, 0);
-
-            const payload = {
-                client: formData.client,
-                stylist: formData.stylist,
-                service: formData.service,
-                date_time: fecha.toISOString(),
-                description: formData.description,
-                status: 'scheduled' as const
-            };
-
-            if (this.editando && this.citaSeleccionada) {
-                await this.appointmentService.updateAppointment(this.citaSeleccionada.id, payload).toPromise();
-                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita actualizada' });
-            } else {
-                await this.appointmentService.createAppointment(payload).toPromise();
-                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita creada' });
-            }
-
-            this.cerrarFormulario();
-            this.cargarCitas();
-        } catch (error) {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al guardar' });
-        } finally {
-            this.guardando.set(false);
-        }
-    }
-
-    confirmarEliminar() {
-        if (!this.canDeleteAppointments) {
-            this.messageService.add({
-                severity: 'warn',
-                summary: 'Acceso restringido',
-                detail: 'Tu rol no puede eliminar citas'
-            });
-            return;
-        }
-        this.confirmationService.confirm({
-            message: '¿Eliminar esta cita?',
-            header: 'Confirmar',
-            icon: 'pi pi-exclamation-triangle',
-            acceptLabel: 'Sí',
-            rejectLabel: 'No',
-            accept: () => this.eliminarCita()
-        });
-    }
-
-    async eliminarCita() {
-        if (!this.canDeleteAppointments) {
-            return;
-        }
-        if (!this.citaSeleccionada) return;
-        try {
-            await this.appointmentService.deleteAppointment(this.citaSeleccionada.id).toPromise();
-            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cita eliminada' });
-            this.mostrarDetalle = false;
-            this.cargarCitas();
-        } catch (error) {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al eliminar' });
-        }
-    }
-
-    cerrarFormulario() {
-        this.mostrarFormulario = false;
-        this.formulario.reset();
-        this.citaSeleccionada = null;
-        this.editando = false;
-    }
-
-    private notifyOverdueAppointments(citas: AppointmentWithDetails[]): void {
-        const now = new Date();
-        const overdue = citas.filter(cita => cita.status === 'scheduled' && new Date(cita.date_time) < now);
-        if (overdue.length === 0 || this.overdueAlertShown) {
-            return;
-        }
-
-        this.overdueAlertShown = true;
-        this.messageService.add({
-            severity: 'warn',
-            summary: 'Citas vencidas',
-            detail: `Hay ${overdue.length} cita${overdue.length > 1 ? 's' : ''} vencida${overdue.length > 1 ? 's' : ''} que no se muestran en el calendario activo.`,
-            life: 9000
-        });
-        this.playNotificationSound();
-    }
-
-    private playNotificationSound(): void {
-        try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(760, audioContext.currentTime);
-            gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + 0.2);
-        } catch {
-            // Ignorar si navegador bloquea audio sin interacción
-        }
-    }
-
-    private async cargarClientesSeguro(): Promise<any[]> {
-        try {
-            const response = await this.clientService.getClients().toPromise();
-            return (response as any)?.results || response || [];
-        } catch {
-            return [];
-        }
     }
 
     private computeCanDeleteAppointments(): boolean {

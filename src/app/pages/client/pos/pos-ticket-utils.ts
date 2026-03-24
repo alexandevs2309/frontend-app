@@ -23,6 +23,7 @@ export interface BuildTicketSaleInput {
     mixedPayments: TicketMixedPayment[];
     clientName?: string;
     employeeName?: string;
+    cashierName?: string;
 }
 
 export function buildTicketPayments(
@@ -54,7 +55,9 @@ export function buildTicketSaleData(input: BuildTicketSaleInput): any {
         details: input.details,
         payments,
         client_name: input.clientName,
-        employee_name: input.employeeName
+        employee_name: input.employeeName,
+        cashier_name: input.cashierName,
+        user_name: input.cashierName
     };
 }
 

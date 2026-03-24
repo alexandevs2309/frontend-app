@@ -19,6 +19,7 @@ import { SubscriptionService } from '../../core/services/subscription/subscripti
 import { ActivityLogService } from '../../core/services/activity-log/activity-log.service';
 import { LocaleService } from '../../core/services/locale/locale.service';
 import { SettingsService } from '../../core/services/settings.service';
+import { AdminErrorLogService } from '../../core/services/admin-error-log.service';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { toggleTenantActive, toggleTenantSuspension } from './utils/tenant-admin-actions';
@@ -263,7 +264,7 @@ interface Tenant {
 
                     <div>
                         <label for="subscription_plan" class="block font-bold mb-3">Subscription Plan</label>
-                        <p-select [(ngModel)]="tenant.subscription_plan" inputId="subscription_plan" [options]="subscriptionPlans()" optionLabel="name" optionValue="id" placeholder="Select a Plan" fluid />
+                        <p-select [(ngModel)]="tenant.subscription_plan" inputId="subscription_plan" [options]="subscriptionPlans()" appendTo="body" optionLabel="name" optionValue="id" placeholder="Select a Plan" fluid />
                     </div>
 
                     <div class="flex items-center gap-2">
@@ -303,7 +304,8 @@ export class TenantsManagement implements OnInit {
         private router: Router,
         public localeService: LocaleService,
         private messageService: MessageService,
-        private confirmationService: ConfirmationService
+        private confirmationService: ConfirmationService,
+        private errorLogger: AdminErrorLogService
     ) {}
 
     ngOnInit() {
@@ -343,7 +345,6 @@ export class TenantsManagement implements OnInit {
                 }
             },
             error: () => {
-                // Fallback silencioso al límite por defecto
                 this.maxTenants.set(100);
             }
         });
@@ -399,7 +400,6 @@ export class TenantsManagement implements OnInit {
                 if (tenant.id) {
                     this.tenantService.deleteTenant(tenant.id).subscribe({
                         next: () => {
-                            // Reload data from server to ensure consistency
                             this.loadTenants();
                             this.messageService.add({
                                 severity: 'success',
@@ -424,7 +424,6 @@ export class TenantsManagement implements OnInit {
         this.submitted = true;
 
         if (this.tenant.name?.trim() && this.tenant.subdomain?.trim() && this.tenant.contact_email?.trim()) {
-            // Validate subscription plan is selected
             if (!this.tenant.subscription_plan) {
                 this.messageService.add({
                     severity: 'error',
@@ -437,7 +436,6 @@ export class TenantsManagement implements OnInit {
             this.saving.set(true);
 
             if (this.tenant.id) {
-                // Update existing tenant
                 this.tenantService.updateTenant(this.tenant.id, this.tenant).subscribe({
                     next: (updatedTenant) => {
                         const tenants = this.tenants();
@@ -465,7 +463,6 @@ export class TenantsManagement implements OnInit {
                     return;
                 }
 
-                // Create new tenant - prepare data
                 const tenantData = {
                     name: this.tenant.name,
                     subdomain: this.tenant.subdomain,
@@ -598,12 +595,6 @@ export class TenantsManagement implements OnInit {
     }
 
     private logError(context: string, error: any): void {
-        const errorInfo = {
-            context,
-            timestamp: new Date().toISOString(),
-            error: error?.message || 'Unknown error',
-            component: 'TenantsManagement'
-        };
-        
+        this.errorLogger.log('TenantsManagement', context, error);
     }
 }

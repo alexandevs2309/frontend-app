@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -14,9 +14,11 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TabsModule } from 'primeng/tabs';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { MessageService } from 'primeng/api';
 import { ConfirmationService } from 'primeng/api';
 import { EmployeeService, Employee, UpdateEmployeeRequest } from '../../../core/services/employee/employee.service';
+import { ServiceService } from '../../../core/services/service/service.service';
 import { AuthService, User } from '../../../core/services/auth/auth.service';
 import { environment } from '../../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
@@ -24,6 +26,8 @@ import { UserDto, CreateUserDto, UpdateUserDto } from '../../../core/dto/user.dt
 import { EmployeeDto, EmployeeWithUserDto, CreateEmployeeDto, UpdateEmployeeDto } from '../../../core/dto/employee.dto';
 import { PayrollConfigDto, PaymentStatsDto, PaymentReceiptDto } from '../../../core/dto/payroll.dto';
 import { LoanDto, LoanSummaryDto, CreateLoanDto } from '../../../core/dto/loan.dto';
+import { SettingsService } from '../../../core/services/settings/settings.service';
+import { AppCurrencyPipe } from '../../../core/pipes/app-currency.pipe';
 
 // Interface temporal para PaymentDto hasta que se agregue al archivo payroll.dto
 interface PaymentDto {
@@ -57,7 +61,9 @@ interface PaymentDto {
     SkeletonModule,
     TabsModule,
     InputNumberModule,
-    SelectModule
+    SelectModule,
+    MultiSelectModule,
+    AppCurrencyPipe
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -105,6 +111,7 @@ interface PaymentDto {
             <th>Email</th>
             <th>Rol</th>
             <th>Especialidad</th>
+            <th>Servicios</th>
             <th>Teléfono</th>
             <th>Fecha Contrato</th>
             <th>Estado</th>
@@ -121,6 +128,20 @@ interface PaymentDto {
                      [severity]="getRoleSeverity(getRoleDisplayName(emp.user.role))"></p-tag>
             </td>
             <td>{{emp.specialty || '-'}}</td>
+            <td>
+              <div *ngIf="isServiceAssignableRole(emp.user.role); else noServiceRole">
+                <p-tag
+                  [value]="(emp.services_count || 0) + ' servicio' + ((emp.services_count || 0) === 1 ? '' : 's')"
+                  [severity]="(emp.services_count || 0) > 0 ? 'info' : 'warn'">
+                </p-tag>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1" *ngIf="getAssignedServicesPreview(emp) as preview">
+                  {{ preview }}
+                </div>
+              </div>
+              <ng-template #noServiceRole>
+                <span class="text-slate-400">No aplica</span>
+              </ng-template>
+            </td>
             <td>{{emp.phone || '-'}}</td>
             <td>{{emp.hire_date | date:'dd/MM/yyyy'}}</td>
             <td>
@@ -145,7 +166,7 @@ interface PaymentDto {
         </ng-template>
 
         <ng-template pTemplate="emptymessage">
-          <tr><td colspan="8" class="text-center py-4">No hay empleados registrados</td></tr>
+          <tr><td colspan="9" class="text-center py-4">No hay empleados registrados</td></tr>
         </ng-template>
       </p-table>
 
@@ -193,6 +214,28 @@ interface PaymentDto {
             <input type="date" formControlName="hire_date" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
           </div>
 
+          <div *ngIf="isServiceAssignableRole(formulario.get('role')?.value)">
+            <label class="block font-medium mb-1">Servicios que puede realizar</label>
+            <p-multiSelect
+              formControlName="service_ids"
+              [options]="servicesOptions"
+              appendTo="body"
+              optionLabel="label"
+              optionValue="value"
+              defaultLabel="Seleccionar servicios"
+              class="w-full"
+              display="chip"
+              [filter]="true"
+            ></p-multiSelect>
+            <small class="block mt-1 text-slate-500 dark:text-slate-400">
+              Estos servicios determinan si el empleado aparecerá disponible en el módulo de citas.
+            </small>
+          </div>
+
+          <div *ngIf="!isServiceAssignableRole(formulario.get('role')?.value)" class="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 p-3 text-sm text-slate-500 dark:text-slate-400">
+            Este rol no atiende citas, por lo que no necesita servicios asignados.
+          </div>
+
           <div class="flex items-center">
             <p-checkbox formControlName="is_active" [binary]="true" inputId="activo"></p-checkbox>
             <label for="activo" class="ml-2 font-medium">Empleado Activo</label>
@@ -236,7 +279,7 @@ interface PaymentDto {
                      class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
             </div>
             <div>
-              <label class="block font-medium mb-1">Salario Mensual (RD$)</label>
+              <label class="block font-medium mb-1">Salario Mensual ({{ currencySymbol() }})</label>
               <input type="number" formControlName="contractual_monthly_salary" min="0"
                      class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
             </div>
@@ -284,7 +327,7 @@ interface PaymentDto {
             <p-card>
               <div class="text-center">
                 <div class="text-2xl font-bold text-indigo-600">
-                  {{(resumenPrestamos()?.total_amount || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                  {{ (resumenPrestamos()?.total_amount || 0) | appCurrency:'1.2-2' }}
                 </div>
                 <div class="text-sm text-slate-600 dark:text-slate-400">Total Prestado</div>
               </div>
@@ -292,7 +335,7 @@ interface PaymentDto {
             <p-card>
               <div class="text-center">
                 <div class="text-2xl font-bold text-indigo-600">
-                  {{(resumenPrestamos()?.remaining_balance || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                  {{ (resumenPrestamos()?.remaining_balance || 0) | appCurrency:'1.2-2' }}
                 </div>
                 <div class="text-sm text-slate-600 dark:text-slate-400">Saldo Pendiente</div>
               </div>
@@ -300,7 +343,7 @@ interface PaymentDto {
             <p-card>
               <div class="text-center">
                 <div class="text-2xl font-bold text-indigo-600">
-                  {{(resumenPrestamos()?.next_deduction || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                  {{ (resumenPrestamos()?.next_deduction || 0) | appCurrency:'1.2-2' }}
                 </div>
                 <div class="text-sm text-slate-600 dark:text-slate-400">Próxima Deducción</div>
               </div>
@@ -346,18 +389,18 @@ interface PaymentDto {
                 </td>
                 <td>
                   <span class="font-medium text-blue-600">
-                    {{loan.amount | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                    {{ loan.amount | appCurrency:'1.2-2' }}
                   </span>
                 </td>
                 <td>{{loan.installments}}</td>
                 <td>
                   <span class="font-medium">
-                    {{loan.monthly_payment | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                    {{ loan.monthly_payment | appCurrency:'1.2-2' }}
                   </span>
                 </td>
                 <td>
                   <span class="font-bold" [class]="loan.remaining_balance > 0 ? 'text-orange-600' : 'text-green-600'">
-                    {{loan.remaining_balance | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                    {{ loan.remaining_balance | appCurrency:'1.2-2' }}
                   </span>
                 </td>
                 <td>
@@ -388,15 +431,15 @@ interface PaymentDto {
         <div [formGroup]="formularioPrestamo" class="grid gap-4">
           <div>
             <label class="block font-medium mb-1">Tipo de Préstamo *</label>
-            <p-select formControlName="loan_type" [options]="loanTypeOptions"
+            <p-select formControlName="loan_type" [options]="loanTypeOptions" appendTo="body"
                         optionLabel="label" optionValue="value" class="w-full"
                         placeholder="Seleccionar tipo"></p-select>
           </div>
 
           <div>
-            <label class="block font-medium mb-1">Monto (RD$) *</label>
-            <p-inputNumber formControlName="amount" mode="currency" currency="DOP"
-                           locale="es-DO" class="w-full" [min]="100" [max]="50000"></p-inputNumber>
+            <label class="block font-medium mb-1">Monto ({{ currencySymbol() }}) *</label>
+            <p-inputNumber formControlName="amount" mode="currency" [currency]="currencyCode()"
+                           [locale]="currencyLocale()" class="w-full" [min]="100" [max]="50000"></p-inputNumber>
           </div>
 
           <div>
@@ -417,7 +460,7 @@ interface PaymentDto {
             <div class="text-sm space-y-1">
               <div class="flex justify-between">
                 <span>Monto solicitado:</span>
-                <span class="font-medium">{{formularioPrestamo.get('amount')?.value | currency:'DOP':'symbol':'1.2-2':'es-DO'}}</span>
+                <span class="font-medium">{{ formularioPrestamo.get('amount')?.value | appCurrency:'1.2-2' }}</span>
               </div>
               <div class="flex justify-between">
                 <span>Cuotas:</span>
@@ -426,7 +469,7 @@ interface PaymentDto {
               <div class="flex justify-between border-t pt-1">
                 <span>Pago mensual:</span>
                 <span class="font-bold text-green-600">
-                  {{calcularPagoMensual() | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                  {{ calcularPagoMensual() | appCurrency:'1.2-2' }}
                 </span>
               </div>
             </div>
@@ -459,7 +502,7 @@ interface PaymentDto {
             <p-card>
               <div class="text-center">
                 <div class="text-2xl font-bold text-indigo-600">
-                  {{(paymentStats()?.all_time?.total_net || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                  {{ (paymentStats()?.all_time?.total_net || 0) | appCurrency:'1.2-2' }}
                 </div>
                 <div class="text-sm text-slate-600 dark:text-slate-400">Total Pagado</div>
               </div>
@@ -467,7 +510,7 @@ interface PaymentDto {
             <p-card>
               <div class="text-center">
                 <div class="text-2xl font-bold text-indigo-600">
-                  {{(paymentStats()?.all_time?.average_payment || 0) | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                  {{ (paymentStats()?.all_time?.average_payment || 0) | appCurrency:'1.2-2' }}
                 </div>
                 <div class="text-sm text-slate-600 dark:text-slate-400">Promedio por Pago</div>
               </div>
@@ -499,7 +542,7 @@ interface PaymentDto {
                   </div>
                 </div>
                 <div class="text-xl font-bold text-green-600">
-                  {{paymentStats()?.last_payment?.amount | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                  {{ paymentStats()?.last_payment?.amount | appCurrency:'1.2-2' }}
                 </div>
               </div>
             </p-card>
@@ -531,17 +574,17 @@ interface PaymentDto {
                   </td>
                   <td>
                     <span class="font-medium text-blue-600">
-                      {{payment.gross_amount | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                      {{ payment.gross_amount | appCurrency:'1.2-2' }}
                     </span>
                   </td>
                   <td>
                     <span class="text-red-600">
-                      {{payment.total_deductions | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                      {{ payment.total_deductions | appCurrency:'1.2-2' }}
                     </span>
                   </td>
                   <td>
                     <span class="font-bold text-green-600">
-                      {{payment.net_amount | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                      {{ payment.net_amount | appCurrency:'1.2-2' }}
                     </span>
                   </td>
                   <td>
@@ -606,7 +649,7 @@ interface PaymentDto {
               <div class="flex justify-between">
                 <span>Monto Bruto:</span>
                 <span class="font-medium">
-                  {{reciboActual()?.amounts?.gross_amount | currency:'DOP':'symbol':'1.2-2':'es-DO'}}
+                  {{ reciboActual()?.amounts?.gross_amount | appCurrency:'1.2-2' }}
                 </span>
               </div>
 
@@ -615,30 +658,30 @@ interface PaymentDto {
                 <div class="ml-4 space-y-1 text-sm">
                   <div class="flex justify-between" *ngIf="reciboActual()?.amounts?.deductions?.afp && (reciboActual()?.amounts?.deductions?.afp ?? 0) > 0">
                     <span>AFP (2.87%):</span>
-                    <span>-{{reciboActual()?.amounts?.deductions?.afp | currency:'DOP':'symbol':'1.2-2':'es-DO'}}</span>
+                    <span>-{{ reciboActual()?.amounts?.deductions?.afp | appCurrency:'1.2-2' }}</span>
                   </div>
                   <div class="flex justify-between" *ngIf="reciboActual()?.amounts?.deductions?.sfs && (reciboActual()?.amounts?.deductions?.sfs ?? 0) > 0">
                     <span>SFS (3.04%):</span>
-                    <span>-{{reciboActual()?.amounts?.deductions?.sfs | currency:'DOP':'symbol':'1.2-2':'es-DO'}}</span>
+                    <span>-{{ reciboActual()?.amounts?.deductions?.sfs | appCurrency:'1.2-2' }}</span>
                   </div>
                   <div class="flex justify-between" *ngIf="reciboActual()?.amounts?.deductions?.isr && (reciboActual()?.amounts?.deductions?.isr ?? 0) > 0">
                     <span>ISR:</span>
-                    <span>-{{reciboActual()?.amounts?.deductions?.isr | currency:'DOP':'symbol':'1.2-2':'es-DO'}}</span>
+                    <span>-{{ reciboActual()?.amounts?.deductions?.isr | appCurrency:'1.2-2' }}</span>
                   </div>
                   <div class="flex justify-between" *ngIf="reciboActual()?.amounts?.deductions?.loans && (reciboActual()?.amounts?.deductions?.loans ?? 0) > 0">
                     <span>Préstamos:</span>
-                    <span>-{{reciboActual()?.amounts?.deductions?.loans | currency:'DOP':'symbol':'1.2-2':'es-DO'}}</span>
+                    <span>-{{ reciboActual()?.amounts?.deductions?.loans | appCurrency:'1.2-2' }}</span>
                   </div>
                 </div>
                 <div class="flex justify-between font-medium border-t pt-1 mt-2">
                   <span>Total Descuentos:</span>
-                  <span>-{{reciboActual()?.amounts?.deductions?.total | currency:'DOP':'symbol':'1.2-2':'es-DO'}}</span>
+                  <span>-{{ reciboActual()?.amounts?.deductions?.total | appCurrency:'1.2-2' }}</span>
                 </div>
               </div>
 
               <div class="border-t pt-2 flex justify-between text-lg font-bold text-green-700 dark:text-emerald-400">
                 <span>Monto Neto:</span>
-                <span>{{reciboActual()?.amounts?.net_amount | currency:'DOP':'symbol':'1.2-2':'es-DO'}}</span>
+                <span>{{ reciboActual()?.amounts?.net_amount | appCurrency:'1.2-2' }}</span>
               </div>
             </div>
           </div>
@@ -677,7 +720,9 @@ interface PaymentDto {
   `
 })
 export class EmployeesManagement implements OnInit {
+  private settingsService = inject(SettingsService);
   private employeeService = inject(EmployeeService);
+  private serviceService = inject(ServiceService);
   private authService = inject(AuthService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
@@ -712,6 +757,9 @@ export class EmployeesManagement implements OnInit {
   resumenPrestamos = signal<LoanSummaryDto | null>(null);
   mostrarNuevoPrestamo = false;
   guardandoPrestamo = signal(false);
+  currencyCode = computed(() => this.settingsService.settings().currency || 'DOP');
+  currencyLocale = computed(() => this.settingsService.getCurrencyLocale());
+  currencySymbol = computed(() => this.settingsService.getCurrencySymbol() || 'RD$');
 
   rolesOptions = [
     { label: 'Estilista', value: 'Estilista' },
@@ -746,8 +794,11 @@ export class EmployeesManagement implements OnInit {
     specialty: [''],
     phone: [''],
     hire_date: [new Date()],
+    service_ids: [[]],
     is_active: [true]
   });
+
+  servicesOptions: Array<{ label: string; value: number }> = [];
 
   formularioNomina: FormGroup = this.fb.group({
     salary_type: ['commission'],
@@ -786,6 +837,8 @@ export class EmployeesManagement implements OnInit {
       phone: empleadoBackend?.phone || '',
       hire_date: empleadoBackend?.hire_date || '',
       is_active: empleadoBackend?.is_active ?? true,
+      service_ids: empleadoBackend?.service_ids || [],
+      services_count: empleadoBackend?.services_count || 0,
       created_at: empleadoBackend?.created_at || '',
       display_name: `${usuarioBackend.full_name || usuarioBackend.email || 'Sin nombre'} (${usuarioBackend.role || 'Sin rol'})`
     };
@@ -793,7 +846,33 @@ export class EmployeesManagement implements OnInit {
 
   ngOnInit() {
     this.cargarDatos();
+    this.cargarServicios();
     this.cargarConfiguracionDefecto();
+    this.formularioNomina.get('salary_type')?.valueChanges.subscribe((salaryType) => {
+      this.syncPayrollFieldsByType(salaryType);
+    });
+    this.syncPayrollFieldsByType(this.formularioNomina.get('salary_type')?.value);
+  }
+
+  async cargarServicios() {
+    try {
+      const response = await this.serviceService.getActiveServices().toPromise();
+      const services = (response as any)?.results || response || [];
+      this.servicesOptions = services.map((service: any) => ({
+        label: `${service.name} - ${this.formatearMoneda(service.price)}`,
+        value: service.id
+      }));
+    } catch {
+      this.servicesOptions = [];
+    }
+  }
+
+  formatearMoneda(valor: number | string | null | undefined): string {
+    const amount = Number(valor) || 0;
+    return new Intl.NumberFormat(this.currencyLocale(), {
+      style: 'currency',
+      currency: this.currencyCode()
+    }).format(amount);
   }
 
   async cargarConfiguracionDefecto() {
@@ -837,6 +916,8 @@ export class EmployeesManagement implements OnInit {
           phone: emp.phone || '',
           hire_date: emp.hire_date || '',
           is_active: emp.is_active,
+          service_ids: emp.service_ids || [],
+          services_count: emp.services_count || 0,
           created_at: emp.created_at,
           display_name: `${emp.user.full_name || emp.user.email || 'Sin nombre'} (${emp.user.role || 'Sin rol'})`
         };
@@ -867,6 +948,7 @@ export class EmployeesManagement implements OnInit {
       specialty: '',
       phone: '',
       hire_date: new Date(),
+      service_ids: [],
       is_active: true
     });
     this.formulario.get('password')?.setValidators([Validators.required, Validators.minLength(8)]);
@@ -882,6 +964,7 @@ export class EmployeesManagement implements OnInit {
       specialty: emp.specialty,
       phone: emp.phone,
       hire_date: emp.hire_date ? new Date(emp.hire_date) : new Date(),
+      service_ids: emp.service_ids || [],
       is_active: emp.is_active
     });
     this.formulario.get('password')?.clearValidators();
@@ -897,6 +980,7 @@ export class EmployeesManagement implements OnInit {
 
     this.guardando.set(true);
     const formData = this.formulario.value;
+    const serviceIds = this.isServiceAssignableRole(formData.role) ? (formData.service_ids || []) : [];
 
     try {
       if (this.empleadoSeleccionado) {
@@ -920,6 +1004,7 @@ export class EmployeesManagement implements OnInit {
           
           // Usar PATCH en lugar de PUT para evitar problemas con campos no permitidos
           await this.employeeService.patchEmployee(this.empleadoSeleccionado.id, updateData).toPromise();
+          await this.employeeService.assignServices(this.empleadoSeleccionado.id, serviceIds).toPromise();
         }
         // NOTA: No se puede crear registro Employee vía POST /api/employees/ (endpoint deshabilitado)
         // Los datos de empleado se manejan solo a través del usuario
@@ -949,6 +1034,7 @@ export class EmployeesManagement implements OnInit {
             is_active: formData.is_active
           };
           await this.employeeService.patchEmployee(nuevoEmpleado.id, updateData).toPromise();
+          await this.employeeService.assignServices(nuevoEmpleado.id, serviceIds).toPromise();
         }
 
         this.messageService.add({
@@ -1106,10 +1192,32 @@ export class EmployeesManagement implements OnInit {
     return severities[role] || 'secondary';
   }
 
+  getAssignedServicesPreview(emp: EmployeeWithUserDto): string {
+    const ids = emp.service_ids || [];
+    if (!ids.length) {
+      return 'Sin servicios asignados';
+    }
+
+    const names = ids
+      .map(id => this.servicesOptions.find(service => service.value === id)?.label?.split(' - $')[0])
+      .filter((name): name is string => !!name);
+
+    if (!names.length) {
+      return `${ids.length} servicio(s) asignado(s)`;
+    }
+
+    const preview = names.slice(0, 2).join(', ');
+    return names.length > 2 ? `${preview} y ${names.length - 2} más` : preview;
+  }
+
   cerrarDialogo() {
     this.mostrarDialogo = false;
     this.empleadoSeleccionado = null;
     this.formulario.reset();
+  }
+
+  isServiceAssignableRole(role: string | null | undefined): boolean {
+    return role === 'Estilista' || role === 'Utility';
   }
 
   // Nuevos métodos para configuración de nómina
@@ -1133,6 +1241,7 @@ export class EmployeesManagement implements OnInit {
           contractual_monthly_salary: config.fixed_salary || 0,
           commission_percentage: config.commission_rate || 40
         });
+        this.syncPayrollFieldsByType(config.payment_type || 'commission');
       }
     } catch (error) {
       if (!environment.production) {
@@ -1180,6 +1289,30 @@ export class EmployeesManagement implements OnInit {
   cerrarConfigNomina() {
     this.mostrarConfigNomina = false;
     this.empleadoDetalle = null;
+  }
+
+  private syncPayrollFieldsByType(salaryType: string | null | undefined) {
+    const commissionControl = this.formularioNomina.get('commission_percentage');
+    const salaryControl = this.formularioNomina.get('contractual_monthly_salary');
+
+    if (!commissionControl || !salaryControl) {
+      return;
+    }
+
+    if (salaryType === 'fixed') {
+      commissionControl.disable({ emitEvent: false });
+      salaryControl.enable({ emitEvent: false });
+      return;
+    }
+
+    if (salaryType === 'commission') {
+      salaryControl.disable({ emitEvent: false });
+      commissionControl.enable({ emitEvent: false });
+      return;
+    }
+
+    commissionControl.enable({ emitEvent: false });
+    salaryControl.enable({ emitEvent: false });
   }
 
   // Métodos para historial de pagos

@@ -206,7 +206,7 @@ interface BillingStats {
                 <div class="flex flex-col gap-4">
                     <div>
                         <label class="block font-bold mb-2">Tenant</label>
-                        <p-select [(ngModel)]="newInvoice.tenant" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Selecciona un tenant" fluid />
+                        <p-select [(ngModel)]="newInvoice.tenant" [options]="tenantOptions()" appendTo="body" optionLabel="name" optionValue="id" placeholder="Selecciona un tenant" fluid />
                     </div>
                     <div>
                         <label class="block font-bold mb-2">Descripción (opcional)</label>
@@ -405,9 +405,13 @@ export class BillingManagement implements OnInit {
         if (invoice.id) {
             this.billingService.markInvoiceAsPaid(invoice.id).subscribe({
                 next: () => {
-                    invoice.status = 'paid';
-                    invoice.is_paid = true;
-                    (invoice as any).paid_at = new Date().toISOString();
+                    const paidAt = new Date().toISOString();
+                    const updatedInvoices = this.invoices().map(current =>
+                        current.id === invoice.id
+                            ? { ...current, status: 'paid', is_paid: true, paid_at: paidAt }
+                            : current
+                    );
+                    this.invoices.set(updatedInvoices);
                     this.loadStats();
                     this.filterInvoices();
                     this.messageService.add({

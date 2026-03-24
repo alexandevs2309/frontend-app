@@ -38,6 +38,9 @@ import { getHttpErrorMessage } from '../../core/utils/http-error-message';
 export class Login implements OnInit {
     loginForm!: FormGroup;
     isLoading = false;
+    requiresMfa = false;
+    pendingMfaEmail: string | null = null;
+    pendingMfaTenantSubdomain: string | null = null;
 
     constructor(
         private fb: FormBuilder,
@@ -62,6 +65,7 @@ export class Login implements OnInit {
         this.loginForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]],
             password: ['', Validators.required],
+            mfaCode: [''],
             rememberMe: [false]
         });
 
@@ -85,7 +89,16 @@ export class Login implements OnInit {
         return this.loginForm.get('password')!;
     }
 
+    get mfaCode() {
+        return this.loginForm.get('mfaCode')!;
+    }
+
     onLogin(): void {
+        if (this.requiresMfa) {
+            this.onVerifyMfa();
+            return;
+        }
+
         if (this.loginForm.invalid) {
             this.loginForm.markAllAsTouched();
             this.messageService.add({ 
@@ -103,15 +116,25 @@ export class Login implements OnInit {
         this.authService.loginSecure({ email: normalizedEmail, password }).subscribe({
             next: (response: LoginResponse | any) => {
                 this.isLoading = false;
-                
-                // Guardar email si RememberMe está activo
-                if (rememberMe) {
-                    localStorage.setItem('rememberedEmail', normalizedEmail);
-                    localStorage.setItem('rememberMe', 'true');
-                } else {
-                    localStorage.removeItem('rememberedEmail');
-                    localStorage.removeItem('rememberMe');
+
+                if (response?.requires_mfa) {
+                    this.requiresMfa = true;
+                    this.pendingMfaEmail = response.email || normalizedEmail;
+                    this.pendingMfaTenantSubdomain = response.tenant?.subdomain || null;
+                    this.mfaCode.setValidators([Validators.required, Validators.minLength(6), Validators.maxLength(6)]);
+                    this.mfaCode.reset('');
+                    this.mfaCode.updateValueAndValidity();
+                    this.password.disable();
+                    this.messageService.add({
+                        severity: 'info',
+                        summary: 'Verificacion requerida',
+                        detail: response.detail || 'Ingresa tu codigo MFA para completar el acceso.',
+                        life: 4000
+                    });
+                    return;
                 }
+                 
+                this.persistRememberMe(normalizedEmail);
 
                 // Redirigir usando el rol de la respuesta directamente
                 const userRole = response.user?.role || 'CLIENT_ADMIN';
@@ -137,6 +160,77 @@ export class Login implements OnInit {
                 });
             }
         });
+    }
+
+    onVerifyMfa(): void {
+        if (!this.pendingMfaEmail) {
+            this.resetMfaState();
+            return;
+        }
+
+        if (this.mfaCode.invalid) {
+            this.mfaCode.markAsTouched();
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Codigo requerido',
+                detail: 'Ingresa un codigo MFA valido de 6 digitos.',
+                life: 3000
+            });
+            return;
+        }
+
+        this.isLoading = true;
+        this.authService.verifyLoginMfa({
+            email: this.pendingMfaEmail,
+            code: this.mfaCode.value,
+            tenant_subdomain: this.pendingMfaTenantSubdomain || undefined
+        }).subscribe({
+            next: (response) => {
+                this.isLoading = false;
+                this.persistRememberMe(this.pendingMfaEmail);
+                this.resetMfaState();
+                const userRole = response.user?.role || 'CLIENT_ADMIN';
+                this.redirectUser(userRole);
+            },
+            error: (error) => {
+                this.isLoading = false;
+                const message = getHttpErrorMessage(error, 'No se pudo verificar el codigo MFA.');
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error de verificacion',
+                    detail: message,
+                    life: 4000
+                });
+            }
+        });
+    }
+
+    cancelMfa(): void {
+        this.resetMfaState(true);
+    }
+
+    private resetMfaState(resetPassword = false): void {
+        this.requiresMfa = false;
+        this.pendingMfaEmail = null;
+        this.pendingMfaTenantSubdomain = null;
+        this.mfaCode.clearValidators();
+        this.mfaCode.reset('');
+        this.mfaCode.updateValueAndValidity();
+        this.password.enable();
+        if (resetPassword) {
+            this.password.reset('');
+        }
+    }
+
+    private persistRememberMe(email: string | null): void {
+        if (this.loginForm.get('rememberMe')?.value && email) {
+            localStorage.setItem('rememberedEmail', email);
+            localStorage.setItem('rememberMe', 'true');
+            return;
+        }
+
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberMe');
     }
 
     private redirectUser(role: string): void {

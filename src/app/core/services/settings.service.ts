@@ -55,7 +55,7 @@ export class SettingsService extends BaseApiService {
   }
 
   updateSettings(settings: Partial<SystemSettings>): Observable<SystemSettings> {
-    return this.put<SystemSettings>('/system-settings/', settings);
+        return this.patch<SystemSettings>('/system-settings/', settings);
   }
 
   testEmailConnection(emailConfig: any): Observable<any> {

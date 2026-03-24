@@ -13,16 +13,26 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  access: string;
-  refresh: string;
-  user: any;
+  access?: string;
+  refresh?: string;
+  user?: any;
   tenant?: any;
+  detail?: string;
+  message?: string;
+  email?: string;
+  requires_mfa?: boolean;
 }
 
 export interface SecureLoginResponse {
   user: any;
   tenant?: any;
   message: string;
+}
+
+export interface MFALoginVerifyRequest {
+  email: string;
+  code: string;
+  tenant_subdomain?: string;
 }
 
 export interface User {
@@ -84,6 +94,13 @@ export class AuthService extends BaseApiService {
 
   loginSecure(credentials: LoginRequest): Observable<LoginResponse> {
     return this.login(credentials);
+  }
+
+  verifyLoginMfa(data: MFALoginVerifyRequest): Observable<LoginResponse> {
+    return this.post<LoginResponse>(API_CONFIG.ENDPOINTS.AUTH.MFA_LOGIN_VERIFY, data, { withCredentials: true })
+      .pipe(
+        tap(response => this.setAuthData(response))
+      );
   }
 
   logout(): Observable<any> {
@@ -227,6 +244,10 @@ export class AuthService extends BaseApiService {
   }
 
   private setAuthData(response: LoginResponse): void {
+    if (!response.user) {
+      return;
+    }
+
     // ✅ NO almacenar tokens - están en httpOnly cookies
     // Solo almacenar datos de usuario (no sensibles)
     

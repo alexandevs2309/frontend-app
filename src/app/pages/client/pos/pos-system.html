@@ -10,6 +10,9 @@
         <div>
           <h2 class="text-4xl font-bold mb-1 text-slate-900 dark:text-white">Sistema POS</h2>
           <p class="text-slate-600 dark:text-slate-400 text-lg">{{ getCurrentDateTime() }}</p>
+          <p *ngIf="cajaAbierta() && nombreCajeroTurno" class="text-slate-600 dark:text-slate-400 text-sm mt-1">
+            Caja abierta por: <strong>{{ nombreCajeroTurno }}</strong>
+          </p>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -226,7 +229,7 @@
                 <span class="font-medium">{{ item.quantity }}</span>
                 <button pButton icon="pi pi-plus" size="small" (click)="cambiarCantidad(i,1)" [text]="true"></button>
               </div>
-              <span class="font-bold" style="color: var(--primary-color);">\${{ item.subtotal.toFixed(2) }}</span>
+              <span class="font-bold" style="color: var(--primary-color);">{{ formatearMoneda(item.subtotal) }}</span>
               <button pButton icon="pi pi-trash" severity="danger" size="small" (click)="removerDelCarrito(i)" [text]="true"></button>
             </div>
           </div>
@@ -372,7 +375,7 @@
   <p-dialog header="Abrir Caja" [(visible)]="mostrarDialogoAbrirCaja" [modal]="true" [style]="{width:'400px'}">
     <div class="flex flex-col gap-3">
       <label class="font-medium">Monto Inicial</label>
-      <p-inputNumber [(ngModel)]="montoInicialCaja" mode="currency" currency="USD" locale="en-US" class="w-full"></p-inputNumber>
+      <p-inputNumber [(ngModel)]="montoInicialCaja" mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()" class="w-full"></p-inputNumber>
       <div class="flex justify-end gap-2">
         <button pButton label="Cancelar" (click)="mostrarDialogoAbrirCaja=false" class="p-button-text"></button>
         <button pButton label="Abrir Caja" (click)="abrirCaja()" class="p-button-success"></button>
@@ -386,15 +389,15 @@
         <h5 class="font-bold mb-2">Resumen del día (efectivo)</h5>
         <div class="flex justify-between text-sm">
           <span>Monto inicial:</span>
-          <span class="font-mono">${{ (montoEsperado - ventasEfectivoHoy).toFixed(2) }}</span>
+          <span class="font-mono">{{ formatearMoneda(montoEsperado - ventasEfectivoHoy) }}</span>
         </div>
         <div class="flex justify-between text-sm">
           <span>Ventas en efectivo:</span>
-          <span class="font-mono">${{ ventasEfectivoHoy.toFixed(2) }}</span>
+          <span class="font-mono">{{ formatearMoneda(ventasEfectivoHoy) }}</span>
         </div>
         <div class="flex justify-between text-sm font-bold border-t pt-1">
           <span>Efectivo esperado:</span>
-          <span class="font-mono">${{ (+montoEsperado || 0).toFixed(2) }}</span>
+          <span class="font-mono">{{ formatearMoneda(+montoEsperado || 0) }}</span>
         </div>
       </div>
 
@@ -406,7 +409,7 @@
         </h5>
         <div *ngFor="let pago of pagosNoCash()" class="flex justify-between text-sm mb-1">
           <span>{{ pago.payment_method }}:</span>
-          <span class="font-mono text-blue-700 dark:text-blue-300">${{ pago.total.toFixed(2) }}</span>
+          <span class="font-mono text-blue-700 dark:text-blue-300">{{ formatearMoneda(pago.total) }}</span>
         </div>
         <div class="text-xs text-blue-700 dark:text-blue-300 mt-2 p-2 bg-blue-100 dark:bg-slate-700 rounded border-l-4 border-blue-400 dark:border-blue-500">
           <i class="pi pi-shield mr-1"></i>
@@ -416,8 +419,8 @@
 
       <div>
         <label class="font-medium block mb-2">Efectivo contado en caja:</label>
-        <p-inputNumber [(ngModel)]="montoFinalCaja"
-                       mode="currency" currency="USD" locale="en-US"
+                      <p-inputNumber [(ngModel)]="montoFinalCaja"
+                       mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()"
                        class="w-full"
                        (onInput)="calcularDiferencia()"></p-inputNumber>
       </div>
@@ -489,9 +492,9 @@
           <span class="label">HORA</span>
           <span class="value">{{ getCurrentDateTime().split(',')[1] }}</span>
         </div>
-        <div class="info-row" *ngIf="ventaActual.client">
+        <div class="info-row" *ngIf="ventaActual.client || ventaActual.client_name">
           <span class="label">CLIENTE</span>
-          <span class="value"> ID {{ ventaActual.client }}</span>
+          <span class="value">{{ ventaActual.client_name || ('ID ' + ventaActual.client) }}</span>
         </div>
         <div class="info-row" *ngIf="ventaActual.employee_name">
           <span class="label">BARBERO</span>
@@ -583,12 +586,15 @@
 
       <!-- Footer profesional -->
       <div class="separator"></div>
-      <div class="footer-section">
-        <div class="thank-you">
+        <div class="footer-section">
+          <div class="thank-you">
           <p class="main-message">¡GRACIAS POR SU VISITA!</p>
           <p class="sub-message">Su satisfacción es nuestra prioridad</p>
-          <p class="sub-message" *ngIf="obtenerUsuarioActual()" style="margin-top: 8px;">
-            Le atendió: <strong style="text-transform: capitalize; color: #000;">{{ obtenerUsuarioActual() }}</strong>
+          <p class="sub-message" *ngIf="ventaActual.employee_name" style="margin-top: 8px;">
+            Le atendió: <strong style="text-transform: capitalize; color: #000;">{{ ventaActual.employee_name }}</strong>
+          </p>
+          <p class="sub-message" *ngIf="ventaActual.cashier_name || ventaActual.user_name" style="margin-top: 4px;">
+            Cajera de turno: <strong style="text-transform: capitalize; color: #000;">{{ ventaActual.cashier_name || ventaActual.user_name }}</strong>
           </p>
         </div>
         <div class="footer-info">
@@ -623,7 +629,7 @@
       <div>
         <label class="font-medium block mb-2">Monto recibido:</label>
         <p-inputNumber [(ngModel)]="montoRecibido"
-                       mode="currency" currency="USD" locale="en-US"
+                       mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()"
                        class="w-full"
                        (onInput)="cambio = calcularCambio()"></p-inputNumber>
       </div>
@@ -666,7 +672,7 @@
             {label: 'Tarjeta', value: 'card'},
             {label: 'Transferencia', value: 'transfer'}
           ]" optionLabel="label" optionValue="value" placeholder="Método" class="flex-1"></p-select>
-          <p-inputNumber [(ngModel)]="montoTemporal" mode="currency" currency="USD" locale="en-US" placeholder="Monto" class="flex-1"></p-inputNumber>
+          <p-inputNumber [(ngModel)]="montoTemporal" mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()" placeholder="Monto" class="flex-1"></p-inputNumber>
           <button pButton icon="pi pi-plus" (click)="agregarPagoMixto(metodoPagoTemporal, montoTemporal)" class="p-button-success"></button>
         </div>
       </div>
@@ -718,7 +724,7 @@
       <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Este arqueo es solo para consulta. El cuadre oficial se realiza al cerrar caja.</p>
 
       <div *ngFor="let denom of denominaciones; trackBy: trackByDenominacion" class="flex items-center gap-3">
-        <span class="w-16 font-mono">${{ denom.valor }}</span>
+        <span class="w-16 font-mono">{{ formatearMoneda(denom.valor) }}</span>
         <input
           type="number"
           pInputText
@@ -726,21 +732,21 @@
           (ngModelChange)="actualizarDenominacion(denom, $event)"
           min="0"
           class="w-20">
-        <span class="w-24 text-right font-mono">${{ denom.total.toFixed(2) }}</span>
+        <span class="w-24 text-right font-mono">{{ formatearMoneda(denom.total) }}</span>
       </div>
 
       <div class="border-t pt-3">
         <div class="flex justify-between font-bold text-lg">
           <span>Total contado:</span>
-          <span class="font-mono">${{ calcularTotalArqueo().toFixed(2) }}</span>
+          <span class="font-mono">{{ formatearMoneda(calcularTotalArqueo()) }}</span>
         </div>
         <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mt-2">
           <span>Efectivo esperado:</span>
-          <span class="font-mono">${{ calcularEfectivoEsperadoArqueo().toFixed(2) }}</span>
+          <span class="font-mono">{{ formatearMoneda(calcularEfectivoEsperadoArqueo()) }}</span>
         </div>
         <div class="flex justify-between font-semibold mt-1" [class]="calcularDiferenciaArqueo() >= 0 ? 'text-green-600' : 'text-red-600'">
           <span>Diferencia:</span>
-          <span class="font-mono">{{ calcularDiferenciaArqueo() >= 0 ? '+' : '' }}${{ calcularDiferenciaArqueo().toFixed(2) }}</span>
+          <span class="font-mono">{{ calcularDiferenciaArqueo() >= 0 ? '+' : '' }}{{ formatearMoneda(Math.abs(calcularDiferenciaArqueo())) }}</span>
         </div>
       </div>
 
@@ -774,7 +780,7 @@
             </div>
 
             <div class="text-right">
-              <div class="font-bold text-lg">${{ venta.total }}</div>
+              <div class="font-bold text-lg">{{ formatearMoneda(venta.total) }}</div>
             </div>
 
             <div class="flex gap-1 ml-4">
@@ -810,8 +816,8 @@
             <p class="text-sm text-gray-600 dark:text-gray-300">{{ promocion.description }}</p>
             <div class="text-sm">
               <span *ngIf="promocion.type === 'percentage'">{{ promocion.discount_value }}% descuento</span>
-              <span *ngIf="promocion.type === 'fixed'">${{ promocion.discount_value }} descuento</span>
-              <span *ngIf="promocion.min_amount > 0"> - Mínimo ${{ promocion.min_amount }}</span>
+              <span *ngIf="promocion.type === 'fixed'">{{ formatearMoneda(promocion.discount_value) }} descuento</span>
+              <span *ngIf="promocion.min_amount > 0"> - Mínimo {{ formatearMoneda(promocion.min_amount) }}</span>
             </div>
           </div>
           <button pButton label="Aplicar" (click)="aplicarPromocion(promocion)" class="p-button-success"></button>

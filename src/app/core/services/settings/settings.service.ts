@@ -23,7 +23,11 @@ export class SettingsService {
   public settings = signal<AppSettings>({ currency: 'DOP', currency_symbol: 'RD$' });
 
   constructor(private http: HttpClient) {
-    this.loadSettings();
+    this.loadSettings().subscribe({
+      error: () => {
+        // Mantener fallback local si el endpoint no responde.
+      }
+    });
   }
 
   loadSettings(): Observable<any> {
@@ -46,5 +50,16 @@ export class SettingsService {
 
   getCurrencySymbol(): string {
     return this.settings().currency_symbol;
+  }
+
+  getCurrencyLocale(): string {
+    const currency = this.getCurrency();
+    const localeMap: Record<string, string> = {
+      DOP: 'es-DO',
+      COP: 'es-CO',
+      USD: 'en-US',
+      EUR: 'es-ES'
+    };
+    return localeMap[currency] || 'es-DO';
   }
 }

@@ -5,6 +5,8 @@ export interface EmployeeDto {
   phone?: string;
   hire_date?: string;
   is_active: boolean;
+  service_ids?: number[];
+  services_count?: number;
   created_at: string;
 }
 
@@ -25,6 +27,8 @@ export interface EmployeeWithUserDto {
   phone?: string;
   hire_date?: string;
   is_active: boolean;
+  service_ids?: number[];
+  services_count?: number;
   created_at: string;
   display_name?: string;
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -18,6 +18,7 @@ import { BadgeModule } from 'primeng/badge';
 import { FileUploadModule } from 'primeng/fileupload';
 import { InventoryService, Product } from '../../../core/services/inventory/inventory.service';
 import { environment } from '../../../../environments/environment';
+import { SettingsService } from '../../../core/services/settings/settings.service';
 
 interface StockMovementRow {
     id: number;
@@ -139,12 +140,12 @@ interface StockMovementRow {
                             <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm text-gray-800 dark:text-gray-200">{{producto.sku}}</code>
                         </td>
                         <td>
-                            <p-tag [value]="producto.category || 'Sin categoría'"
-                                   severity="info" *ngIf="producto.category">
+                            <p-tag [value]="producto.category_name || 'Sin categoría'"
+                                   severity="info" *ngIf="producto.category_name">
                             </p-tag>
-                            <span class="text-gray-400" *ngIf="!producto.category">Sin categoría</span>
+                            <span class="text-gray-400" *ngIf="!producto.category_name">Sin categoría</span>
                         </td>
-                        <td class="font-medium">\${{producto.price}}</td>
+                        <td class="font-medium">{{ formatearMoneda(producto.price) }}</td>
                         <td>
                             <div class="flex items-center gap-2">
                                 <span [class]="getStockClass(producto)">{{producto.stock}}</span>
@@ -237,7 +238,7 @@ interface StockMovementRow {
                         </div>
                         <div>
                             <label class="block font-medium mb-1">Categoría</label>
-                            <p-select formControlName="category" [options]="categoriasOptions"
+                            <p-select formControlName="category" [options]="categoriasOptions" appendTo="body"
                                       optionLabel="label" optionValue="value"
                                       placeholder="Seleccionar categoría" class="w-full"
                                       [showClear]="true">
@@ -254,7 +255,7 @@ interface StockMovementRow {
                         <div>
                             <label class="block font-medium mb-1">Precio *</label>
                             <p-inputNumber formControlName="price" class="w-full"
-                                           mode="currency" currency="USD" locale="en-US"
+                                           mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()"
                                            [min]="0" [step]="0.01">
                             </p-inputNumber>
                         </div>
@@ -274,7 +275,7 @@ interface StockMovementRow {
 
                     <div>
                         <label class="block font-medium mb-1">Unidad de Medida</label>
-                        <p-select formControlName="unit" [options]="unidadesOptions"
+                        <p-select formControlName="unit" [options]="unidadesOptions" appendTo="body"
                                   optionLabel="label" optionValue="value"
                                   placeholder="Seleccionar unidad" class="w-full">
                         </p-select>
@@ -325,7 +326,7 @@ interface StockMovementRow {
 
                     <div *ngIf="!productoStock">
                         <label class="block font-medium mb-1">Seleccionar Producto *</label>
-                        <p-select formControlName="product_id" [options]="productosOptions"
+                        <p-select formControlName="product_id" [options]="productosOptions" appendTo="body"
                                   optionLabel="label" optionValue="value"
                                   placeholder="Seleccionar producto" class="w-full">
                         </p-select>
@@ -333,7 +334,7 @@ interface StockMovementRow {
 
                     <div>
                         <label class="block font-medium mb-1">Tipo de Movimiento *</label>
-                        <p-select formControlName="movement_type" [options]="tiposMovimientoOptions"
+                        <p-select formControlName="movement_type" [options]="tiposMovimientoOptions" appendTo="body"
                                   optionLabel="label" optionValue="value"
                                   placeholder="Seleccionar tipo" class="w-full">
                         </p-select>
@@ -369,6 +370,7 @@ interface StockMovementRow {
 })
 export class ProductsManagement implements OnInit {
     private inventoryService = inject(InventoryService);
+    private settingsService = inject(SettingsService);
     private messageService = inject(MessageService);
     private confirmationService = inject(ConfirmationService);
     private fb = inject(FormBuilder);
@@ -379,6 +381,8 @@ export class ProductsManagement implements OnInit {
     cargando = signal(false);
     cargandoMovimientos = signal(false);
     guardando = signal(false);
+    currencyCode = computed(() => this.settingsService.settings().currency || 'DOP');
+    currencyLocale = computed(() => this.settingsService.getCurrencyLocale());
     mostrarDialogo = false;
     mostrarDialogoStock = false;
     productoSeleccionado: Product | null = null;
@@ -387,16 +391,7 @@ export class ProductsManagement implements OnInit {
 
     productosOptions: any[] = [];
 
-    categoriasOptions = [
-        { label: 'Shampoo', value: 'Shampoo' },
-        { label: 'Acondicionador', value: 'Acondicionador' },
-        { label: 'Gel', value: 'Gel' },
-        { label: 'Cera', value: 'Cera' },
-        { label: 'Pomada', value: 'Pomada' },
-        { label: 'Aceite', value: 'Aceite' },
-        { label: 'Herramientas', value: 'Herramientas' },
-        { label: 'Accesorios', value: 'Accesorios' }
-    ];
+    categoriasOptions: { label: string; value: number }[] = [];
 
     unidadesOptions = [
         { label: 'Unidad', value: 'unidad' },
@@ -433,6 +428,26 @@ export class ProductsManagement implements OnInit {
     ngOnInit() {
         this.cargarProductos();
         this.cargarMovimientosStock();
+        this.cargarCategorias();
+    }
+
+    async cargarCategorias() {
+        try {
+            const response = await this.inventoryService.getCategories().toPromise();
+            const categorias = (response as any)?.results || response || [];
+            this.categoriasOptions = (categorias as any[]).map((categoria) => ({
+                label: categoria.name,
+                value: categoria.id
+            }));
+        } catch (error: any) {
+            if (error?.status !== 401 && error?.status !== 403) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Categorías no disponibles',
+                    detail: 'No se pudieron cargar las categorías de productos'
+                });
+            }
+        }
     }
 
     async cargarProductos() {
@@ -710,6 +725,14 @@ export class ProductsManagement implements OnInit {
         const productId = typeof mov.product === 'number' ? mov.product : mov.product?.id;
         const product = this.productos().find((p) => p.id === productId);
         return product?.name || `Producto #${productId ?? 'N/A'}`;
+    }
+
+    formatearMoneda(valor: number | string | null | undefined): string {
+        const amount = Number(valor) || 0;
+        return new Intl.NumberFormat(this.currencyLocale(), {
+            style: 'currency',
+            currency: this.currencyCode()
+        }).format(amount);
     }
 
     onImageSelect(event: any) {

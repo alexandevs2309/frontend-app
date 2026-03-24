@@ -112,7 +112,7 @@ export class BarbershopSettingsComponent implements OnInit {
 
   loadSettings() {
     this.loading.set(true);
-    this.http.get<BarbershopSettings>(`${environment.apiUrl}/settings/barbershop/`)
+    this.http.get<BarbershopSettings>(`${environment.apiUrl}/settings/barbershop/admin_settings/`)
       .subscribe({
         next: (data) => {
           if (data.logo) {
@@ -152,6 +152,16 @@ export class BarbershopSettingsComponent implements OnInit {
   }
 
   saveSettings() {
+    const validationErrors = this.validateSettings();
+    if (validationErrors.length > 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Revisa la configuración',
+        detail: validationErrors[0]
+      });
+      return;
+    }
+
     this.loading.set(true);
     const current = this.settings();
     const payload = {
@@ -180,6 +190,7 @@ export class BarbershopSettingsComponent implements OnInit {
             summary: 'Guardado',
             detail: 'Configuración actualizada correctamente'
           });
+          this.loadSettings();
         },
         error: (error) => {
           this.loading.set(false);
@@ -219,6 +230,7 @@ export class BarbershopSettingsComponent implements OnInit {
             summary: 'Guardado',
             detail: 'Configuración crítica actualizada y registrada'
           });
+          this.loadSettings();
         },
         error: () => {
           this.loading.set(false);
@@ -301,6 +313,90 @@ export class BarbershopSettingsComponent implements OnInit {
     return this.settings().business_hours[day]?.[field];
   }
 
+  isBusinessNameInvalid(): boolean {
+    return !this.settings().name?.trim();
+  }
+
+  isContactEmailInvalid(): boolean {
+    const email = this.settings().contact?.email;
+    return Boolean(email && !this.isValidEmail(email));
+  }
+
+  isPosEmailInvalid(): boolean {
+    const email = this.settings().pos_config?.email;
+    return Boolean(email && !this.isValidEmail(email));
+  }
+
+  isPosWebsiteInvalid(): boolean {
+    const website = this.settings().pos_config?.website;
+    return Boolean(website && !this.isValidUrl(website));
+  }
+
+  isDayScheduleInvalid(day: string): boolean {
+    const schedule = this.settings().business_hours?.[day];
+    if (!schedule || schedule.closed) {
+      return false;
+    }
+
+    return !schedule.open || !schedule.close || schedule.open >= schedule.close;
+  }
+
+  getTicketPreviewBusinessName(): string {
+    return this.settings().pos_config?.business_name?.trim() || this.settings().name?.trim() || 'Mi Peluqueria';
+  }
+
+  getTicketPreviewAddress(): string {
+    return this.settings().pos_config?.address?.trim() || this.settings().contact?.address?.trim() || 'Direccion no configurada';
+  }
+
+  getTicketPreviewPhone(): string {
+    return this.settings().pos_config?.phone?.trim() || this.settings().contact?.phone?.trim() || 'Telefono no configurado';
+  }
+
+  getTicketPreviewEmail(): string {
+    return this.settings().pos_config?.email?.trim() || this.settings().contact?.email?.trim() || 'Email no configurado';
+  }
+
+  getTicketPreviewWebsite(): string {
+    return this.settings().pos_config?.website?.trim() || 'www.tunegocio.com';
+  }
+
+  getTicketPreviewCurrency(): string {
+    return this.settings().currency_symbol || '$';
+  }
+
+  copyMondayScheduleToOpenDays() {
+    const monday = this.settings().business_hours['monday'];
+    if (!monday) {
+      return;
+    }
+
+    this.settings.update(s => {
+      const updatedHours = { ...s.business_hours };
+      Object.keys(updatedHours).forEach((dayKey) => {
+        if (dayKey === 'monday') return;
+        if (!updatedHours[dayKey].closed) {
+          updatedHours[dayKey] = {
+            ...updatedHours[dayKey],
+            open: monday.open,
+            close: monday.close
+          };
+        }
+      });
+
+      return {
+        ...s,
+        business_hours: updatedHours
+      };
+    });
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Horarios copiados',
+      detail: 'Se aplicó el horario del lunes a los días abiertos'
+    });
+  }
+
   getSettingType(settingName: string): 'critical' | 'sensitive' | 'cosmetic' {
     const governance = this.governanceInfo();
     if (!governance) return 'cosmetic';
@@ -333,5 +429,61 @@ export class BarbershopSettingsComponent implements OnInit {
     if (/^https?:\/\//i.test(url)) return url;
     const apiOrigin = new URL(environment.apiUrl).origin;
     return url.startsWith('/') ? `${apiOrigin}${url}` : `${apiOrigin}/${url}`;
+  }
+
+  private validateSettings(): string[] {
+    const current = this.settings();
+    const errors: string[] = [];
+
+    if (!current.name?.trim()) {
+      errors.push('El nombre de la peluquería es obligatorio.');
+    }
+
+    if (current.contact?.email && !this.isValidEmail(current.contact.email)) {
+      errors.push('El email de contacto no tiene un formato válido.');
+    }
+
+    if (current.pos_config?.email && !this.isValidEmail(current.pos_config.email)) {
+      errors.push('El email del POS no tiene un formato válido.');
+    }
+
+    if (current.pos_config?.website && !this.isValidUrl(current.pos_config.website)) {
+      errors.push('El sitio web del POS debe ser una URL válida.');
+    }
+
+    for (const day of Object.keys(current.business_hours || {})) {
+      const schedule = current.business_hours[day];
+      if (!schedule || schedule.closed) {
+        continue;
+      }
+
+      if (!schedule.open || !schedule.close) {
+        errors.push(`El horario de ${day} debe tener apertura y cierre.`);
+        continue;
+      }
+
+      if (schedule.open >= schedule.close) {
+        errors.push(`El horario de ${day} es inválido: la apertura debe ser antes del cierre.`);
+      }
+    }
+
+    return errors;
+  }
+
+  private isValidEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  }
+
+  private isValidUrl(value: string): boolean {
+    const normalized = value.startsWith('http://') || value.startsWith('https://')
+      ? value
+      : `https://${value}`;
+
+    try {
+      const url = new URL(normalized);
+      return Boolean(url.hostname);
+    } catch {
+      return false;
+    }
   }
 }

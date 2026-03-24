@@ -1,235 +1,223 @@
-import { Component, EventEmitter, Input, Output, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { CalendarModule } from 'primeng/calendar';
+import { DatePickerModule } from 'primeng/datepicker';
+import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
-import { InputTextareaModule } from 'primeng/inputtextarea';
-import { AppointmentService } from '../../../core/services/appointment/appointment.service';
-import { EmployeeService } from '../../../core/services/employee/employee.service';
-import { ClientService } from '../../../core/services/client/client.service';
-import { ServiceService } from '../../../core/services/service/service.service';
+import { TextareaModule } from 'primeng/textarea';
+import { AppointmentWithDetails } from '../../../core/services/appointment/appointment.service';
+
+export interface AppointmentDialogValue {
+    client: number;
+    stylist: number;
+    service: number | null;
+    date: Date | null;
+    time: Date | null;
+    description: string;
+}
+
+type EmployeeOption = { label: string; value: number; serviceIds?: number[] };
 
 @Component({
-  selector: 'app-appointment-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    DialogModule,
-    ButtonModule,
-    InputTextModule,
-    CalendarModule,
-    SelectModule,
-    InputTextareaModule
-  ],
-  template: `
-    <p-dialog 
-      [(visible)]="visible" 
-      [header]="appointment() ? 'Editar Cita' : 'Nueva Cita'"
-      [modal]="true"
-      [style]="{width: '500px'}"
-      (onHide)="onCancel()">
-      
-      <form [formGroup]="form" (ngSubmit)="onSubmit()">
-        <div class="flex flex-col gap-4">
-          <div>
-            <label class="block mb-2 font-semibold">Cliente *</label>
-            <p-select 
-              formControlName="client"
-              [options]="clients()"
-              optionLabel="full_name"
-              optionValue="id"
-              placeholder="Seleccionar cliente"
-              [filter]="true"
-              class="w-full" />
-          </div>
+    selector: 'app-appointment-dialog',
+    standalone: true,
+    imports: [CommonModule, ReactiveFormsModule, DialogModule, ButtonModule, SelectModule, DatePickerModule, TextareaModule],
+    template: `
+        <p-dialog
+            [header]="appointment ? 'Editar Cita' : 'Nueva Cita'"
+            [(visible)]="visible"
+            [modal]="true"
+            [style]="{ width: '95%', maxWidth: '600px' }"
+            [closable]="!saving"
+            [closeOnEscape]="!saving"
+            (onHide)="handleHide()"
+        >
+            <form [formGroup]="form" class="grid gap-4" (ngSubmit)="onSubmit()">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-medium mb-1">Cliente *</label>
+                        <p-select
+                            formControlName="client"
+                            [options]="clientsOptions"
+                            appendTo="body"
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Seleccionar cliente"
+                            class="w-full"
+                            [filter]="true"
+                        ></p-select>
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1">Empleado *</label>
+                        <p-select
+                            formControlName="stylist"
+                            [options]="filteredEmployeesOptions"
+                            appendTo="body"
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Seleccionar empleado"
+                            class="w-full"
+                        ></p-select>
+                        <small class="block mt-1 text-slate-500 dark:text-slate-400">
+                            {{ form.controls.service.value ? 'Solo se muestran empleados que realizan el servicio seleccionado.' : 'Se muestran empleados activos con servicios asignados.' }}
+                        </small>
+                    </div>
+                </div>
 
-          <div>
-            <label class="block mb-2 font-semibold">Estilista *</label>
-            <p-select 
-              formControlName="employee"
-              [options]="employees()"
-              optionLabel="user.full_name"
-              optionValue="id"
-              placeholder="Seleccionar estilista"
-              class="w-full" />
-          </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-medium mb-1">Fecha *</label>
+                        <p-datepicker formControlName="date" dateFormat="dd/mm/yy" appendTo="body" class="w-full"></p-datepicker>
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1">Hora *</label>
+                        <p-datepicker formControlName="time" hourFormat="24" [showTime]="true" [timeOnly]="true" appendTo="body" class="w-full"></p-datepicker>
+                    </div>
+                </div>
 
-          <div>
-            <label class="block mb-2 font-semibold">Servicio *</label>
-            <p-select 
-              formControlName="service"
-              [options]="services()"
-              optionLabel="name"
-              optionValue="id"
-              placeholder="Seleccionar servicio"
-              class="w-full" />
-          </div>
+                <div>
+                    <label class="block font-medium mb-1">Servicio</label>
+                    <p-select
+                        formControlName="service"
+                        [options]="servicesOptions"
+                        appendTo="body"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Seleccionar servicio"
+                        class="w-full"
+                        [showClear]="true"
+                    ></p-select>
+                </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block mb-2 font-semibold">Fecha *</label>
-              <p-calendar 
-                formControlName="appointment_date"
-                [showIcon]="true"
-                dateFormat="dd/mm/yy"
-                [minDate]="minDate"
-                class="w-full" />
-            </div>
+                <div>
+                    <label class="block font-medium mb-1">Notas</label>
+                    <textarea pTextarea formControlName="description" class="w-full" rows="3" placeholder="Notas adicionales sobre la cita..."></textarea>
+                </div>
 
-            <div>
-              <label class="block mb-2 font-semibold">Hora *</label>
-              <p-calendar 
-                formControlName="appointment_time"
-                [timeOnly]="true"
-                [showIcon]="true"
-                hourFormat="24"
-                class="w-full" />
-            </div>
-          </div>
-
-          <div>
-            <label class="block mb-2 font-semibold">Estado</label>
-            <p-select 
-              formControlName="status"
-              [options]="statusOptions"
-              optionLabel="label"
-              optionValue="value"
-              class="w-full" />
-          </div>
-
-          <div>
-            <label class="block mb-2 font-semibold">Notas</label>
-            <textarea 
-              pInputTextarea
-              formControlName="notes"
-              rows="3"
-              class="w-full"></textarea>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-2 mt-4">
-          <p-button 
-            label="Cancelar" 
-            severity="secondary"
-            [outlined]="true"
-            type="button"
-            (onClick)="onCancel()" />
-          <p-button 
-            [label]="appointment() ? 'Actualizar' : 'Crear'"
-            type="submit"
-            [disabled]="form.invalid || loading()" />
-        </div>
-      </form>
-    </p-dialog>
-  `
+                <div class="flex justify-end gap-2 mt-4">
+                    <button pButton label="Cancelar" type="button" class="p-button-text" (click)="onCancel()" [disabled]="saving"></button>
+                    <button pButton [label]="appointment ? 'Actualizar' : 'Crear'" type="submit" icon="pi pi-check" [loading]="saving" [disabled]="form.invalid"></button>
+                </div>
+            </form>
+        </p-dialog>
+    `
 })
-export class AppointmentDialogComponent implements OnInit {
-  @Input() visible = false;
-  @Input() appointment = signal<any>(null);
-  @Output() visibleChange = new EventEmitter<boolean>();
-  @Output() saved = new EventEmitter<void>();
+export class AppointmentDialogComponent implements OnChanges {
+    @Input() visible = false;
+    @Input() saving = false;
+    @Input() appointment: AppointmentWithDetails | null = null;
+    @Input() clientsOptions: Array<{ label: string; value: number }> = [];
+    @Input() employeesOptions: EmployeeOption[] = [];
+    @Input() servicesOptions: Array<{ label: string; value: number }> = [];
 
-  form!: FormGroup;
-  loading = signal(false);
-  clients = signal<any[]>([]);
-  employees = signal<any[]>([]);
-  services = signal<any[]>([]);
-  minDate = new Date();
+    @Output() visibleChange = new EventEmitter<boolean>();
+    @Output() save = new EventEmitter<AppointmentDialogValue>();
+    @Output() cancel = new EventEmitter<void>();
 
-  statusOptions = [
-    { label: 'Programada', value: 'scheduled' },
-    { label: 'Completada', value: 'completed' },
-    { label: 'Cancelada', value: 'cancelled' }
-  ];
+    private readonly fb = inject(FormBuilder);
 
-  constructor(
-    private fb: FormBuilder,
-    private appointmentService: AppointmentService,
-    private employeeService: EmployeeService,
-    private clientService: ClientService,
-    private serviceService: ServiceService
-  ) {
-    this.form = this.fb.group({
-      client: [null, Validators.required],
-      employee: [null, Validators.required],
-      service: [null, Validators.required],
-      appointment_date: [null, Validators.required],
-      appointment_time: [null, Validators.required],
-      status: ['scheduled'],
-      notes: ['']
+    form = this.fb.group({
+        client: [null as number | null, Validators.required],
+        stylist: [null as number | null, Validators.required],
+        service: [null as number | null],
+        date: [null as Date | null, Validators.required],
+        time: [null as Date | null, Validators.required],
+        description: ['']
     });
-  }
 
-  ngOnInit() {
-    this.loadData();
-    if (this.appointment()) {
-      this.patchForm();
+    get filteredEmployeesOptions(): EmployeeOption[] {
+        const selectedServiceId = this.form.controls.service.value;
+        if (!selectedServiceId) {
+            return this.employeesOptions;
+        }
+
+        return this.employeesOptions.filter((employee) => employee.serviceIds?.includes(selectedServiceId));
     }
-  }
 
-  loadData() {
-    this.clientService.getClients().subscribe(data => this.clients.set(data));
-    this.employeeService.getEmployees().subscribe(data => this.employees.set(data));
-    this.serviceService.getServices().subscribe(data => this.services.set(data));
-  }
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['appointment'] || changes['visible']) {
+            this.syncForm();
+        }
 
-  patchForm() {
-    const apt = this.appointment();
-    if (apt) {
-      const [date, time] = apt.appointment_datetime.split('T');
-      this.form.patchValue({
-        client: apt.client.id,
-        employee: apt.employee.id,
-        service: apt.service.id,
-        appointment_date: new Date(date),
-        appointment_time: new Date(`2000-01-01T${time}`),
-        status: apt.status,
-        notes: apt.notes || ''
-      });
+        if (changes['employeesOptions']) {
+            this.ensureSelectedStylistIsStillValid();
+        }
     }
-  }
 
-  onSubmit() {
-    if (this.form.invalid) return;
+    onSubmit(): void {
+        if (this.form.invalid) {
+            this.form.markAllAsTouched();
+            return;
+        }
 
-    this.loading.set(true);
-    const formValue = this.form.value;
-    
-    const date = formValue.appointment_date;
-    const time = formValue.appointment_time;
-    const datetime = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}:00`;
+        const value = this.form.getRawValue();
+        this.save.emit({
+            client: value.client as number,
+            stylist: value.stylist as number,
+            service: value.service ?? null,
+            date: value.date,
+            time: value.time,
+            description: value.description?.trim() || ''
+        });
+    }
 
-    const payload = {
-      client: formValue.client,
-      employee: formValue.employee,
-      service: formValue.service,
-      appointment_datetime: datetime,
-      status: formValue.status,
-      notes: formValue.notes
-    };
+    onCancel(): void {
+        this.visible = false;
+        this.visibleChange.emit(false);
+        this.cancel.emit();
+    }
 
-    const request = this.appointment()
-      ? this.appointmentService.updateAppointment(this.appointment().id, payload)
-      : this.appointmentService.createAppointment(payload);
-
-    request.subscribe({
-      next: () => {
-        this.loading.set(false);
-        this.saved.emit();
+    handleHide(): void {
         this.onCancel();
-      },
-      error: () => this.loading.set(false)
-    });
-  }
+    }
 
-  onCancel() {
-    this.visible = false;
-    this.visibleChange.emit(false);
-    this.form.reset({ status: 'scheduled' });
-    this.appointment.set(null);
-  }
+    private syncForm(): void {
+        if (!this.visible) {
+            this.form.reset({
+                client: null,
+                stylist: null,
+                service: null,
+                date: null,
+                time: null,
+                description: ''
+            });
+            return;
+        }
+
+        if (!this.appointment) {
+            this.form.reset({
+                client: null,
+                stylist: null,
+                service: null,
+                date: null,
+                time: null,
+                description: ''
+            });
+            return;
+        }
+
+        const appointmentDate = new Date(this.appointment.date_time);
+        this.form.reset({
+            client: this.appointment.client,
+            stylist: this.appointment.stylist,
+            service: this.appointment.service ?? null,
+            date: appointmentDate,
+            time: appointmentDate,
+            description: this.appointment.description || ''
+        });
+        this.ensureSelectedStylistIsStillValid();
+    }
+
+    private ensureSelectedStylistIsStillValid(): void {
+        const selectedStylist = this.form.controls.stylist.value;
+        if (!selectedStylist) {
+            return;
+        }
+
+        const allowedIds = new Set(this.filteredEmployeesOptions.map((employee) => employee.value));
+        if (!allowedIds.has(selectedStylist)) {
+            this.form.patchValue({ stylist: null });
+        }
+    }
 }

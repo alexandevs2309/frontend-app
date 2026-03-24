@@ -12,6 +12,8 @@ export interface Employee {
   phone?: string;
   hire_date?: string;
   is_active: boolean;
+  service_ids?: number[];
+  services_count?: number;
   created_at?: string;
   updated_at?: string;
 }

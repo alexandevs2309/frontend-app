@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -17,6 +17,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ServiceService, Service, ServiceCategory } from '../../../core/services/service/service.service';
 import { environment } from '../../../../environments/environment';
 import { ServiceDto, ServiceCategoryDto, CreateServiceDto, UpdateServiceDto } from '../../../core/dto/service.dto';
+import { SettingsService } from '../../../core/services/settings/settings.service';
 
 @Component({
     selector: 'app-services-management',
@@ -107,7 +108,7 @@ import { ServiceDto, ServiceCategoryDto, CreateServiceDto, UpdateServiceDto } fr
                                 <span class="text-gray-400" *ngIf="!servicio.category">Sin categoría</span>
                             </ng-template>
                         </td>
-                        <td class="font-medium">\${{servicio.price}}</td>
+                        <td class="font-medium">{{ formatearMoneda(servicio.price) }}</td>
                         <td>{{servicio.duration}} min</td>
                         <td>
                             <p-tag [value]="servicio.is_active ? 'Activo' : 'Inactivo'"
@@ -148,8 +149,8 @@ import { ServiceDto, ServiceCategoryDto, CreateServiceDto, UpdateServiceDto } fr
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block font-medium mb-1">Categorías</label>
-                            <p-multiSelect formControlName="categories" 
-                                          [options]="categoriasDisponibles" 
+                            <p-multiSelect formControlName="categories" appendTo="body"
+                                            [options]="categoriasDisponibles" 
                                           optionLabel="name" 
                                           optionValue="id"
                                           placeholder="Seleccionar categorías" 
@@ -172,7 +173,7 @@ import { ServiceDto, ServiceCategoryDto, CreateServiceDto, UpdateServiceDto } fr
                     <div>
                         <label class="block font-medium mb-1">Precio *</label>
                         <p-inputNumber formControlName="price" class="w-full"
-                                       mode="currency" currency="USD" locale="en-US"
+                                       mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()"
                                        [min]="0" [step]="0.01">
                         </p-inputNumber>
                     </div>
@@ -199,6 +200,7 @@ import { ServiceDto, ServiceCategoryDto, CreateServiceDto, UpdateServiceDto } fr
 })
 export class ServicesManagement implements OnInit {
     private serviceService = inject(ServiceService);
+    private settingsService = inject(SettingsService);
     private messageService = inject(MessageService);
     private confirmationService = inject(ConfirmationService);
     private fb = inject(FormBuilder);
@@ -206,6 +208,8 @@ export class ServicesManagement implements OnInit {
     servicios = signal<ServiceDto[]>([]);
     cargando = signal(false);
     guardando = signal(false);
+    currencyCode = computed(() => this.settingsService.settings().currency || 'DOP');
+    currencyLocale = computed(() => this.settingsService.getCurrencyLocale());
     mostrarDialogo = false;
     servicioSeleccionado: ServiceDto | null = null;
     categoriasDisponibles: ServiceCategoryDto[] = [];
@@ -409,6 +413,14 @@ export class ServicesManagement implements OnInit {
                 detail: error?.error?.detail || 'Error al eliminar el servicio'
             });
         }
+    }
+
+    formatearMoneda(valor: number | string | null | undefined): string {
+        const amount = Number(valor) || 0;
+        return new Intl.NumberFormat(this.currencyLocale(), {
+            style: 'currency',
+            currency: this.currencyCode()
+        }).format(amount);
     }
 
     cerrarDialogo() {

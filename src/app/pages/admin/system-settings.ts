@@ -14,12 +14,25 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 
-const MASKED_SECRET = '••••••••configured••••••••';
+function constantTimeEquals(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return result === 0;
+}
+
+function isMaskedSecret(value: string): boolean {
+    return constantTimeEquals(value, MASKED_SECRET);
+}
+
+const MASKED_SECRET = '';
 
 function optionalPatternValidator(pattern: RegExp, errorKey: string): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
         const value = String(control.value || '').trim();
-        if (!value || value === MASKED_SECRET) return null;
+        if (!value || isMaskedSecret(value)) return null;
         return pattern.test(value) ? null : { [errorKey]: true };
     };
 }
@@ -172,7 +185,7 @@ function optionalEmailValidator(): ValidatorFn {
                                                 <input pInputText id="from_name" formControlName="from_name" placeholder="Equipo de Soporte" />
                                             </div>
                                             <div class="flex items-center gap-3">
-                                                <p-toggleSwitch formControlName="enable_notifications" inputId="email_notifications" />
+                                                <p-toggleSwitch formControlName="email_notifications" inputId="email_notifications" />
                                                 <label for="email_notifications" class="text-base font-medium text-gray-700 dark:text-gray-300">Habilitar Notificaciones por Correo</label>
                                             </div>
                                         </div>
@@ -536,13 +549,13 @@ export class SystemSettings implements OnInit {
         });
 
         this.emailForm = this.fb.group({
-            smtp_host: ['', Validators.required],
-            smtp_port: [587, [Validators.required, Validators.min(1)]],
-            smtp_username: ['', [Validators.required, optionalEmailValidator()]],
-            smtp_password: ['', [Validators.required]],
-            from_email: ['', [Validators.required, Validators.email]],
-            from_name: ['', Validators.required],
-            enable_notifications: [true]
+            smtp_host: [''],
+            smtp_port: [587, [Validators.min(1)]],
+            smtp_username: [''],
+            smtp_password: [''],
+            from_email: ['', [optionalEmailValidator()]],
+            from_name: [''],
+            email_notifications: [true]
         });
 
         this.paymentForm = this.fb.group({
@@ -583,12 +596,12 @@ export class SystemSettings implements OnInit {
             default_currency: ['USD', Validators.required]
         });
 
-        this.automationForm = this.fb.group({
-            auto_suspend_expired: [true],
-            email_notifications: [true],
-            auto_upgrade_limits: [false],
-            maintenance_mode: [false]
-        });
+    this.automationForm = this.fb.group({
+        auto_suspend_expired: [true],
+        email_notifications: [true],
+        auto_upgrade_limits: [false],
+        maintenance_mode: [false]
+    });
     }
 
     private loadSettings() {
@@ -614,7 +627,7 @@ export class SystemSettings implements OnInit {
                     smtp_password: this.maskSecret(settings.smtp_password),
                     from_email: settings.from_email || 'noreply@barbersaas.com',
                     from_name: settings.from_name || 'BarberSaaS Team',
-                    enable_notifications: settings.email_notifications !== false
+                    email_notifications: settings.email_notifications !== false
                 });
                 
                 // Payment form
@@ -719,12 +732,12 @@ export class SystemSettings implements OnInit {
                     this.saving = false;
                     this.messageService.add({
                         severity: 'success',
-                        summary: '¡Éxito!',
+                        summary: 'Exito',
                         detail: 'Configuracion de pagos actualizada correctamente.',
                         life: 3000
                     });
                 },
-                error: (error) => this.handleSaveError('configuración de pagos', error)
+                error: (error) => this.handleSaveError('configuracion de pagos', error)
             });
         }
     }
@@ -737,12 +750,12 @@ export class SystemSettings implements OnInit {
                     this.saving = false;
                     this.messageService.add({
                         severity: 'success',
-                        summary: '¡Éxito!',
+                        summary: 'Exito',
                         detail: 'Configuracion de seguridad actualizada correctamente.',
                         life: 3000
                     });
                 },
-                error: (error) => this.handleSaveError('configuración de seguridad', error)
+                error: (error) => this.handleSaveError('configuracion de seguridad', error)
             });
         }
     }
@@ -918,7 +931,7 @@ export class SystemSettings implements OnInit {
                     this.saving = false;
                     this.messageService.add({
                         severity: 'success',
-                        summary: '💰 Comisiones Actualizadas',
+                        summary: ' Comisiones Actualizadas',
                         detail: `Nueva comisión: ${formData.platform_commission_rate}% - Afecta nuevas transacciones`,
                         life: 4000
                     });
@@ -957,7 +970,7 @@ export class SystemSettings implements OnInit {
                     this.saving = false;
                     this.messageService.add({
                         severity: 'success',
-                        summary: '✅ Automatización Configurada',
+                        summary: ' Automatización Configurada',
                         detail: 'Los cambios se aplicarán en los próximos minutos',
                         life: 3000
                     });
@@ -968,17 +981,48 @@ export class SystemSettings implements OnInit {
     }
 
     private buildEmailPayload(): Record<string, unknown> {
-        return this.omitMaskedSecrets(this.emailForm.getRawValue(), ['smtp_password']);
+        const raw = this.emailForm.getRawValue();
+        return this.omitMaskedSecrets(
+            {
+                smtp_host: raw.smtp_host,
+                smtp_port: raw.smtp_port,
+                smtp_username: raw.smtp_username,
+                smtp_password: raw.smtp_password,
+                from_email: raw.from_email,
+                from_name: raw.from_name,
+                email_notifications: raw.email_notifications
+            },
+            ['smtp_password']
+        );
     }
 
     private buildPaymentPayload(): Record<string, unknown> {
-        return this.omitMaskedSecrets(this.paymentForm.getRawValue(), [
-            'stripe_secret_key',
-            'webhook_secret',
-            'paypal_client_secret',
-            'twilio_account_sid',
-            'twilio_auth_token'
-        ]);
+        const raw = this.paymentForm.getRawValue();
+        return this.omitMaskedSecrets(
+            {
+                stripe_public_key: raw.stripe_public_key,
+                stripe_secret_key: raw.stripe_secret_key,
+                webhook_secret: raw.webhook_secret,
+                stripe_enabled: raw.stripe_enabled,
+                paypal_client_id: raw.paypal_client_id,
+                paypal_client_secret: raw.paypal_client_secret,
+                paypal_enabled: raw.paypal_enabled,
+                paypal_sandbox: raw.paypal_sandbox,
+                twilio_account_sid: raw.twilio_account_sid,
+                twilio_auth_token: raw.twilio_auth_token,
+                twilio_phone_number: raw.twilio_phone_number,
+                twilio_enabled: raw.twilio_enabled,
+                default_currency: raw.currency,
+                trial_days: raw.trial_days
+            },
+            [
+                'stripe_secret_key',
+                'webhook_secret',
+                'paypal_client_secret',
+                'twilio_account_sid',
+                'twilio_auth_token'
+            ]
+        );
     }
 
     private omitMaskedSecrets<T extends Record<string, unknown>>(payload: T, secretKeys: string[]): Record<string, unknown> {
@@ -988,7 +1032,7 @@ export class SystemSettings implements OnInit {
             const raw = sanitized[key];
             if (typeof raw === 'string') {
                 const value = raw.trim();
-                if (!value || value === MASKED_SECRET) {
+                if (!value || isMaskedSecret(value)) {
                     delete sanitized[key];
                 } else {
                     sanitized[key] = value;
@@ -1033,4 +1077,7 @@ export class SystemSettings implements OnInit {
         this.errorLogger.log('SystemSettings', context, error);
     }
 }
+
+
+
 

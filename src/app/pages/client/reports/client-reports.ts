@@ -13,6 +13,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { DashboardService } from '../../../core/services/dashboard/dashboard.service';
+import { TenantService } from '../../../core/services/tenant/tenant.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -85,6 +86,7 @@ export class ClientReports implements OnInit {
     private fb = inject(FormBuilder);
     private http = inject(HttpClient);
     private messageService = inject(MessageService);
+    private tenantService = inject(TenantService);
 
     activeTab = 'dashboard';
 
@@ -104,7 +106,7 @@ export class ClientReports implements OnInit {
     // KPI Cards solo con datos reales
     kpiCards = [
         {
-            label: 'Ingresos Febrero',
+            label: 'Ingresos del Mes',
             value: '$0.00',
             color: 'text-indigo-600',
             trendIcon: '',
@@ -154,7 +156,30 @@ export class ClientReports implements OnInit {
     ngOnInit() {
         this.initCharts();
         this.cargarMoneda();
+        this.cargarTenantActual();
         this.cargarDatos();
+    }
+
+    cargarTenantActual() {
+        this.tenantService.getCurrentTenant().subscribe({
+            next: (tenant) => {
+                const tenantCreatedAt = tenant?.created_at ? new Date(tenant.created_at) : null;
+                if (!tenantCreatedAt || Number.isNaN(tenantCreatedAt.getTime())) {
+                    return;
+                }
+
+                const startOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+                const defaultStartDate = tenantCreatedAt > startOfCurrentMonth ? tenantCreatedAt : startOfCurrentMonth;
+
+                this.filtrosForm.patchValue({
+                    fechaInicio: defaultStartDate,
+                    fechaFin: new Date()
+                });
+            },
+            error: () => {
+                // Mantener rango por defecto actual si no se puede obtener el tenant
+            }
+        });
     }
 
     cargarMoneda() {
@@ -241,9 +266,16 @@ export class ClientReports implements OnInit {
         const activeMonths = monthlyRevenue.filter((item: any) => item.revenue > 0).length;
         const averageRevenue = activeMonths > 0 ? totalRevenue / activeMonths : 0;
 
+        const monthLabel = new Intl.DateTimeFormat('es-DO', { month: 'long' }).format(new Date());
+        const currentMonthLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+        this.kpiCards[0].label = `Ingresos ${currentMonthLabel}`;
         this.kpiCards[0].value = this.formatearMoneda(currentMonthRevenue);
+        this.kpiCards[1].label = 'Ingresos Totales';
         this.kpiCards[1].value = this.formatearMoneda(totalRevenue);
+        this.kpiCards[2].label = 'Promedio Mensual';
         this.kpiCards[2].value = this.formatearMoneda(averageRevenue);
+        this.kpiCards[3].label = 'Meses Activos';
         this.kpiCards[3].value = activeMonths.toString();
 
         this.actualizarGraficoIngresosMensuales(monthlyRevenue);

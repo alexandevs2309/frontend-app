@@ -217,13 +217,13 @@ interface User {
 
                     <div>
                         <label for="role" class="block font-bold mb-3">Role</label>
-                        <p-select [(ngModel)]="user.role" inputId="role" [options]="roleOptions()" optionLabel="label" optionValue="value" placeholder="Select Role" fluid />
+                        <p-select [(ngModel)]="user.role" inputId="role" [options]="roleOptions()" appendTo="body" optionLabel="label" optionValue="value" placeholder="Select Role" fluid />
                     </div>
 
                     @if (requiresTenant(user.role)) {
                         <div>
                             <label for="tenant" class="block font-bold mb-3">Tenant</label>
-                            <p-select [(ngModel)]="user.tenant" inputId="tenant" [options]="tenantOptions()" optionLabel="name" optionValue="id" placeholder="Select Tenant" fluid />
+                            <p-select [(ngModel)]="user.tenant" inputId="tenant" [options]="tenantOptions()" appendTo="body" optionLabel="name" optionValue="id" placeholder="Select Tenant" fluid />
                             @if (submitted && requiresTenant(user.role) && !user.tenant) {
                                 <small class="text-red-500">Tenant is required for this role.</small>
                             }

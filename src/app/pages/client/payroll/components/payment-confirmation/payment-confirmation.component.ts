@@ -48,8 +48,8 @@ import { Period, PaymentRequest } from '../../interfaces/payroll.interface';
         <!-- Método de pago -->
         <div>
           <label class="block text-sm font-medium mb-2">Método de Pago</label>
-          <p-select [(ngModel)]="paymentMethod" [options]="paymentMethods" 
-                    optionLabel="label" optionValue="value" 
+          <p-select [(ngModel)]="paymentMethod" [options]="paymentMethods" appendTo="body"
+                      optionLabel="label" optionValue="value" 
                     placeholder="Seleccionar método..." class="w-full"></p-select>
         </div>
 

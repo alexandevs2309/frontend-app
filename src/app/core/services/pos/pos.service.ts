@@ -18,6 +18,7 @@ export interface Sale {
 export interface CashRegister {
   id: number;
   user: any;
+  user_name?: string;
   opened_at: string;
   closed_at?: string;
   initial_cash: number;

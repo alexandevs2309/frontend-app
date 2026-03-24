@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { SaasStatsWidget } from '../dashboard/components/saas-stats-widget';
 import { NotificationsWidget } from '../dashboard/components/notificationswidget';
-import { Subscription } from 'rxjs';
+import { Subscription, interval } from 'rxjs';
 
 @Component({
     selector: 'app-admin-dashboard',
@@ -58,6 +58,7 @@ import { Subscription } from 'rxjs';
 })
 export class AdminDashboard implements OnInit, OnDestroy {
     currentUser = signal<any>(null);
+    currentTime = signal(new Date());
     private subscription = new Subscription();
 
     constructor(private authService: AuthService) {}
@@ -68,6 +69,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
                 this.currentUser.set(user);
             })
         );
+        this.subscription.add(
+            interval(60000).subscribe(() => this.currentTime.set(new Date()))
+        );
     }
 
     ngOnDestroy() {
@@ -76,7 +80,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
     private readonly roleNames = {
         'SUPER_ADMIN': 'Super Administrador',
-        'CLIENT_ADMIN': 'Administrador de Peluquería', 
+        'CLIENT_ADMIN': 'Administrador de Peluquería',
         'CLIENT_STAFF': 'Empleado'
     } as const;
 
@@ -85,10 +89,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
     }
 
     getCurrentDate(): string {
-        return new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        return this.currentTime().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     }
 
     getCurrentTime(): string {
-        return new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        return this.currentTime().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     }
 }

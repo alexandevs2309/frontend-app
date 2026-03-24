@@ -88,6 +88,26 @@
               </small>
             </div>
 
+            <div *ngIf="requiresMfa" class="space-y-3">
+              <label for="mfaCode" class="block text-sm font-semibold text-surface-700 dark:text-surface-300">Codigo MFA</label>
+              <div class="relative">
+                <i class="pi pi-shield absolute left-3 top-1/2 transform -translate-y-1/2 text-surface-400"></i>
+                <input
+                  pInputText
+                  id="mfaCode"
+                  type="text"
+                  maxlength="6"
+                  formControlName="mfaCode"
+                  placeholder="Ingresa tu codigo de 6 digitos"
+                  class="w-full pl-10 h-12 border-2 border-surface-300 focus:border-blue-500 rounded-lg transition-colors backdrop-blur-sm bg-white/50 dark:bg-slate-800/50"
+                />
+              </div>
+              <small *ngIf="mfaCode.invalid && mfaCode.touched" class="text-red-500 flex items-center gap-1">
+                <i class="pi pi-exclamation-triangle"></i>
+                Ingresa un codigo MFA valido de 6 digitos.
+              </small>
+            </div>
+
             <!-- Remember Me & Forgot Password -->
             <div class="flex items-center justify-between mt-6">
               <div class="flex items-center gap-2">
@@ -101,14 +121,26 @@
             <button
               pButton
               pRipple
-              [label]="t('auth.login.submit')"
-              icon="pi pi-sign-in"
+              [label]="requiresMfa ? 'Verificar codigo' : t('auth.login.submit')"
+              [icon]="requiresMfa ? 'pi pi-shield' : 'pi pi-sign-in'"
               iconPos="right"
               [loading]="isLoading"
               type="submit"
-              [disabled]="loginForm.invalid"
+              [disabled]="requiresMfa ? mfaCode.invalid : loginForm.invalid"
               class="w-full h-14 text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
               style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%); border: none;">
+            </button>
+
+            <button
+              *ngIf="requiresMfa"
+              pButton
+              pRipple
+              label="Volver"
+              icon="pi pi-arrow-left"
+              type="button"
+              (click)="cancelMfa()"
+              class="w-full h-12 text-base font-semibold"
+              [outlined]="true">
             </button>
           </form>
 

@@ -15,7 +15,7 @@ export class AppCurrencyPipe implements PipeTransform {
     }
 
     const currency = this.settingsService.getCurrency();
-    const locale = currency === 'DOP' ? 'es-DO' : 'en-US';
+    const locale = this.settingsService.getCurrencyLocale();
 
     return new Intl.NumberFormat(locale, {
       style: 'currency',

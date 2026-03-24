@@ -102,9 +102,9 @@ export class AppMenu implements OnInit, OnDestroy {
                 label: this.localeService.t('menu.admin_panel' as any),
                 items: [
                     { label: this.localeService.t('menu.dashboard' as any), icon: 'pi pi-fw pi-home', routerLink: ['/admin/dashboard'] },
+                    { label: this.localeService.t('menu.subscription_plans' as any), icon: 'pi pi-fw pi-credit-card', routerLink: ['/admin/plans'] },
                     { label: this.localeService.t('menu.tenants' as any), icon: 'pi pi-fw pi-building', routerLink: ['/admin/tenants'] },
                     { label: this.localeService.t('menu.users' as any), icon: 'pi pi-fw pi-users', routerLink: ['/admin/users'] },
-                    { label: this.localeService.t('menu.subscription_plans' as any), icon: 'pi pi-fw pi-credit-card', routerLink: ['/admin/plans'] },
                     { label: this.localeService.t('menu.billing' as any), icon: 'pi pi-fw pi-dollar', routerLink: ['/admin/billing'] },
                     { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/admin/reports'] },
                     { label: 'Soporte', icon: 'pi pi-fw pi-headphones', routerLink: ['/admin/support'] },
@@ -127,10 +127,11 @@ export class AppMenu implements OnInit, OnDestroy {
         ];
 
         if (userRoleKey === 'CLIENT_ADMIN') {
-            // CLIENT_ADMIN: All features available
             menuItems.push(
                 { label: this.localeService.t('menu.employees' as any), icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
                 { label: 'Turnos', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/client/schedules'] },
+                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
+                { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
                 { 
                     label: this.localeService.t('menu.appointments' as any), 
@@ -139,15 +140,12 @@ export class AppMenu implements OnInit, OnDestroy {
                     badge: badgeCount > 0 ? badgeCount.toString() : undefined,
                     badgeStyleClass: 'p-badge-danger'
                 },
-                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
-                { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: this.localeService.t('menu.pos' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
                 { label: this.localeService.t('menu.payroll' as any), icon: 'pi pi-fw pi-wallet', routerLink: ['/client/payroll'] },
                 { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] },
                 { label: this.localeService.t('menu.settings' as any), icon: 'pi pi-fw pi-cog', routerLink: ['/client/settings'] }
             );
         } else if (userRoleKey === 'CLIENT_STAFF' || userRoleKey === 'ESTILISTA') {
-            // CLIENT_STAFF / Estilista: only routes allowed by client.routes
             menuItems.push(
                 { 
                     label: this.localeService.t('menu.my_appointments' as any), 
@@ -160,6 +158,9 @@ export class AppMenu implements OnInit, OnDestroy {
             );
         } else if (userRoleKey === 'CAJERA') {
             menuItems.push(
+                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
+                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
+                { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { 
                     label: this.localeService.t('menu.appointments' as any), 
                     icon: 'pi pi-fw pi-calendar', 
@@ -167,15 +168,14 @@ export class AppMenu implements OnInit, OnDestroy {
                     badge: badgeCount > 0 ? badgeCount.toString() : undefined,
                     badgeStyleClass: 'p-badge-danger'
                 },
-                { label: this.localeService.t('menu.sales' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
-                { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
-                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
-                { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] }
+                { label: this.localeService.t('menu.sales' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] }
             );
         } else if (userRoleKey === 'MANAGER') {
             menuItems.push(
                 { label: this.localeService.t('menu.employees' as any), icon: 'pi pi-fw pi-users', routerLink: ['/client/employees'] },
                 { label: 'Turnos', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/client/schedules'] },
+                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
+                { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: this.localeService.t('menu.clients' as any), icon: 'pi pi-fw pi-user-plus', routerLink: ['/client/clients'] },
                 { 
                     label: this.localeService.t('menu.appointments' as any), 
@@ -184,8 +184,6 @@ export class AppMenu implements OnInit, OnDestroy {
                     badge: badgeCount > 0 ? badgeCount.toString() : undefined,
                     badgeStyleClass: 'p-badge-danger'
                 },
-                { label: this.localeService.t('menu.services' as any), icon: 'pi pi-fw pi-wrench', routerLink: ['/client/services'] },
-                { label: this.localeService.t('menu.products' as any), icon: 'pi pi-fw pi-box', routerLink: ['/client/products'] },
                 { label: this.localeService.t('menu.pos' as any), icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/client/pos'] },
                 { label: this.localeService.t('menu.payroll' as any), icon: 'pi pi-fw pi-wallet', routerLink: ['/client/payroll'] },
                 { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/client/reports'] }

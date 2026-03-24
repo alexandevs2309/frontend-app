@@ -12,7 +12,8 @@ export interface Product {
   cost?: number;
   stock: number;
   min_stock: number;
-  category: string;
+  category: number | null;
+  category_name?: string;
   supplier?: any;
   unit?: string;
   is_active: boolean;

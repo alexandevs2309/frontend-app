@@ -74,13 +74,14 @@ export async function loadPosCatalogData(fetchers: PosCatalogLoadFetchers): Prom
     );
     const services = mapServicesWithCategories(servicesRaw, serviceCategoryMap);
 
-    const products = await loadWithAccessControl(
+    const productsRaw = await loadWithAccessControl(
         fetchers.getProducts,
         (response) => normalizeArrayResponse<any>(response).filter(
             (product: any) => product.is_active && (product.stock > 0 || product.stock === undefined)
         ),
         () => { accessLimited = true; }
     );
+    const products = mapProductsWithCategories(productsRaw);
 
     const clients = await loadWithAccessControl(
         fetchers.getClients,
@@ -129,6 +130,18 @@ function mapServicesWithCategories(services: any[], serviceCategoryMap: Map<numb
             ...service,
             category_names: normalizedCategoryNames,
             category: normalizedCategoryNames[0] || fallbackCategory || ''
+        };
+    });
+}
+
+function mapProductsWithCategories(products: any[]): any[] {
+    return products.map((product: any) => {
+        const resolvedCategory = resolveCategoryName(product);
+
+        return {
+            ...product,
+            category_name: resolvedCategory || '',
+            category: resolvedCategory || ''
         };
     });
 }

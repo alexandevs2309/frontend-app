@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -158,15 +158,24 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block font-medium mb-1">Email *</label>
+                            <label class="block font-medium mb-1">Email</label>
                             <input pInputText formControlName="email" type="email" class="w-full"
                                    [class.ng-invalid]="formulario.get('email')?.invalid && formulario.get('email')?.touched">
+                            <small *ngIf="formulario.get('email')?.invalid && formulario.get('email')?.touched"
+                                   class="text-red-500 block mt-1">
+                                Ingresa un correo válido.
+                            </small>
                         </div>
                         <div>
                             <label class="block font-medium mb-1">Teléfono</label>
                             <input pInputText formControlName="phone" class="w-full">
                         </div>
                     </div>
+
+                    <small *ngIf="formulario.errors?.['contactRequired'] && (formulario.get('email')?.touched || formulario.get('phone')?.touched)"
+                           class="text-red-500 block -mt-2">
+                        Debes proporcionar al menos un medio de contacto: correo o teléfono.
+                    </small>
 
                     <div>
                         <label class="block font-medium mb-1">Dirección</label>
@@ -176,13 +185,13 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block font-medium mb-1">Fecha de Nacimiento</label>
-                            <p-datepicker formControlName="birthday" dateFormat="dd/mm/yy"
+                            <p-datepicker formControlName="birthday" dateFormat="dd/mm/yy" appendTo="body"
                                         class="w-full" [showClear]="true" [maxDate]="todayDate">
                             </p-datepicker>
                         </div>
                         <div>
                             <label class="block font-medium mb-1">Género</label>
-                            <p-select formControlName="gender" [options]="generoOptions"
+                            <p-select formControlName="gender" [options]="generoOptions" appendTo="body"
                                       optionLabel="label" optionValue="value"
                                       placeholder="Seleccionar género" class="w-full">
                             </p-select>
@@ -261,14 +270,14 @@ export class ClientsManagement implements OnInit {
 
     formulario: FormGroup = this.fb.group({
         full_name: ['', [Validators.required, Validators.maxLength(100)]], // ✅ Normalizado
-        email: ['', [Validators.required, Validators.email]],
+        email: ['', [Validators.email]],
         phone: [''],
         address: [''],
         birthday: [null], // ✅ Normalizado desde backend
         gender: [''],
         notes: [''],
         is_active: [true]
-    });
+    }, { validators: this.contactRequiredValidator });
 
     ngOnInit() {
         this.cargarClientes();
@@ -330,7 +339,10 @@ export class ClientsManagement implements OnInit {
     }
 
     async guardarCliente() {
-        if (this.formulario.invalid) return;
+        if (this.formulario.invalid) {
+            this.formulario.markAllAsTouched();
+            return;
+        }
 
         this.guardando.set(true);
         try {
@@ -428,6 +440,13 @@ export class ClientsManagement implements OnInit {
         this.mostrarDialogo = false;
         this.clienteSeleccionado = null;
         this.formulario.reset();
+    }
+
+    private contactRequiredValidator(control: AbstractControl): ValidationErrors | null {
+        const email = control.get('email')?.value?.toString().trim();
+        const phone = control.get('phone')?.value?.toString().trim();
+
+        return email || phone ? null : { contactRequired: true };
     }
 
     // Funciones para sistema de cumpleaños
