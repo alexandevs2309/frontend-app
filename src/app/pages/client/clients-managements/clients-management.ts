@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -14,6 +14,7 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { firstValueFrom } from 'rxjs';
 import { ClientService, Client } from '../../../core/services/client/client.service';
 import { environment } from '../../../../environments/environment';
 import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/client.dto';
@@ -38,6 +39,7 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
         TooltipModule
     ],
     providers: [MessageService, ConfirmationService],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="card">
             <!-- Hero Header -->
@@ -287,7 +289,7 @@ export class ClientsManagement implements OnInit {
         if (this.cargando()) return; // ✅ Prevenir llamadas concurrentes
         this.cargando.set(true);
         try {
-            const response = await this.clientService.getClients().toPromise();
+            const response = await firstValueFrom(this.clientService.getClients());
             
             const clientes = this.normalizeArray<any>(response);
             const clientesNormalizados = clientes.map((cliente: any) => this.mapBackendToClientDto(cliente));
@@ -354,14 +356,14 @@ export class ClientsManagement implements OnInit {
             }
 
             if (this.clienteSeleccionado) {
-                await this.clientService.updateClient(this.clienteSeleccionado.id, clienteData).toPromise();
+                await firstValueFrom(this.clientService.updateClient(this.clienteSeleccionado.id, clienteData));
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
                     detail: 'Cliente actualizado correctamente'
                 });
             } else {
-                await this.clientService.createClient(clienteData).toPromise();
+                await firstValueFrom(this.clientService.createClient(clienteData));
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
@@ -398,7 +400,7 @@ export class ClientsManagement implements OnInit {
 
     async eliminarCliente(cliente: ClientDto) {
         try {
-            await this.clientService.deleteClient(cliente.id).toPromise();
+            await firstValueFrom(this.clientService.deleteClient(cliente.id));
             this.messageService.add({
                 severity: 'success',
                 summary: 'Éxito',

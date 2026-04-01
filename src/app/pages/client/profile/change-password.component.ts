@@ -6,8 +6,6 @@ import { PasswordModule } from 'primeng/password';
 import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/services/auth/auth.service';
 
 @Component({
@@ -184,7 +182,6 @@ export class ChangePasswordComponent implements OnInit {
 
     constructor(
         private messageService: MessageService,
-        private http: HttpClient,
         private authService: AuthService
     ) {}
 
@@ -213,9 +210,7 @@ export class ChangePasswordComponent implements OnInit {
         if (!this.isValid()) return;
 
         this.saving.set(true);
-        const url = `${environment.apiUrl}/auth/change-password/`;
-
-        this.http.put(url, {
+        this.authService.changePassword({
             old_password: this.currentPassword,
             new_password: this.newPassword
         }).subscribe({

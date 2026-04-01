@@ -12,7 +12,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { FormsModule } from '@angular/forms';
-import { PosService } from '../../../core/services/pos/pos.service';
+import { CashRegister, PosService } from '../../../core/services/pos/pos.service';
 import { ServiceService } from '../../../core/services/service/service.service';
 import { InventoryService } from '../../../core/services/inventory/inventory.service';
 import { ClientService } from '../../../core/services/client/client.service';
@@ -23,18 +23,22 @@ import { SaleDto, SaleWithDetailsDto, CreateSaleDto } from '../../../core/dto/sa
 import { SaleDetailDto, CartItemDto } from '../../../core/dto/sale-detail.dto';
 import { PaymentDto, PaymentMethodDto } from '../../../core/dto/payment.dto';
 import { Subject } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { calculateCartSubtotal, calculateMixedPaymentsTotal, calculateTotalFromDiscount, getMixedPaymentMessage, isMixedPaymentBalanced } from './pos-calculations';
-import { buildCreateSalePayload, buildSalePayments, getDiscountContext, getSaleValidationMessage } from './pos-sale-builder';
+import { getDiscountContext, getSaleValidationMessage } from './pos-sale-builder';
 import { POS_ROLE_GROUPS, canRefundSaleByContent, hasRolePermission, normalizePosRole } from './pos-permissions';
 import {
-    buildCashCountEntries,calculateArqueoTotal,calculateCashDifference,calculateExpectedCash,getCloseCashSuccessMessage,    getCloseCashValidationMessage,getDenominationsWithTotals,getDifferenceToConfirm,getInitialCashFromStorage,    getOpenCashSuccessMessage,getOpenCashValidationMessage,getResetDenominations,saveInitialCashToStorage,shouldConfirmCartLoss
+    buildCashCountEntries,calculateArqueoTotal,calculateCashDifference,calculateExpectedCash,getCloseCashSuccessMessage,    getCloseCashValidationMessage,getDenominationsWithTotals,getDifferenceToConfirm,    getOpenCashSuccessMessage,getOpenCashValidationMessage,getResetDenominations,shouldConfirmCartLoss
 } from './pos-cash-workflow';
-import { getUserIdFromStorage, loadArqueoHistory, loadDailyStats, saveArqueoHistory, saveDailyStats } from './pos-storage';
 import {
-    buildEscPosTicketText, buildTicketSaleData, clearSignatureCanvas, drawSignatureStroke, drawSimpleSaleQr, getSignatureDataUrl,startSignatureStroke,supportsSerialPrinting
+    buildTicketSaleData
 } from './pos-ticket-utils';
 import { buildCashCloseReportData, extractCashSalesTotal, extractNonCashPayments, printCashCloseReport } from './pos-cash-reporting';
+import { cartHasServices, createCartItem, findCartItemIndex, getAvailableStock, PosCartItem, projectCatalogState, removeCartItem, updateCartQuantity } from './pos-cart-state';
+import { PosCashSnapshot, PosCashStateService } from './pos-cash-state.service';
+import { PosSaleFlowService, PosStockValidationError } from './pos-sale-flow.service';
+import { PosTicketFlowService } from './pos-ticket-flow.service';
 import { buildDefaultPosConfig, buildPosConfigFromSettings, getBusinessNameFromTenantStorage, getCurrentUserIdentity, toAbsoluteMediaUrl } from './pos-config';
 import {
     extractCatalogCategories,filterCatalogItems,getCachedPosCatalog,isForbiddenStatus,loadPosCatalogData,normalizeArrayResponse,setCachedPosCatalog
@@ -42,15 +46,7 @@ import {
 import { getDefaultPromotions, mapSaleForTicketPreview, mapSalesHistory } from './pos-sales-history';
 
 
-interface CartItem {
-    id: string;
-    type: 'service' | 'product';
-    item: any;
-    employee?: any;
-    quantity: number;
-    price: number;
-    subtotal: number;
-}
+type CartItem = PosCartItem;
 type PaymentMethod = 'cash' | 'card' | 'transfer' | 'mixed';
 
 @Component({
@@ -68,12 +64,16 @@ export class PosSystem implements OnInit, OnDestroy {
     private readonly employeesService = inject(EmployeeService);
     private readonly messageService = inject(MessageService);
     private readonly settingsService = inject(SettingsService);
+    private readonly posCashStateService = inject(PosCashStateService);
+    private readonly posSaleFlowService = inject(PosSaleFlowService);
+    private readonly posTicketFlowService = inject(PosTicketFlowService);
 
     // Signals principales
     carrito = signal<CartItem[]>([]);
     cajaAbierta = signal(false);
     estadisticasDia = signal({ ventas: 0, ingresos: 0, ticketPromedio: 0 });
     pagosNoCash = signal<PaymentMethodDto[]>([]);
+    currentCashRegister = signal<CashRegister | null>(null);
 
     // Computed signals para cálculos automáticos
     subtotal = computed(() => calculateCartSubtotal(this.carrito()));
@@ -272,6 +272,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         
         // ⚡ OPTIMIZACIÓN: Cargar datos no críticos en background
         this.cargarEstadisticasGuardadas();
+        this.cargarHistorialArqueos();
         setTimeout(() => {
             this.cargarPromociones();
             this.setupKeyboardShortcuts();
@@ -355,8 +356,16 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     private extraerCategorias() {
-        const items = this.tipoActivo === 'services' ? this.servicios : this.productos;
-        this.categorias = extractCatalogCategories(items);
+        const projection = projectCatalogState(
+            this.tipoActivo,
+            this.servicios,
+            this.productos,
+            this.categoriaSeleccionada,
+            this.busqueda,
+            extractCatalogCategories,
+            filterCatalogItems
+        );
+        this.categorias = projection.categorias;
     }
 
     cambiarTipoActivo(tipo: 'services' | 'products'): void {
@@ -372,8 +381,16 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
 
     filtrarItems() {
-        const items = this.tipoActivo === 'services' ? this.servicios : this.productos;
-        this.itemsFiltrados = filterCatalogItems(items, this.tipoActivo, this.categoriaSeleccionada, this.busqueda);
+        const projection = projectCatalogState(
+            this.tipoActivo,
+            this.servicios,
+            this.productos,
+            this.categoriaSeleccionada,
+            this.busqueda,
+            extractCatalogCategories,
+            filterCatalogItems
+        );
+        this.itemsFiltrados = projection.itemsFiltrados;
     }
 
     async agregarAlCarrito(item: any) {
@@ -409,12 +426,9 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             }
         }
 
-        const existeEnCarrito = this.carrito().find(cartItem =>
-            cartItem.item.id === item.id && cartItem.type === (this.tipoActivo === 'services' ? 'service' : 'product')
-        );
+        const index = findCartItemIndex(this.carrito(), item, this.tipoActivo);
 
-        if (existeEnCarrito) {
-            const index = this.carrito().indexOf(existeEnCarrito);
+        if (index >= 0) {
             this.cambiarCantidad(index, 1);
             return;
         }
@@ -428,14 +442,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             return;
         }
 
-        const cartItem: CartItem = {
-            id: `${this.tipoActivo}-${item.id}-${Date.now()}`,
-            type: this.tipoActivo === 'services' ? 'service' : 'product',
-            item: item,
-            quantity: 1,
-            price: Number(item.price) || 0,
-            subtotal: Number(item.price) || 0
-        };
+        const cartItem: CartItem = createCartItem(item, this.tipoActivo);
 
         this.carrito.update(cart => [...cart, cartItem]);
         
@@ -450,28 +457,20 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     cambiarCantidad(index: number, cambio: number) {
         this.carrito.update(cart => {
-            const newCart = [...cart];
-            const item = newCart[index];
-            const nuevaCantidad = item.quantity + cambio;
-            if (nuevaCantidad <= 0) {
-                return newCart.filter((_, i) => i !== index);
-            }
-            if (item.type === 'product' && nuevaCantidad > item.item.stock) {
+            const result = updateCartQuantity(cart, index, cambio);
+            if (result.warning) {
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'Stock insuficiente',
-                    detail: `Solo hay ${item.item.stock} unidades disponibles`
+                    detail: result.warning
                 });
-                return cart;
             }
-            item.quantity = nuevaCantidad;
-            item.subtotal = item.price * item.quantity;
-            return newCart;
+            return result.cart;
         });
     }
 
     removerDelCarrito(index: number) {
-        this.carrito.update(cart => cart.filter((_, i) => i !== index));
+        this.carrito.update(cart => removeCartItem(cart, index));
     }
 
     limpiarCarrito() {
@@ -486,10 +485,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     obtenerStockDisponible(item: any): number {
         if (this.tipoActivo === 'products') {
-            const enCarrito = this.carrito()
-                .filter(cartItem => cartItem.item.id === item.id && cartItem.type === 'product')
-                .reduce((total, cartItem) => total + cartItem.quantity, 0);
-            return Math.max(0, (Number(item.stock) || 0) - enCarrito);
+            return getAvailableStock(this.carrito(), item);
         }
         return 999;
     }
@@ -545,7 +541,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     tieneServicios(): boolean {
-        return this.carrito().some(item => item.type === 'service');
+        return cartHasServices(this.carrito());
     }
 
     puedeVender(): boolean {
@@ -607,42 +603,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         if (this.procesandoVenta) return;
         this.procesandoVenta = true;
         try {
-            // 1. Validar stock en tiempo real antes de procesar
-            const productosEnCarrito = this.carrito()
-                .filter(item => item.type === 'product')
-                .map(item => ({
-                    id: item.item.id,
-                    type: 'product',
-                    quantity: item.quantity
-                }));
+            await this.posSaleFlowService.validateStock(this.carrito());
 
-            if (productosEnCarrito.length > 0) {
-                try {
-                    await this.posService.validateStock(productosEnCarrito).toPromise();
-                } catch (error: any) {
-                    // Stock insuficiente detectado
-                    const errorData = error.error;
-                    if (errorData && errorData.errors) {
-                        const errorMessages = errorData.errors
-                            .map((e: any) => e.message)
-                            .join('\n');
-                        
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Stock insuficiente',
-                            detail: errorMessages,
-                            life: 8000
-                        });
-                        
-                        // Recargar datos para actualizar stock
-                        await this.cargarDatos();
-                        this.procesandoVenta = false;
-                        return;
-                    }
-                }
-            }
-
-            // 2. Procesar venta si stock es válido
             const subtotal = this.calcularSubtotal();
             const descuentoValor = Number(this.descuento()) || 0;
             const discountContext = getDiscountContext({
@@ -669,19 +631,17 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             
             const totalVenta = this.calcularTotal();
             const paymentMethod = this.metodoPagoSeleccionado() as 'cash' | 'card' | 'transfer' | 'mixed';
-            const payments = buildSalePayments(paymentMethod, totalVenta, this.pagosMixtos);
-            
-            const ventaData: CreateSaleDto = buildCreateSalePayload({
+            const venta = await this.posSaleFlowService.createSale({
+                cart: this.carrito(),
                 clientId: this.clienteSeleccionado?.id,
                 employeeId: this.empleadoSeleccionado()?.id ?? undefined,
                 paymentMethod,
                 discountAmount: discountContext.discountAmount,
                 discountReason,
                 total: totalVenta,
-                details: this.carrito().map(item => this.mapCartItemToSaleDetail(item)),
-                payments
+                mixedPayments: this.pagosMixtos,
+                mapCartItemToSaleDetail: (item) => this.mapCartItemToSaleDetail(item)
             });
-            const venta = await this.posService.createSale(ventaData).toPromise();
 
             this.reproducirSonidoVenta();
             this.messageService.add({
@@ -695,16 +655,21 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             this.limpiarCarrito();
             this.resetearPago();
         } catch (error: any) {
-            const errorMsg =
-                error?.error?.detail ||
-                error?.error?.message ||
-                (Array.isArray(error?.error) ? error.error.join(' ') : null) ||
-                (typeof error?.error === 'string' ? error.error : null) ||
-                'Error al procesar la venta';
+            if (error instanceof PosStockValidationError) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Stock insuficiente',
+                    detail: error.messages.join('\n'),
+                    life: 8000
+                });
+                await this.cargarDatos();
+                return;
+            }
+
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
-                detail: errorMsg,
+                detail: this.posSaleFlowService.getErrorMessage(error),
                 life: 8000
             });
         } finally {
@@ -724,20 +689,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     async verificarEstadoCaja() {
-        try {
-            const register = await this.posService.getCurrentCashRegister().toPromise();
-            this.cajaAbierta.set(!!register);
-            this.nombreCajeroTurno = register?.user_name || this.nombreUsuarioActual || '';
-
-            // Cargar pagos no cash al verificar estado de caja
-            if (this.cajaAbierta()) {
-                const dailySummary = await this.posService.getDailySummary().toPromise();
-                this.extraerPagosNoCash(dailySummary);
-            }
-        } catch (error) {
-            this.cajaAbierta.set(false);
-            this.nombreCajeroTurno = '';
-        }
+        const snapshot = await this.posCashStateService.getCurrentSnapshot(this.nombreUsuarioActual);
+        this.aplicarCashSnapshot(snapshot);
     }
 
     async abrirCaja() {
@@ -751,20 +704,15 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             return;
         }
         try {
-            const register = await this.posService.openCashRegister({
-                initial_cash: this.montoInicialCaja
-            }).toPromise();
-            this.cajaAbierta.set(true);
-            this.nombreCajeroTurno = register?.user_name || this.nombreUsuarioActual || '';
+            const snapshot = await this.posCashStateService.openRegister(this.montoInicialCaja, this.nombreUsuarioActual);
+            this.aplicarCashSnapshot(snapshot);
             this.mostrarDialogoAbrirCaja = false;
 
             // NO resetear estadísticas - se mantienen del día
             // Solo resetear ventas en efectivo de la sesión
             this.ventasEfectivoSesionActual = 0;
 
-            // Guardar monto inicial para cálculos posteriores
             const montoParaGuardar = this.montoInicialCaja;
-            saveInitialCashToStorage(montoParaGuardar);
             this.montoInicialCaja = 0; // Reset solo la variable del formulario
 
             const mensaje = getOpenCashSuccessMessage(montoParaGuardar);
@@ -798,9 +746,9 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         }
         
         try {
-            const cajaActual = await this.posService.getCurrentCashRegister().toPromise();
+            const closePreparation = await this.posCashStateService.prepareClose(this.nombreUsuarioActual);
 
-            if (!cajaActual) {
+            if (!closePreparation?.register) {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -808,19 +756,10 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 });
                 return;
             }
+            this.aplicarCashSnapshot(closePreparation);
 
-            // Obtener monto inicial de cuando se abrió la caja
-            const montoInicialSesion = this.obtenerMontoInicialCaja();
-
-            // 🔧 FIX: Consultar ventas en efectivo reales desde backend
-            const dailySummary = await this.posService.getDailySummary().toPromise();
-            const ventasEfectivoReales = this.extraerVentasEfectivo(dailySummary);
-
-            // 💡 NUEVA FUNCIONALIDAD: Extraer pagos no en efectivo
-            this.extraerPagosNoCash(dailySummary);
-
-            this.ventasEfectivoHoy = ventasEfectivoReales;
-            this.montoEsperado = calculateExpectedCash(montoInicialSesion, ventasEfectivoReales);
+            this.ventasEfectivoHoy = closePreparation.cashSales;
+            this.montoEsperado = closePreparation.expectedCash;
             this.montoFinalCaja = 0; // Reset
             this.diferenciaCaja = 0; // Reset
 
@@ -873,17 +812,20 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         }
 
         try {
-            const cajaActual = await this.posService.getCurrentCashRegister().toPromise();
+            const cajaActual = await firstValueFrom(this.posService.getCurrentCashRegister());
             if (cajaActual) {
-                await this.posService.closeCashRegister(cajaActual.id, {
-                    final_cash: this.montoFinalCaja
-                }).toPromise();
+                await this.posCashStateService.closeRegister(cajaActual.id, this.montoFinalCaja);
 
                 // Generar reporte de cuadre
                 await this.generarReporteCuadre(cajaActual);
             }
-            this.cajaAbierta.set(false);
-            this.nombreCajeroTurno = '';
+            this.aplicarCashSnapshot({
+                register: null,
+                cashierName: this.nombreUsuarioActual,
+                stats: this.estadisticasDia(),
+                cashSales: 0,
+                nonCashPayments: []
+            });
             this.mostrarDialogoCerrarCaja = false;
 
             // Limpiar datos del cuadre
@@ -927,12 +869,10 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         };
 
         this.estadisticasDia.set(nuevasEstadisticas);
-        this.guardarEstadisticas(nuevasEstadisticas);
 
         // Actualizar pagos no cash después de la venta
         try {
-            const dailySummary = await this.posService.getDailySummary().toPromise();
-            this.extraerPagosNoCash(dailySummary);
+            await this.sincronizarEstadisticasDesdeBackend();
         } catch (error) {
             console.error('Error actualizando pagos no cash:', error);
         }
@@ -1044,13 +984,14 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     visualizarVenta(venta: SaleWithDetailsDto) {
         this.ventaActual = mapSaleForTicketPreview(venta);
         this.mostrarDialogoTicket = true;
-        setTimeout(() => this.generarQR(), 100);
+        this.posTicketFlowService.scheduleQrRender(() => this.generarQR());
     }
 
     reimprimirTicket(venta: SaleWithDetailsDto) {
         this.visualizarVenta(venta);
-        // Auto-imprimir después de mostrar
-        setTimeout(() => this.imprimirTicket(), 500);
+        this.posTicketFlowService.scheduleTicketPrint(() => {
+            void this.imprimirTicket();
+        });
     }
 
     async imprimirRecibo(ventaId: number) {
@@ -1119,7 +1060,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     obtenerMontoInicialCaja(): number {
-        return getInitialCashFromStorage();
+        return Number(this.currentCashRegister()?.initial_cash) || 0;
     }
 
     limpiarArqueo() {
@@ -1128,8 +1069,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     async cargarDatosArqueo() {
         try {
-            const dailySummary = await this.posService.getDailySummary().toPromise();
-            this.ventasEfectivoHoy = this.extraerVentasEfectivo(dailySummary);
+            const snapshot = await this.posCashStateService.loadCashCountContext(this.currentCashRegister(), this.nombreUsuarioActual);
+            this.aplicarCashSnapshot(snapshot);
             
             // Limpiar denominaciones al abrir
             this.limpiarArqueo();
@@ -1156,7 +1097,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         }
 
         try {
-            const cajaActual = await this.posService.getCurrentCashRegister().toPromise();
+            const cajaActual = await firstValueFrom(this.posService.getCurrentCashRegister());
             if (!cajaActual) {
                 this.messageService.add({
                     severity: 'error',
@@ -1167,30 +1108,22 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             }
 
             const counts = buildCashCountEntries(this.denominaciones);
+            const cashCountResult = await this.posCashStateService.performCashCount(
+                cajaActual.id,
+                counts,
+                this.obtenerUsuarioActual(),
+                this.denominaciones.filter(d => d.cantidad > 0)
+            );
 
-            await this.posService.cashCount(cajaActual.id, counts).toPromise();
-
-            // Calcular diferencia con efectivo esperado
-            const efectivoEsperado = calculateExpectedCash(cajaActual.initial_cash, this.ventasEfectivoHoy);
-            const diferencia = calculateCashDifference(totalContado, efectivoEsperado);
-
-            // Guardar arqueo en localStorage
-            this.guardarArqueoHistorico({
-                fecha: new Date().toISOString(),
-                totalContado,
-                efectivoEsperado,
-                diferencia,
-                usuario: this.obtenerUsuarioActual(),
-                denominaciones: this.denominaciones.filter(d => d.cantidad > 0)
-            });
+            this.historialArqueos = [cashCountResult.historyEntry, ...this.historialArqueos].slice(0, 20);
 
             // Limpiar denominaciones después del arqueo
             this.denominaciones = getResetDenominations(this.denominaciones);
 
             this.messageService.add({
-                severity: diferencia === 0 ? 'success' : 'warn',
+                severity: cashCountResult.difference === 0 ? 'success' : 'warn',
                 summary: 'Arqueo completado',
-                detail: `Total contado: ${this.formatearMoneda(totalContado)}. Diferencia: ${this.formatearMoneda(diferencia)}`
+                detail: `Total contado: ${this.formatearMoneda(cashCountResult.totalCounted)}. Diferencia: ${this.formatearMoneda(cashCountResult.difference)}`
             });
             this.mostrarDialogoArqueo = false;
         } catch (error: any) {
@@ -1205,15 +1138,9 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     async cargarConfiguracion() {
         const businessName = getBusinessNameFromTenantStorage();
         try {
-            const response = await fetch(`${environment.apiUrl}/settings/barbershop/`, {
-                credentials: 'include'
-            });
-            
-            if (response.ok) {
-                const settings = await response.json();
-                this.configuracionPos = buildPosConfigFromSettings(settings, businessName, environment.apiUrl);
-                this.limiteDescuento = settings.service_discount_limit || 20;
-            }
+            const settings = await firstValueFrom(this.settingsService.getBarbershopSettings());
+            this.configuracionPos = buildPosConfigFromSettings(settings, businessName, environment.apiUrl);
+            this.limiteDescuento = settings.service_discount_limit || 20;
 
             const userIdentity = getCurrentUserIdentity();
             this.nombreUsuarioActual = userIdentity.nombreUsuarioActual;
@@ -1309,7 +1236,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     mostrarTicket(venta: any) {
         // Guardar datos de la venta actual antes de limpiar el carrito
-        this.ventaActual = buildTicketSaleData({
+        this.ventaActual = this.posTicketFlowService.buildTicketSale({
             saleId: venta.id,
             clientId: this.clienteSeleccionado?.id,
             employeeId: this.empleadoSeleccionado()?.id,
@@ -1327,58 +1254,30 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             cashierName: this.nombreCajeroTurno || this.nombreUsuarioActual
         });
         this.mostrarDialogoTicket = true;
-        setTimeout(() => this.generarQR(), 100);
+        this.posTicketFlowService.scheduleQrRender(() => this.generarQR());
     }
 
     generarQR() {
         if (!this.qrCanvas?.nativeElement || !this.ventaActual) return;
-        drawSimpleSaleQr(this.qrCanvas.nativeElement, this.ventaActual.id, this.calcularTotal());
+        this.posTicketFlowService.renderQr(this.qrCanvas.nativeElement, this.ventaActual.id, this.calcularTotal());
     }
 
     async imprimirTicket() {
         try {
-            // Intentar impresión térmica si está disponible
-            if (supportsSerialPrinting()) {
-                await this.imprimirTermica();
-            } else {
-                // Fallback a impresión normal
-                window.print();
+            const mode = await this.posTicketFlowService.printTicket(
+                this.carrito(),
+                this.calcularTotal(),
+                this.ventaActual?.id
+            );
+            if (mode === 'thermal') {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Impreso',
+                    detail: 'Ticket enviado a impresora térmica'
+                });
             }
         } catch {
             window.print();
-        }
-    }
-
-    async imprimirTermica() {
-        try {
-            const port = await (navigator as any).serial.requestPort();
-            await port.open({ baudRate: 9600 });
-
-            const writer = port.writable.getWriter();
-            const encoder = new TextEncoder();
-
-            const ticket = buildEscPosTicketText(
-                this.ventaActual?.id,
-                this.carrito().map(item => ({
-                    name: item.item.name,
-                    quantity: item.quantity,
-                    price: item.price,
-                    subtotal: item.subtotal
-                })),
-                this.calcularTotal()
-            );
-
-            await writer.write(encoder.encode(ticket));
-            writer.releaseLock();
-            await port.close();
-
-            this.messageService.add({
-                severity: 'success',
-                summary: 'Impreso',
-                detail: 'Ticket enviado a impresora térmica'
-            });
-        } catch (error) {
-            throw error;
         }
     }
 
@@ -1389,22 +1288,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     reproducirSonidoVenta() {
         try {
-            // Crear sonido usando Web Audio API
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
+            this.posTicketFlowService.playSaleSound();
         } catch (error) {
             if (!environment.production) {
                 console.warn('Audio no disponible', error);
@@ -1417,12 +1301,12 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     iniciarFirma(event: any) {
         this.firmando = true;
-        startSignatureStroke(this.firmaCanvas.nativeElement, event);
+        this.posTicketFlowService.startSignature(this.firmaCanvas.nativeElement, event);
     }
 
     dibujarFirma(event: any) {
         if (!this.firmando) return;
-        drawSignatureStroke(this.firmaCanvas.nativeElement, event);
+        this.posTicketFlowService.drawSignature(this.firmaCanvas.nativeElement, event);
     }
 
     terminarFirma() {
@@ -1430,11 +1314,11 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     limpiarFirma() {
-        clearSignatureCanvas(this.firmaCanvas.nativeElement);
+        this.posTicketFlowService.clearSignature(this.firmaCanvas.nativeElement);
     }
 
     confirmarFirma() {
-        this.firmaCliente = getSignatureDataUrl(this.firmaCanvas.nativeElement);
+        this.firmaCliente = this.posTicketFlowService.readSignature(this.firmaCanvas.nativeElement);
         this.mostrarDialogoFirma = false;
         this.confirmarVenta();
     }
@@ -1491,29 +1375,27 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         return this.ventasEfectivoSesionActual;
     }
 
-    cargarEstadisticasGuardadas() {
+    private aplicarCashSnapshot(snapshot: PosCashSnapshot): void {
+        this.currentCashRegister.set(snapshot.register);
+        this.cajaAbierta.set(!!snapshot.register);
+        this.nombreCajeroTurno = snapshot.cashierName || this.nombreUsuarioActual || '';
+        this.estadisticasDia.set(snapshot.stats);
+        this.ventasEfectivoHoy = snapshot.cashSales;
+        this.pagosNoCash.set(snapshot.nonCashPayments);
+    }
+
+    private async sincronizarEstadisticasDesdeBackend(): Promise<void> {
+        const snapshot = await this.posCashStateService.getCurrentSnapshot(this.nombreUsuarioActual);
+        this.aplicarCashSnapshot(snapshot);
+    }
+
+    async cargarEstadisticasGuardadas() {
         try {
-            const userId = this.obtenerUserId();
-            this.estadisticasDia.set(loadDailyStats(userId));
+            await this.sincronizarEstadisticasDesdeBackend();
         } catch (error) {
-            console.error('Error cargando estadísticas:', error);
+            console.error('Error cargando estadísticas desde backend:', error);
             this.estadisticasDia.set({ ventas: 0, ingresos: 0, ticketPromedio: 0 });
         }
-    }
-
-    guardarEstadisticas(estadisticas: any) {
-        try {
-            const userId = this.obtenerUserId();
-            saveDailyStats(userId, estadisticas);
-        } catch (error) {
-            if (!environment.production) {
-                console.error('Error guardando estadísticas:', error);
-            }
-        }
-    }
-
-    obtenerUserId(): number {
-        return getUserIdFromStorage();
     }
 
     obtenerUsuarioActual(): string {
@@ -1592,23 +1474,8 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         return normalizePosRole(role);
     }
 
-    guardarArqueoHistorico(arqueo: any) {
-        try {
-            const userId = this.obtenerUserId();
-            saveArqueoHistory(userId, arqueo, 50);
-        } catch (error) {
-            console.error('Error guardando arqueo histórico:', error);
-        }
-    }
-
     cargarHistorialArqueos() {
-        try {
-            const userId = this.obtenerUserId();
-            this.historialArqueos = loadArqueoHistory(userId);
-        } catch (error) {
-            console.error('Error cargando historial de arqueos:', error);
-            this.historialArqueos = [];
-        }
+        this.historialArqueos = [];
     }
 
     limpiarCache(): void {

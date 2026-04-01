@@ -1,4 +1,3 @@
-import { AppFloatingConfigurator } from './../../layout/component/app.floatingconfigurator';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -26,7 +25,6 @@ import { getHttpErrorMessage } from '../../core/utils/http-error-message';
     PasswordModule,
     CheckboxModule,
     StepsModule,
-    AppFloatingConfigurator,
     CardModule,
     ToastModule
   ],
@@ -90,13 +88,7 @@ export class Register implements OnInit {
   autoSaveStatus: 'saved' | 'saving' | 'idle' = 'idle';
   private saveTimeout: any;
 
-  // A/B Testing for CTA button
-  ctaVariant: 'A' | 'B' | 'C' = 'A';
-  ctaTexts = {
-    A: '¡Comenzar Prueba Gratuita!',
-    B: '¡Activar Mi Barbería Ahora!',
-    C: '¡Iniciar Prueba de 7 Días!'
-  };
+  readonly submitLabel = 'Crear cuenta y activar prueba';
 
   // Step 3: Payment
   paymentData = {
@@ -129,13 +121,6 @@ export class Register implements OnInit {
   ) {}
 
   ngOnInit() {
-    
-    
-    // A/B Testing: Randomly assign variant
-    const variants: ('A' | 'B' | 'C')[] = ['A', 'B', 'C'];
-    this.ctaVariant = variants[Math.floor(Math.random() * variants.length)];
-    
-    
     // Load saved data from localStorage
     this.loadSavedData();
     
@@ -369,13 +354,12 @@ export class Register implements OnInit {
     
     
     // Analytics: Track registration attempt
-    this.trackEvent('registration_submitted', {
-      plan: this.planData.selectedPlan,
-      plan_price: this.planData.selectedPrice,
-      cta_variant: this.ctaVariant,
-      has_address: !!this.businessData.address,
-      accepts_marketing: this.termsData.acceptMarketing
-    });
+      this.trackEvent('registration_submitted', {
+        plan: this.planData.selectedPlan,
+        plan_price: this.planData.selectedPrice,
+        has_address: !!this.businessData.address,
+        accepts_marketing: this.termsData.acceptMarketing
+      });
     
     this.isLoading = true;
 
@@ -399,8 +383,7 @@ export class Register implements OnInit {
         // Analytics: Track successful registration
         this.trackEvent('registration_completed', {
           plan: this.planData.selectedPlan,
-          plan_price: this.planData.selectedPrice,
-          cta_variant: this.ctaVariant
+          plan_price: this.planData.selectedPrice
         });
         
         // Clear saved draft on successful registration
@@ -432,8 +415,7 @@ export class Register implements OnInit {
         // Analytics: Track registration error
         this.trackEvent('registration_failed', {
           plan: this.planData.selectedPlan,
-          error_message: error.error?.error || 'Unknown error',
-          cta_variant: this.ctaVariant
+          error_message: error.error?.error || 'Unknown error'
         });
         
         const message = getHttpErrorMessage(error, 'Error al crear la cuenta. Intentalo de nuevo.');

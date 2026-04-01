@@ -1,13 +1,27 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 
 export interface AppSettings {
   currency: string;
   currency_symbol: string;
   name?: string;
+}
+
+export interface BarbershopSettingsResponse extends AppSettings {
+  logo?: string | null;
+  pos_config?: Record<string, unknown> | null;
+  service_discount_limit?: number | null;
+  business_hours?: Record<string, { open: string; close: string; closed: boolean }>;
+  contact?: {
+    phone: string;
+    email: string;
+    address: string;
+  };
+  currency_locked?: boolean;
+  currency_lock_reason?: string;
 }
 
 @Injectable({
@@ -21,6 +35,7 @@ export class SettingsService {
 
   public settings$ = this.settingsSubject.asObservable();
   public settings = signal<AppSettings>({ currency: 'DOP', currency_symbol: 'RD$' });
+  private settingsRequest$?: Observable<BarbershopSettingsResponse>;
 
   constructor(private http: HttpClient) {
     this.loadSettings().subscribe({
@@ -30,9 +45,17 @@ export class SettingsService {
     });
   }
 
-  loadSettings(): Observable<any> {
-    return this.http.get(`${environment.apiUrl}/settings/barbershop/`).pipe(
-      tap((data: any) => {
+  loadSettings(): Observable<BarbershopSettingsResponse> {
+    return this.getBarbershopSettings();
+  }
+
+  getBarbershopSettings(forceRefresh = false): Observable<BarbershopSettingsResponse> {
+    if (!forceRefresh && this.settingsRequest$) {
+      return this.settingsRequest$;
+    }
+
+    this.settingsRequest$ = this.http.get<BarbershopSettingsResponse>(`${environment.apiUrl}/settings/barbershop/`).pipe(
+      tap((data: BarbershopSettingsResponse) => {
         const settings: AppSettings = {
           currency: data.currency || 'DOP',
           currency_symbol: data.currency_symbol || 'RD$',
@@ -40,8 +63,25 @@ export class SettingsService {
         };
         this.settingsSubject.next(settings);
         this.settings.set(settings);
-      })
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
+
+    return this.settingsRequest$;
+  }
+
+  getBarbershopAdminSettings(): Observable<BarbershopSettingsResponse> {
+    return this.http.get<BarbershopSettingsResponse>(`${environment.apiUrl}/settings/barbershop/admin_settings/`);
+  }
+
+  updateBarbershopSettings(payload: unknown): Observable<any> {
+    this.settingsRequest$ = undefined;
+    return this.http.post(`${environment.apiUrl}/settings/barbershop/`, payload);
+  }
+
+  uploadBarbershopLogo(formData: FormData): Observable<{ logo_url: string }> {
+    this.settingsRequest$ = undefined;
+    return this.http.post<{ logo_url: string }>(`${environment.apiUrl}/settings/barbershop/upload_logo/`, formData);
   }
 
   getCurrency(): string {

@@ -1,24 +1,27 @@
-import { Component, signal } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { Component } from '@angular/core';
+import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
-import { DatePipe } from '@angular/common';
 
 @Component({
     selector: 'footer-widget',
     standalone: true,
-    imports: [RouterModule, CommonModule, ButtonModule, RippleModule , DatePipe],
+    imports: [RouterModule, CommonModule, ButtonModule, RippleModule],
     template: `
-        <footer class="bg-slate-900 dark:bg-slate-950 py-24 lg:py-32">
+        <footer class="bg-slate-950 py-24 lg:py-32 relative overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.14),transparent_22%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.1),transparent_20%)]"></div>
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-12 mb-16">
+                <div class="relative z-10 grid grid-cols-1 lg:grid-cols-4 gap-12 mb-16">
                     <div class="lg:col-span-1">
                         <div class="flex items-center mb-6">
-                            <div class="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center mr-4">
-                                <span class="text-white font-bold text-xl">A</span>
+                            <div class="flex items-center justify-center rounded-2xl bg-white px-2.5 py-2 border border-white/60 shadow-sm mr-4">
+                                <img src="assets/logos/iso-auron.jpg" alt="Auron Suite" class="h-9 w-9 object-contain rounded-xl" />
                             </div>
-                            <h3 class="text-2xl font-bold text-white">Auron Suite</h3>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">Auron Suite</h3>
+                                <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Salon Management</div>
+                            </div>
                         </div>
                         <p class="text-slate-300 mb-6 leading-relaxed">
                             Plataforma para ordenar citas, ventas, clientes e inventario en barberias y negocios de cuidado personal.
@@ -67,7 +70,7 @@ import { DatePipe } from '@angular/common';
                     </div>
                 </div>
 
-                <div class="bg-slate-800 dark:bg-slate-900 rounded-2xl p-8 mb-12 border border-slate-700">
+                <div class="relative z-10 bg-linear-to-br from-slate-900 via-slate-900 to-indigo-950 rounded-[2rem] p-8 mb-12 border border-slate-800 shadow-[0_28px_90px_-56px_rgba(15,23,42,0.8)]">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                         <div>
                             <h4 class="text-2xl font-bold text-white mb-4">¿Quieres evaluar Auron-Suite?</h4>
@@ -86,10 +89,10 @@ import { DatePipe } from '@angular/common';
                     </div>
                 </div>
 
-                <div class="border-t border-slate-700 pt-8">
+                <div class="relative z-10 border-t border-slate-800 pt-8">
                     <div class="flex flex-col lg:flex-row justify-between items-center gap-6">
                         <div class="text-slate-400 text-center lg:text-left">
-                            <p>&copy; {{fechaActual() | date:'yyyy'}} Auron Suite. Todos los derechos reservados.</p>
+                            <p>&copy; {{ currentYear }} Auron Suite. Todos los derechos reservados.</p>
                             <p class="text-sm mt-1">Construido para negocios que necesitan mas orden operativo.</p>
                         </div>
 
@@ -109,23 +112,12 @@ import { DatePipe } from '@angular/common';
     `
 })
 export class FooterWidget {
-
-    
-        fechaActual = signal(new Date());
-
-    constructor(public router: Router) {
-        setInterval(() => {
-            this.fechaActual.set(new Date());
-        }, 1000);
-    }
+    currentYear = new Date().getFullYear();
 
     scrollToSection(sectionId: string) {
-        const element = document.getElementById(sectionId);
+        const element = document.querySelector(`[data-section="${sectionId}"]`) || document.getElementById(sectionId);
         if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
-
-
-
 }

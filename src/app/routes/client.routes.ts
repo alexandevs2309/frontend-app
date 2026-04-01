@@ -56,7 +56,6 @@ export const clientRoutes: Routes = [
                 path: 'payroll',
                 canActivate: [TrialGuard, RoleGuard],
                 data: { roles: ['CLIENT_ADMIN', 'Manager'] },
-                loadComponent: () => import('../pages/client/payroll/payroll.component').then(m => m.PayrollComponent),
                 loadChildren: () => import('../pages/client/payroll/payroll.routes').then(m => m.PAYROLL_ROUTES)
             },
             {

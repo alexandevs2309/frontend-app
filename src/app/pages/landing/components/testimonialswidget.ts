@@ -11,8 +11,8 @@ interface Testimonial {
     position: string;
     company: string;
     avatar: string;
-    rating: number;
     text: string;
+    fit: string;
 }
 
 @Component({
@@ -21,16 +21,16 @@ interface Testimonial {
     imports: [CommonModule, ButtonModule, RippleModule, CarouselModule],
     template: `
         <section id="testimonials">
-            <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="max-w-[92rem] mx-auto px-6 lg:px-8">
                 <div class="text-center mb-20">
                     <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 mb-4">
-                        Casos de uso
+                        Escenarios ideales
                     </div>
                     <h2 class="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-6">
-                        Perfiles de negocio que <span class="text-indigo-600">encajan bien</span>
+                        Donde <span class="text-indigo-600">Auron aporta mas valor</span>
                     </h2>
                     <p class="text-lg text-slate-600 dark:text-slate-300 max-w-4xl mx-auto">
-                        Ejemplos de operaciones que suelen beneficiarse de agenda, caja, inventario y control multi-sucursal.
+                        En vez de vender humo, aqui te mostramos los escenarios donde la plataforma suele aportar mas valor operativo hoy.
                     </p>
                 </div>
 
@@ -38,18 +38,17 @@ interface Testimonial {
                     <p-carousel [value]="testimonials" [numVisible]="1" [numScroll]="1" [circular]="true" [autoplayInterval]="5000" [showIndicators]="true" [showNavigators]="true" class="testimonial-carousel">
                         <ng-template pTemplate="item" let-testimonial>
                             <div class="px-4">
-                                <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-12 border border-slate-200 dark:border-slate-700 max-w-4xl mx-auto">
+                                <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-10 lg:p-12 border border-slate-200 dark:border-slate-700 max-w-4xl mx-auto shadow-[0_24px_90px_-58px_rgba(15,23,42,0.3)]">
                                     <div class="flex justify-center mb-8">
-                                        <div class="flex space-x-1">
-                                            @for (star of getStars(testimonial.rating); track $index) {
-                                                <i class="pi pi-star-fill text-yellow-500 text-2xl"></i>
-                                            }
+                                        <div class="inline-flex items-center gap-2 rounded-full bg-indigo-50 dark:bg-indigo-950/40 px-4 py-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                                            <i class="pi pi-briefcase"></i>
+                                            {{ testimonial.fit }}
                                         </div>
                                     </div>
 
-                                    <blockquote class="text-2xl lg:text-3xl font-medium text-slate-900 dark:text-white mb-8 leading-relaxed text-center">
-                                        "{{ testimonial.text }}"
-                                    </blockquote>
+                                    <div class="text-2xl lg:text-3xl font-medium text-slate-900 dark:text-white mb-8 leading-relaxed text-center tracking-tight">
+                                        {{ testimonial.text }}
+                                    </div>
 
                                     <div class="flex items-center justify-center space-x-6">
                                         <div class="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-2xl bg-indigo-600">
@@ -59,7 +58,7 @@ interface Testimonial {
                                             <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ testimonial.name }}</div>
                                             <div class="text-lg text-slate-600 dark:text-slate-400">{{ testimonial.position }}</div>
                                             <div class="text-base text-slate-500 dark:text-slate-500">{{ testimonial.company }}</div>
-                                            <div class="text-xs text-slate-400 mt-1">Escenario representativo</div>
+                                            <div class="text-xs text-slate-400 mt-1 uppercase tracking-[0.18em]">Escenario representativo</div>
                                         </div>
                                     </div>
                                 </div>
@@ -68,10 +67,10 @@ interface Testimonial {
                     </p-carousel>
                 </div>
 
-                <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-12 border border-slate-200 dark:border-slate-700">
+                <div class="bg-linear-to-br from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 rounded-[2rem] p-10 lg:p-12 border border-slate-200 dark:border-slate-700 shadow-[0_28px_90px_-58px_rgba(15,23,42,0.28)]">
                     <div class="text-center mb-12">
                         <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-4">Senales de adopcion</h3>
-                        <p class="text-lg text-slate-600 dark:text-slate-300">Indicadores de uso del ecosistema</p>
+                        <p class="text-lg text-slate-600 dark:text-slate-300">Indicadores visibles del ecosistema y del ritmo comercial</p>
                     </div>
 
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -154,8 +153,8 @@ export class TestimonialsWidget implements OnInit, OnDestroy {
             position: 'Operación pequeña',
             company: '1 local, equipo reducido',
             avatar: 'BB',
-            rating: 5,
-            text: 'Ideal para negocios que necesitan ordenar agenda, ventas y caja sin complicar la operación diaria.'
+            text: 'Ideal para negocios que necesitan ordenar agenda, ventas y caja sin complicar la operacion diaria.',
+            fit: 'Operacion simple y ordenada'
         },
         {
             id: 2,
@@ -163,8 +162,8 @@ export class TestimonialsWidget implements OnInit, OnDestroy {
             position: 'Gestión operativa',
             company: 'Equipo mixto y más demanda',
             avatar: 'SC',
-            rating: 5,
-            text: 'Funciona bien cuando ya hay varios empleados y se vuelve importante controlar reportes, inventario y flujo de caja.'
+            text: 'Funciona bien cuando ya hay varios empleados y se vuelve importante controlar reportes, inventario y flujo de caja.',
+            fit: 'Mas equipo, mas control'
         },
         {
             id: 3,
@@ -172,8 +171,8 @@ export class TestimonialsWidget implements OnInit, OnDestroy {
             position: 'Control comercial',
             company: 'Ventas, productos y seguimiento',
             avatar: 'NI',
-            rating: 5,
-            text: 'Aporta más valor cuando el negocio ya quiere combinar reservas, clientes frecuentes y control de productos desde un mismo lugar.'
+            text: 'Aporta mas valor cuando el negocio ya quiere combinar reservas, clientes frecuentes y control de productos desde un mismo lugar.',
+            fit: 'Ventas + stock + seguimiento'
         },
         {
             id: 4,
@@ -181,8 +180,8 @@ export class TestimonialsWidget implements OnInit, OnDestroy {
             position: 'Visión consolidada',
             company: 'Varios locales y supervisión central',
             avatar: 'MS',
-            rating: 5,
-            text: 'Encaja especialmente bien cuando hace falta comparar rendimiento entre sucursales y mantener orden operativo en varios puntos.'
+            text: 'Encaja especialmente bien cuando hace falta comparar rendimiento entre sucursales y mantener orden operativo en varios puntos.',
+            fit: 'Escala con visibilidad'
         }
     ];
 
@@ -193,7 +192,4 @@ export class TestimonialsWidget implements OnInit, OnDestroy {
     }
     ngOnDestroy() {}
 
-    getStars(rating: number): number[] {
-        return Array(rating).fill(0);
-    }
 }

@@ -99,14 +99,24 @@ export class AppMenu implements OnInit, OnDestroy {
     getAdminMenu(): MenuItem[] {
         return [
             {
-                label: this.localeService.t('menu.admin_panel' as any),
+                label: 'Resumen',
                 items: [
-                    { label: this.localeService.t('menu.dashboard' as any), icon: 'pi pi-fw pi-home', routerLink: ['/admin/dashboard'] },
+                    { label: this.localeService.t('menu.dashboard' as any), icon: 'pi pi-fw pi-home', routerLink: ['/admin/dashboard'] }
+                ]
+            },
+            {
+                label: 'Crecimiento',
+                items: [
                     { label: this.localeService.t('menu.subscription_plans' as any), icon: 'pi pi-fw pi-credit-card', routerLink: ['/admin/plans'] },
+                    { label: this.localeService.t('menu.billing' as any), icon: 'pi pi-fw pi-dollar', routerLink: ['/admin/billing'] },
+                    { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/admin/reports'] }
+                ]
+            },
+            {
+                label: 'Operaciones',
+                items: [
                     { label: this.localeService.t('menu.tenants' as any), icon: 'pi pi-fw pi-building', routerLink: ['/admin/tenants'] },
                     { label: this.localeService.t('menu.users' as any), icon: 'pi pi-fw pi-users', routerLink: ['/admin/users'] },
-                    { label: this.localeService.t('menu.billing' as any), icon: 'pi pi-fw pi-dollar', routerLink: ['/admin/billing'] },
-                    { label: this.localeService.t('menu.reports' as any), icon: 'pi pi-fw pi-chart-line', routerLink: ['/admin/reports'] },
                     { label: 'Soporte', icon: 'pi pi-fw pi-headphones', routerLink: ['/admin/support'] },
                     { label: this.localeService.t('menu.system_monitor' as any), icon: 'pi pi-fw pi-eye', routerLink: ['/admin/monitor'] },
                     { label: this.localeService.t('menu.audit_logs' as any), icon: 'pi pi-fw pi-list', routerLink: ['/admin/audit-logs'] },
@@ -190,12 +200,42 @@ export class AppMenu implements OnInit, OnDestroy {
             );
         }
 
-        return [
+        const sections: MenuItem[] = [
             {
-                label: this.localeService.t('menu.barbershop' as any),
-                items: menuItems
+                label: 'Resumen',
+                items: menuItems.filter(item => item.routerLink?.[0] === '/client/dashboard')
             }
         ];
+
+        const operationsItems = menuItems.filter(item =>
+            ['/client/appointments', '/client/pos', '/client/schedules'].includes(item.routerLink?.[0] as string)
+        );
+        if (operationsItems.length > 0) {
+            sections.push({ label: 'Operaciones', items: operationsItems });
+        }
+
+        const customerItems = menuItems.filter(item =>
+            ['/client/clients', '/client/services', '/client/products'].includes(item.routerLink?.[0] as string)
+        );
+        if (customerItems.length > 0) {
+            sections.push({ label: 'Clientes y catalogo', items: customerItems });
+        }
+
+        const teamItems = menuItems.filter(item =>
+            ['/client/employees', '/client/payroll'].includes(item.routerLink?.[0] as string)
+        );
+        if (teamItems.length > 0) {
+            sections.push({ label: 'Equipo', items: teamItems });
+        }
+
+        const businessItems = menuItems.filter(item =>
+            ['/client/reports', '/client/settings'].includes(item.routerLink?.[0] as string)
+        );
+        if (businessItems.length > 0) {
+            sections.push({ label: 'Negocio', items: businessItems });
+        }
+
+        return sections.filter(section => (section.items?.length || 0) > 0);
     }
 
     private canLoadAppointments(role?: string): boolean {

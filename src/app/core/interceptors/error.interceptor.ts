@@ -5,6 +5,7 @@ import { catchError, switchMap, take, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { environment } from '../../../environments/environment';
+import { getHttpErrorMessage } from '../utils/http-error-message';
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
@@ -84,7 +85,7 @@ export class ErrorInterceptor implements HttpInterceptor {
         this.handle402Error(error);
         break;
       case 403:
-        this.handle403Error();
+        this.handle403Error(error);
         break;
       case 404:
         this.handle404Error();
@@ -149,12 +150,12 @@ export class ErrorInterceptor implements HttpInterceptor {
     }
   }
 
-  private handle403Error(): void {
+  private handle403Error(error: HttpErrorResponse): void {
     // No limpiar sesión en 403 - solo mostrar mensaje
     this.messageService.add({ 
       severity: 'warn', 
       summary: 'Acceso denegado', 
-      detail: 'No tienes permisos para realizar esta acción.', 
+      detail: getHttpErrorMessage(error, 'No tienes permisos para realizar esta accion.'), 
       life: 3000 
     });
   }
@@ -168,14 +169,8 @@ export class ErrorInterceptor implements HttpInterceptor {
   }
 
   private handleGenericError(error: HttpErrorResponse): void {
-    // ✅ SEGURO - No exponer detalles técnicos en producción
-    let message = 'Ha ocurrido un error. Intenta nuevamente.';
-    
-    // Solo mostrar detalles en desarrollo
-    if (!environment.production && error.error?.message) {
-      message = error.error.message;
-    }
-    
+    const message = getHttpErrorMessage(error, 'Ha ocurrido un error. Intenta nuevamente.');
+
     this.messageService.add({ 
       severity: 'error', 
       summary: 'Error', 

@@ -1,5 +1,5 @@
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { ApplicationConfig, APP_INITIALIZER, LOCALE_ID } from '@angular/core';
+import { ApplicationConfig, APP_INITIALIZER, ErrorHandler, LOCALE_ID } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
 import Aura from '@primeuix/themes/aura';
@@ -8,7 +8,12 @@ import { MessageService } from 'primeng/api';
 import { appRoutes } from './app.routes';
 import { AuthInterceptor, ErrorInterceptor, TenantInterceptor } from './app/core/interceptors';
 import { MaintenanceInterceptor } from './app/core/interceptors/maintenance.interceptor';
+import { RuntimeConfigValidatorService } from './app/core/config/runtime-config-validator.service';
+import { GlobalErrorHandlerService } from './app/core/services/global-error-handler.service';
 
+function validateRuntimeConfigFactory(validator: RuntimeConfigValidatorService) {
+    return () => validator.assertValidRuntimeConfig();
+}
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -42,6 +47,16 @@ export const appConfig: ApplicationConfig = {
         {
             provide: LOCALE_ID,
             useValue: 'es-DO'
+        },
+        {
+            provide: APP_INITIALIZER,
+            useFactory: validateRuntimeConfigFactory,
+            deps: [RuntimeConfigValidatorService],
+            multi: true
+        },
+        {
+            provide: ErrorHandler,
+            useClass: GlobalErrorHandlerService
         }
     ]
 };

@@ -1,16 +1,16 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { catchError, map, of } from 'rxjs';
 import { MessageService } from 'primeng/api';
+import { TrialService } from '../services/trial.service';
 
 export const subscriptionGuard: CanActivateFn = (route, state) => {
-  const http = inject(HttpClient);
+  const trialService = inject(TrialService);
   const router = inject(Router);
   const messageService = inject(MessageService);
 
   // Verificar estado de suscripción haciendo un request simple
-  return http.get('/api/tenants/subscription-status/').pipe(
+  return trialService.getSubscriptionStatus().pipe(
     map(() => true),
     catchError((error) => {
       if (error.status === 402) {

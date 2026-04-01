@@ -31,9 +31,20 @@ import { roleKey } from '../../core/utils/role-normalizer';
                 <i class="pi pi-bars"></i>
             </button>
             <a class="layout-topbar-logo" [routerLink]="getDashboardRoute()" style="cursor: pointer;">
-                <span>{{ appConfig.platformName() }}</span>
+                <span class="topbar-brand-mark">P</span>
+                <div class="topbar-brand-copy">
+                    <strong>{{ appConfig.platformName() }}</strong>
+                    <small>{{ getWorkspaceLabel() }}</small>
+                </div>
             </a>
         </div>
+
+        <button type="button" class="layout-topbar-search" (click)="openCommandBar($event)">
+            <i class="pi pi-search"></i>
+            <span>Buscar, navegar o ejecutar</span>
+            <kbd>Ctrl K</kbd>
+        </button>
+        <p-menu #quickSearchMenu [model]="quickSearchItems" [popup]="true" [style]="{'width': '320px'}"></p-menu>
 
         <div class="layout-topbar-actions">
             <button type="button" class="layout-topbar-action p-overlay-badge" (click)="appointmentMenu.toggle($event)">
@@ -90,6 +101,73 @@ import { roleKey } from '../../core/utils/role-normalizer';
             overflow: hidden;
         }
 
+        .topbar-brand-mark {
+            width: 2.25rem;
+            height: 2.25rem;
+            display: grid;
+            place-items: center;
+            border-radius: 0.9rem;
+            background: var(--shell-brand-mark-bg);
+            color: var(--shell-brand-mark-color);
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+        }
+
+        .topbar-brand-copy {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+
+        .topbar-brand-copy strong {
+            font-size: 0.98rem;
+            color: var(--text-color);
+            font-weight: 700;
+        }
+
+        .topbar-brand-copy small {
+            font-size: 0.72rem;
+            color: var(--text-color-secondary);
+            letter-spacing: 0.02em;
+        }
+
+        .layout-topbar-search {
+            min-width: min(38rem, 42vw);
+            height: 2.85rem;
+            border-radius: 999px;
+            border: 1px solid var(--shell-search-border);
+            background: var(--shell-search-bg);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0 1rem;
+            color: var(--text-color-secondary);
+            box-shadow: var(--shell-search-shadow);
+            transition: all 180ms ease;
+        }
+
+        .layout-topbar-search:hover {
+            border-color: var(--shell-search-border-hover);
+            color: var(--text-color);
+            transform: translateY(-1px);
+        }
+
+        .layout-topbar-search span {
+            flex: 1;
+            text-align: left;
+            font-size: 0.92rem;
+        }
+
+        .layout-topbar-search kbd {
+            border-radius: 999px;
+            border: 1px solid var(--shell-search-kbd-border);
+            padding: 0.2rem 0.55rem;
+            font-size: 0.72rem;
+            background: var(--shell-search-kbd-bg);
+            color: var(--text-color-secondary);
+        }
+
         .topbar-user-avatar {
             width: 2rem;
             height: 2rem;
@@ -114,14 +192,22 @@ import { roleKey } from '../../core/utils/role-normalizer';
             height: 100%;
             object-fit: cover;
         }
+
+        @media (max-width: 991px) {
+            .layout-topbar-search {
+                display: none;
+            }
+        }
     `]
 })
 export class AppTopbar implements OnInit, OnDestroy {
+    @ViewChild('quickSearchMenu') quickSearchMenu!: Menu;
     @ViewChild('appointmentMenu') appointmentMenu!: Menu;
     @ViewChild('notificationMenu') notificationMenu!: Menu;
     @ViewChild('languageMenu') languageMenu!: Menu;
     
     userMenuItems: MenuItem[] = [];
+    quickSearchItems: MenuItem[] = [];
     appointmentMenuItems: MenuItem[] = [];
     notificationMenuItems: MenuItem[] = [];
     languageMenuItems: MenuItem[] = [];
@@ -144,6 +230,7 @@ export class AppTopbar implements OnInit, OnDestroy {
     ) {
         this.initUserMenu();
         this.initLanguageMenu();
+        this.initQuickSearchMenu();
     }
 
     ngOnInit() {
@@ -171,6 +258,7 @@ export class AppTopbar implements OnInit, OnDestroy {
             this.localeService.languageChanged$.subscribe(() => {
                 this.initUserMenu();
                 this.initLanguageMenu();
+                this.initQuickSearchMenu();
                 this.buildAppointmentMenu();
                 this.buildNotificationMenu();
             })
@@ -195,6 +283,11 @@ export class AppTopbar implements OnInit, OnDestroy {
             return '/admin/dashboard';
         }
         return '/client/dashboard';
+    }
+
+    getWorkspaceLabel(): string {
+        const user = this.authService.getCurrentUser();
+        return roleKey(user?.role) === 'SUPER_ADMIN' ? 'Control Center' : (user?.tenant_name || 'Workspace');
     }
 
     initUserMenu() {
@@ -242,6 +335,66 @@ export class AppTopbar implements OnInit, OnDestroy {
         }));
     }
 
+    initQuickSearchMenu() {
+        const isSuperAdmin = roleKey(this.authService.getCurrentUser()?.role) === 'SUPER_ADMIN';
+
+        this.quickSearchItems = isSuperAdmin
+            ? [
+                {
+                    label: 'Ir al dashboard admin',
+                    icon: 'pi pi-home',
+                    command: () => this.router.navigate(['/admin/dashboard'])
+                },
+                {
+                    label: 'Tenants',
+                    icon: 'pi pi-building',
+                    command: () => this.router.navigate(['/admin/tenants'])
+                },
+                {
+                    label: 'Usuarios',
+                    icon: 'pi pi-users',
+                    command: () => this.router.navigate(['/admin/users'])
+                },
+                {
+                    label: 'Facturacion',
+                    icon: 'pi pi-credit-card',
+                    command: () => this.router.navigate(['/admin/billing'])
+                },
+                {
+                    label: 'Soporte',
+                    icon: 'pi pi-life-ring',
+                    command: () => this.router.navigate(['/admin/support'])
+                }
+            ]
+            : [
+                {
+                    label: 'Dashboard',
+                    icon: 'pi pi-home',
+                    command: () => this.router.navigate(['/client/dashboard'])
+                },
+                {
+                    label: 'Agenda',
+                    icon: 'pi pi-calendar',
+                    command: () => this.router.navigate(['/client/appointments'])
+                },
+                {
+                    label: 'POS',
+                    icon: 'pi pi-shopping-cart',
+                    command: () => this.router.navigate(['/client/pos'])
+                },
+                {
+                    label: 'Clientes',
+                    icon: 'pi pi-users',
+                    command: () => this.router.navigate(['/client/clients'])
+                },
+                {
+                    label: 'Reportes',
+                    icon: 'pi pi-chart-line',
+                    command: () => this.router.navigate(['/client/reports'])
+                }
+            ];
+    }
+
     changeLanguage(lang: 'es' | 'en' | 'fr' | 'pt' | 'de') {
         this.localeService.setLanguage(lang);
         
@@ -262,6 +415,10 @@ export class AppTopbar implements OnInit, OnDestroy {
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
+    }
+
+    openCommandBar(event: Event) {
+        this.quickSearchMenu.toggle(event);
     }
 
     goToProfile() {

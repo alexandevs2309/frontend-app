@@ -9,130 +9,125 @@ import { CardModule } from 'primeng/card';
   standalone: true,
   imports: [CommonModule, RouterModule, ButtonModule, CardModule],
   template: `
-    <div class="min-h-screen bg-linear-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-slate-900 dark:via-green-900 dark:to-emerald-900 flex items-center justify-center p-4">
-      <div class="max-w-2xl w-full">
-        <!-- Success Card -->
-        <div class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-slate-700/50 overflow-hidden">
+    <div class="relative min-h-screen overflow-hidden bg-linear-to-br from-slate-50 via-white to-emerald-50 dark:from-slate-950 dark:via-slate-950 dark:to-emerald-950 flex items-center justify-center p-4 lg:p-6">
+      <div class="absolute inset-x-0 top-0 h-72 bg-linear-to-b from-emerald-500/10 via-sky-400/6 to-transparent dark:from-emerald-400/12 dark:via-sky-400/8 dark:to-transparent"></div>
+      <div class="absolute -top-20 left-8 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl"></div>
+      <div class="absolute right-0 top-24 h-80 w-80 rounded-full bg-sky-500/10 blur-3xl"></div>
+      <div class="absolute inset-0 opacity-[0.035] dark:opacity-[0.06]" style="background-image: radial-gradient(circle at 1px 1px, rgba(15,23,42,0.28) 1px, transparent 0); background-size: 34px 34px;"></div>
 
-          <!-- Header -->
-          <div class="bg-linear-to-r from-green-500 to-emerald-600 p-8 text-center text-white">
-            <div class="w-20 h-20 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
-              <i class="pi pi-check text-4xl"></i>
-            </div>
-            <h1 class="text-3xl font-bold mb-2">¡Cuenta Creada Exitosamente! 🎉</h1>
-            <p class="text-green-100">Tu barbería {{ businessName }} está lista para usar</p>
+      <div class="relative max-w-4xl w-full">
+        <div class="backdrop-blur-xl rounded-[2rem] border border-white/60 dark:border-slate-700/70 bg-white/84 dark:bg-slate-900/84 shadow-[0_32px_110px_-62px_rgba(15,23,42,0.32)] overflow-hidden">
+          <div class="absolute inset-0 rounded-[2rem] bg-linear-to-r from-emerald-500/16 via-sky-400/10 to-emerald-500/16 p-px">
+            <div class="w-full h-full rounded-[2rem] bg-white/90 dark:bg-slate-900/90"></div>
           </div>
 
-          <!-- Content -->
-          <div class="p-8">
+          <div class="relative p-8 lg:p-10">
+            <a routerLink="/landing" class="inline-flex items-center gap-3 mb-8">
+              <div class="flex items-center justify-center rounded-2xl border border-white/70 dark:border-white/10 bg-white/90 dark:bg-white/5 p-2.5 shadow-sm">
+                <img src="assets/logos/iso-auron.jpg" alt="Auron Suite" class="h-9 w-9 rounded-xl object-contain" />
+              </div>
+              <div>
+                <div class="text-[0.68rem] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 font-bold">Business OS</div>
+                <div class="text-lg font-black tracking-tight text-slate-900 dark:text-white">Auron Suite</div>
+              </div>
+            </a>
 
-            <!-- Email Sent Info -->
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6">
-              <div class="flex items-start gap-4">
-                <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
-                  <i class="pi pi-envelope text-white text-xl"></i>
+            <div class="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)] items-start">
+              <div>
+                <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300 mb-5">
+                  <i class="pi pi-check-circle"></i>
+                  Registro completado
                 </div>
-                <div class="flex-1">
-                  <h3 class="font-bold text-blue-900 dark:text-blue-100 mb-2">📧 Email Enviado</h3>
-                  <p class="text-blue-700 dark:text-blue-300 mb-3">
-                    Hemos enviado tus credenciales de acceso a:
-                  </p>
-                  <div class="bg-white/80 dark:bg-slate-800/80 rounded-lg p-3 font-mono text-sm">
-                    <strong>{{ email }}</strong>
+
+                <h1 class="text-4xl lg:text-5xl font-black tracking-tight text-slate-900 dark:text-white mb-4">Tu cuenta ya esta lista</h1>
+                <p class="text-base lg:text-lg leading-7 text-slate-600 dark:text-slate-300 mb-8">
+                  Creamos <strong class="text-slate-900 dark:text-white">{{ businessName }}</strong> correctamente. Ya puedes revisar el correo y entrar a tu panel con las credenciales que enviamos.
+                </p>
+
+                <div class="rounded-[1.6rem] border border-emerald-200/80 dark:border-emerald-900/50 bg-emerald-50/90 dark:bg-emerald-950/25 p-5 mb-6">
+                  <div class="flex items-start gap-4">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white">
+                      <i class="pi pi-envelope text-xl"></i>
+                    </div>
+                    <div>
+                      <div class="font-semibold text-emerald-900 dark:text-emerald-100 mb-1">Credenciales enviadas</div>
+                      <div class="text-sm text-emerald-800 dark:text-emerald-300 mb-3">Revisa este correo para encontrar tus datos de acceso iniciales.</div>
+                      <div class="rounded-xl border border-white/70 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 px-4 py-3 font-mono text-sm text-slate-900 dark:text-slate-100">
+                        {{ email }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rounded-[1.6rem] border border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-800/75 p-6">
+                  <h3 class="font-bold text-slate-900 dark:text-white mb-4">Siguientes pasos</h3>
+                  <div class="space-y-4">
+                    <div class="flex gap-3">
+                      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">1</div>
+                      <div class="text-sm text-slate-600 dark:text-slate-300">Busca el correo de bienvenida y revisa la bandeja principal o spam.</div>
+                    </div>
+                    <div class="flex gap-3">
+                      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">2</div>
+                      <div class="text-sm text-slate-600 dark:text-slate-300">Entra a tu panel con las credenciales iniciales.</div>
+                    </div>
+                    <div class="flex gap-3">
+                      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">3</div>
+                      <div class="text-sm text-slate-600 dark:text-slate-300">Cambia tu contraseña y termina la configuracion del negocio.</div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Account Details -->
-            <div class="bg-gray-50 dark:bg-slate-800/50 rounded-xl p-6 mb-6">
-              <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-                <i class="pi pi-info-circle text-blue-500 mr-2"></i>
-                Detalles de tu Cuenta
-              </h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white dark:bg-slate-700 rounded-lg p-4">
-                  <div class="text-sm text-gray-600 dark:text-gray-400">Barbería</div>
-                  <div class="font-semibold">{{ businessName }}</div>
+              <div class="space-y-5">
+                <div class="rounded-[1.6rem] border border-slate-200 dark:border-slate-700 bg-white/88 dark:bg-slate-900/70 p-6 shadow-[0_24px_80px_-56px_rgba(15,23,42,0.28)]">
+                  <div class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-3">Resumen de la cuenta</div>
+                  <div class="space-y-4">
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4">
+                      <div class="text-sm text-slate-500 dark:text-slate-400">Negocio</div>
+                      <div class="font-semibold text-slate-900 dark:text-white">{{ businessName }}</div>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4">
+                      <div class="text-sm text-slate-500 dark:text-slate-400">Plan</div>
+                      <div class="font-semibold text-slate-900 dark:text-white">{{ planName }} - \${{ planPrice }}/mes</div>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4">
+                      <div class="text-sm text-slate-500 dark:text-slate-400">Estado inicial</div>
+                      <div class="font-semibold text-emerald-600 dark:text-emerald-300">Prueba activa de 7 dias</div>
+                    </div>
+                  </div>
                 </div>
-                <div class="bg-white dark:bg-slate-700 rounded-lg p-4">
-                  <div class="text-sm text-gray-600 dark:text-gray-400">Plan</div>
-                  <div class="font-semibold">{{ planName }} - \${{ planPrice }}/mes</div>
+
+                <div class="rounded-[1.6rem] border border-sky-200/80 dark:border-sky-900/50 bg-sky-50/90 dark:bg-sky-950/25 p-5">
+                  <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-500 text-white">
+                      <i class="pi pi-info-circle"></i>
+                    </div>
+                    <div>
+                      <div class="font-semibold text-sky-900 dark:text-sky-100 mb-1">Si no ves el correo</div>
+                      <div class="text-sm text-sky-800 dark:text-sky-300 leading-6">
+                        Revisa spam o promociones. Si sigue sin aparecer, escribe a <strong>auronsuite.soporte@gmail.com</strong>.
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="bg-white dark:bg-slate-700 rounded-lg p-4">
-                  <div class="text-sm text-gray-600 dark:text-gray-400">Email</div>
-                  <div class="font-semibold">{{ email }}</div>
-                </div>
-                <div class="bg-white dark:bg-slate-700 rounded-lg p-4">
-                  <div class="text-sm text-gray-600 dark:text-gray-400">Estado</div>
-                  <div class="font-semibold text-green-600">Trial 7 días</div>
+
+                <div class="flex flex-col gap-3">
+                  <button pButton
+                          label="Ir a iniciar sesion"
+                          icon="pi pi-sign-in"
+                          class="w-full bg-linear-to-r! from-emerald-500! to-sky-500! border-0! text-white! font-semibold!"
+                          (click)="goToLogin()">
+                  </button>
+                  <button pButton
+                          label="Volver al inicio"
+                          icon="pi pi-arrow-left"
+                          severity="secondary"
+                          class="w-full"
+                          routerLink="/landing">
+                  </button>
                 </div>
               </div>
             </div>
-
-            <!-- Email Content Preview -->
-            <div class="bg-linear-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 rounded-xl p-6 mb-6">
-              <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-                <i class="pi pi-eye text-purple-500 mr-2"></i>
-                Vista Previa del Email Enviado
-              </h3>
-              <div class="bg-white dark:bg-slate-900 rounded-lg p-4 border-l-4 border-green-500 font-mono text-sm">
-                <div class="text-center mb-4">
-                  <strong>🎉 ¡BIENVENIDO A AURON-SUITE! 🎉</strong>
-                </div>
-                <div class="space-y-2 text-gray-700 dark:text-gray-300">
-                  <p><strong>Barbería:</strong> {{ businessName }}</p>
-                  <p><strong>Plan:</strong> {{ planName }}</p>
-                  <p><strong>Email:</strong> {{ email }}</p>
-                  <p><strong>Contraseña:</strong> [Generada automáticamente]</p>
-                  <p><strong>Acceso:</strong> http://localhost:4200/auth/login</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Next Steps -->
-            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6 mb-6">
-              <h3 class="font-bold text-yellow-900 dark:text-yellow-100 mb-3 flex items-center">
-                <i class="pi pi-lightbulb text-yellow-500 mr-2"></i>
-                Próximos Pasos
-              </h3>
-              <ol class="space-y-2 text-yellow-800 dark:text-yellow-200">
-                <li class="flex items-start">
-                  <span class="bg-yellow-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">1</span>
-                  Revisa tu email y copia las credenciales
-                </li>
-                <li class="flex items-start">
-                  <span class="bg-yellow-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">2</span>
-                  Inicia sesión con las credenciales recibidas
-                </li>
-                <li class="flex items-start">
-                  <span class="bg-yellow-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">3</span>
-                  Cambia tu contraseña por una personalizada
-                </li>
-                <li class="flex items-start">
-                  <span class="bg-yellow-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">4</span>
-                  Configura tu barbería y comienza a usar el sistema
-                </li>
-              </ol>
-            </div>
-
-            <!-- Actions -->
-            <div class="flex flex-col sm:flex-row gap-4">
-              <button pButton
-                      label="Ir a Iniciar Sesión"
-                      icon="pi pi-sign-in"
-                      class="flex-1 bg-green-600! border-green-600! text-white!"
-                      (click)="goToLogin()">
-              </button>
-              <button pButton
-                      label="¿No recibiste el email?"
-                      icon="pi pi-question-circle"
-                      severity="secondary"
-                      class="flex-1"
-                      (click)="showEmailHelp()">
-              </button>
-            </div>
-
           </div>
         </div>
       </div>
@@ -152,7 +147,7 @@ export class RegistrationSuccess implements OnInit {
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      this.businessName = params['businessName'] || 'Tu Barbería';
+      this.businessName = params['businessName'] || 'Tu Barberia';
       this.email = params['email'] || '';
       this.planName = params['planName'] || 'Plan';
       this.planPrice = params['planPrice'] || 0;
@@ -169,6 +164,11 @@ export class RegistrationSuccess implements OnInit {
   }
 
   showEmailHelp() {
-    alert(`Si no recibiste el email en ${this.email}:\n\n1. Revisa tu carpeta de SPAM\n2. Verifica que el email esté escrito correctamente\n3. Contacta soporte: auronsuite.soporte@gmail.com`);
+    this.router.navigate(['/auth/login'], {
+      queryParams: {
+        email: this.email,
+        message: 'check_spam'
+      }
+    });
   }
 }

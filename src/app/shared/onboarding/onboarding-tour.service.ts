@@ -6,14 +6,17 @@ import { AuthService } from '../../core/services/auth/auth.service';
 import { EmployeeService } from '../../core/services/employee/employee.service';
 import { ServiceService } from '../../core/services/service/service.service';
 import { LocaleService } from '../../core/services/locale/locale.service';
-import { ONBOARDING_TOURS, OnboardingContext, OnboardingStep, OnboardingTourConfig } from './onboarding.config';
+import { ONBOARDING_TOURS, OnboardingContext, OnboardingStep, OnboardingTourConfig, OnboardingTooltipPlacement } from './onboarding.config';
 
 export interface OnboardingRuntimeState {
     active: boolean;
+    tourId: string;
+    tourName: string;
     title: string;
     description: string;
     stepIndex: number;
     totalSteps: number;
+    placement: OnboardingTooltipPlacement;
     spotlightRect: { top: number; left: number; width: number; height: number; shape: 'rounded' | 'circle' } | null;
 }
 
@@ -21,10 +24,13 @@ export interface OnboardingRuntimeState {
 export class OnboardingTourService {
     private readonly stateSubject = new BehaviorSubject<OnboardingRuntimeState>({
         active: false,
+        tourId: '',
+        tourName: '',
         title: '',
         description: '',
         stepIndex: 0,
         totalSteps: 0,
+        placement: 'bottom-right',
         spotlightRect: null
     });
     readonly state$ = this.stateSubject.asObservable();
@@ -306,10 +312,13 @@ export class OnboardingTourService {
         this.stepIndex = 0;
         this.stateSubject.next({
             active: false,
+            tourId: '',
+            tourName: '',
             title: '',
             description: '',
             stepIndex: 0,
             totalSteps: 0,
+            placement: 'bottom-right',
             spotlightRect: null
         });
     }
@@ -332,10 +341,13 @@ export class OnboardingTourService {
 
         this.stateSubject.next({
             active: true,
+            tourId: this.activeTour?.id || '',
+            tourName: this.resolveText(undefined, this.activeTour?.name || 'Recorrido guiado'),
             title: this.resolveText(step.titleKey, step.title),
             description: this.resolveText(step.descriptionKey, step.description),
             stepIndex: this.stepIndex + 1,
             totalSteps: this.activeSteps.length,
+            placement: step.placement || 'bottom-right',
             spotlightRect
         });
     }

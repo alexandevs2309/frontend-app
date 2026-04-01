@@ -11,8 +11,8 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { SettingsService } from '../../../core/services/settings/settings.service';
 
 interface BarbershopSettings {
   name: string;
@@ -50,7 +50,7 @@ interface BarbershopSettings {
   templateUrl: './barbershop-settings.html'
 })
 export class BarbershopSettingsComponent implements OnInit {
-  private http = inject(HttpClient);
+  private settingsService = inject(SettingsService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
 
@@ -112,28 +112,39 @@ export class BarbershopSettingsComponent implements OnInit {
 
   loadSettings() {
     this.loading.set(true);
-    this.http.get<BarbershopSettings>(`${environment.apiUrl}/settings/barbershop/admin_settings/`)
+    this.settingsService.getBarbershopAdminSettings()
       .subscribe({
         next: (data) => {
-          if (data.logo) {
-            data.logo = this.toAbsoluteUrl(data.logo);
-          }
-          if (!data.pos_config) {
-            data.pos_config = {
+          const normalizedData: BarbershopSettings = {
+            name: data.name || '',
+            logo: data.logo ? this.toAbsoluteUrl(data.logo) : undefined,
+            currency: data.currency || 'DOP',
+            currency_symbol: data.currency_symbol || 'RD$',
+            currency_locked: data.currency_locked ?? false,
+            currency_lock_reason: data.currency_lock_reason || '',
+            business_hours: data.business_hours || {
+              monday: { open: '08:00', close: '20:00', closed: false },
+              tuesday: { open: '08:00', close: '20:00', closed: false },
+              wednesday: { open: '08:00', close: '20:00', closed: false },
+              thursday: { open: '08:00', close: '20:00', closed: false },
+              friday: { open: '08:00', close: '20:00', closed: false },
+              saturday: { open: '08:00', close: '20:00', closed: false },
+              sunday: { open: '10:00', close: '20:00', closed: true }
+            },
+            contact: data.contact || {
+              phone: '',
+              email: '',
+              address: ''
+            },
+            pos_config: (data.pos_config as BarbershopSettings['pos_config']) || {
               business_name: '',
               address: '',
               phone: '',
               email: '',
               website: ''
-            };
-          }
-          if (data.currency_locked === undefined) {
-            data.currency_locked = false;
-          }
-          if (!data.currency_lock_reason) {
-            data.currency_lock_reason = '';
-          }
-          this.settings.set(data);
+            }
+          };
+          this.settings.set(normalizedData);
           this.loading.set(false);
         },
         error: () => {
@@ -173,7 +184,7 @@ export class BarbershopSettingsComponent implements OnInit {
       pos_config: current.pos_config
     };
 
-    this.http.post(`${environment.apiUrl}/settings/barbershop/`, payload)
+    this.settingsService.updateBarbershopSettings(payload)
       .subscribe({
         next: (response: any) => {
           this.loading.set(false);
@@ -217,7 +228,7 @@ export class BarbershopSettingsComponent implements OnInit {
       confirmed_critical: true
     };
     
-    this.http.post(`${environment.apiUrl}/settings/barbershop/`, dataWithConfirmation)
+    this.settingsService.updateBarbershopSettings(dataWithConfirmation)
       .subscribe({
         next: (response: any) => {
           this.loading.set(false);
@@ -275,7 +286,7 @@ export class BarbershopSettingsComponent implements OnInit {
       const formData = new FormData();
       formData.append('logo', file);
 
-      this.http.post(`${environment.apiUrl}/settings/barbershop/upload_logo/`, formData)
+      this.settingsService.uploadBarbershopLogo(formData)
         .subscribe({
           next: (response: any) => {
             this.settings.update(s => ({ ...s, logo: this.toAbsoluteUrl(response.logo_url) }));

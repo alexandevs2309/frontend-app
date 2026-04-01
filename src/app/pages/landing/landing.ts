@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { RippleModule } from 'primeng/ripple';
 import { StyleClassModule } from 'primeng/styleclass';
@@ -44,7 +44,7 @@ import { VideoModal } from './components/video-modal';
                 @defer (on idle) {
                 <div class="bg-slate-50 dark:bg-slate-900 py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="features">
                     <div class="relative z-10 transform skew-y-2">
-                        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+                        <div class="max-w-[92rem] mx-auto px-6 lg:px-8">
                             <div class="text-center mb-20">
                                 <span class="inline-block px-4 py-2 bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-full font-semibold text-sm mb-6 uppercase tracking-wide">Operacion clara</span>
                                 <h2 class="text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mb-6">Todo lo que necesitas.<br>Nada de relleno.</h2>
@@ -97,12 +97,17 @@ import { VideoModal } from './components/video-modal';
         </p-scrollTop>
     `
 })
-export class Landing implements OnInit {
+export class Landing implements OnInit, OnDestroy {
     showVideoModal = false;
+    private readonly openVideoModalHandler = () => {
+        this.showVideoModal = true;
+    };
 
     ngOnInit() {
-        window.addEventListener('openVideoModal', () => {
-            this.showVideoModal = true;
-        });
+        window.addEventListener('openVideoModal', this.openVideoModalHandler);
+    }
+
+    ngOnDestroy() {
+        window.removeEventListener('openVideoModal', this.openVideoModalHandler);
     }
 }

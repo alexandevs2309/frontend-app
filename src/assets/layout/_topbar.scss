@@ -1,14 +1,31 @@
 @use 'mixins' as *;
 
 .layout-topbar {
+    --shell-topbar-bg: rgba(255, 255, 255, 0.86);
+    --shell-topbar-border: rgba(148, 163, 184, 0.16);
+    --shell-topbar-shadow: 0 14px 42px rgba(15, 23, 42, 0.07);
+    --shell-topbar-hover-bg: rgba(99, 102, 241, 0.08);
+    --shell-brand-mark-bg: linear-gradient(135deg, #0f172a, #334155);
+    --shell-brand-mark-color: #f8fafc;
+    --shell-search-bg: rgba(248, 250, 252, 0.84);
+    --shell-search-border: rgba(148, 163, 184, 0.22);
+    --shell-search-border-hover: rgba(99, 102, 241, 0.25);
+    --shell-search-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    --shell-search-kbd-bg: rgba(255, 255, 255, 0.75);
+    --shell-search-kbd-border: rgba(148, 163, 184, 0.25);
     position: fixed;
-    height: 4rem;
+    height: 4.75rem;
     z-index: 997;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 0 2rem;
-    background-color: var(--surface-card);
+    left: 1rem;
+    top: 1rem;
+    width: calc(100% - 2rem);
+    padding: 0 1.25rem;
+    background: var(--shell-topbar-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--shell-topbar-border);
+    border-radius: 1.4rem;
+    box-shadow: var(--shell-topbar-shadow);
     transition: left var(--layout-section-transition-duration);
     display: flex;
     align-items: center;
@@ -26,7 +43,7 @@
         border-radius: var(--content-border-radius);
         color: var(--text-color);
         font-weight: 500;
-        gap: 0.5rem;
+        gap: 0.85rem;
 
         svg {
             width: 3rem;
@@ -46,11 +63,16 @@
         width: 2.5rem;
         height: 2.5rem;
         color: var(--text-color);
-        transition: background-color var(--element-transition-duration);
+        transition:
+            background-color var(--element-transition-duration),
+            transform var(--element-transition-duration),
+            color var(--element-transition-duration);
         cursor: pointer;
 
         &:hover {
-            background-color: var(--surface-hover);
+            background-color: var(--shell-topbar-hover-bg);
+            color: var(--primary-color);
+            transform: translateY(-1px);
         }
 
         &:focus-visible {
@@ -83,7 +105,8 @@
     .layout-topbar-actions {
         margin-left: auto;
         display: flex;
-        gap: 1rem;
+        align-items: center;
+        gap: 0.75rem;
     }
 
     .layout-topbar-menu-content {
@@ -93,13 +116,33 @@
 
     .layout-config-menu {
         display: flex;
-        gap: 1rem;
+        gap: 0.5rem;
+    }
+}
+
+.app-dark {
+    .layout-topbar {
+        --shell-topbar-bg: rgba(15, 23, 42, 0.78);
+        --shell-topbar-border: rgba(148, 163, 184, 0.14);
+        --shell-topbar-shadow: 0 18px 48px rgba(2, 6, 23, 0.38);
+        --shell-topbar-hover-bg: rgba(99, 102, 241, 0.16);
+        --shell-brand-mark-bg: linear-gradient(135deg, #dbeafe, #93c5fd);
+        --shell-brand-mark-color: #0f172a;
+        --shell-search-bg: rgba(15, 23, 42, 0.72);
+        --shell-search-border: rgba(148, 163, 184, 0.24);
+        --shell-search-border-hover: rgba(129, 140, 248, 0.38);
+        --shell-search-shadow: 0 12px 32px rgba(2, 6, 23, 0.28);
+        --shell-search-kbd-bg: rgba(30, 41, 59, 0.82);
+        --shell-search-kbd-border: rgba(148, 163, 184, 0.24);
     }
 }
 
 @media (max-width: 991px) {
     .layout-topbar {
-        padding: 0 2rem;
+        left: 0.75rem;
+        top: 0.75rem;
+        width: calc(100% - 1.5rem);
+        padding: 0 1rem;
 
         .layout-topbar-logo-container {
             width: auto;

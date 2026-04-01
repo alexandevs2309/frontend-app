@@ -9,26 +9,33 @@ import { LayoutService } from '../../../layout/service/layout.service';
     selector: 'topbar-widget',
     imports: [RouterModule, StyleClassModule, ButtonModule, RippleModule],
     template: `
-        <nav class="fixed top-0 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg z-50 border-b border-slate-200/50 dark:border-slate-700/50">
-            <div class="container mx-auto px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
-                    <a class="flex items-center space-x-3" href="#" routerLink="/landing">
-                        <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                            <span class="text-white font-bold text-sm">A</span>
+        <nav class="fixed top-4 inset-x-0 z-50 px-4 lg:px-6">
+            <div class="max-w-[92rem] mx-auto rounded-[1.4rem] border border-white/60 dark:border-slate-700/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-[0_18px_48px_-24px_rgba(15,23,42,0.28)]">
+                <div class="flex items-center justify-between h-[4.5rem] px-4 lg:px-6">
+                    <a class="flex items-center space-x-3 min-w-0" href="#" routerLink="/landing">
+                        <div class="flex items-center justify-center rounded-2xl bg-white/70 dark:bg-white/6 px-2.5 py-2 border border-white/60 dark:border-white/8 shadow-sm">
+                            <img src="assets/logos/iso-auron.jpg" alt="Auron Suite" class="h-9 w-9 object-contain rounded-xl" />
                         </div>
-                        <span class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Auron Suite</span>
+                        <div class="min-w-0">
+                            <div class="text-[0.68rem] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 font-bold">Business OS</div>
+                            <span class="block text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">Auron Suite</span>
+                        </div>
                     </a>
 
-                    <div class="hidden lg:flex items-center space-x-8">
-                        <nav class="flex space-x-8">
-                            <a (click)="scrollToSection('features')" class="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium cursor-pointer transition-colors">Funciones</a>
-                            <a (click)="scrollToSection('testimonials')" class="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium cursor-pointer transition-colors">Resultados</a>
-                            <a (click)="scrollToSection('pricing')" class="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium cursor-pointer transition-colors">Planes</a>
+                    <div class="hidden lg:flex items-center gap-8">
+                        <nav class="flex items-center gap-7">
+                            <a (click)="scrollToSection('features')" class="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold cursor-pointer transition-colors">Funciones</a>
+                            <a (click)="scrollToSection('highlights')" class="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold cursor-pointer transition-colors">Producto</a>
+                            <a (click)="scrollToSection('testimonials')" class="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold cursor-pointer transition-colors">Casos</a>
+                            <a (click)="scrollToSection('pricing')" class="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold cursor-pointer transition-colors">Planes</a>
                         </nav>
 
-                        <div class="flex items-center space-x-4">
+                        <div class="flex items-center gap-3">
+                            <button type="button" pButton [text]="true" class="!rounded-full !px-4 !py-2 !text-sm !font-semibold !text-slate-700 dark:!text-slate-200" (click)="openDemo()">
+                                Ver demo
+                            </button>
                             <p-button type="button" (onClick)="toggleDarkMode()" [rounded]="true" [icon]="isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'" severity="secondary" />
-                            <button pButton routerLink="/auth/register" label="Empezar prueba" class="bg-indigo-600! text-white! hover:bg-indigo-700! border-0! px-5! py-2! rounded-lg! font-medium! text-sm! transition-colors!"></button>
+                            <button pButton routerLink="/auth/register" label="Empieza gratis" class="bg-linear-to-r! from-indigo-600! to-sky-500! text-white! border-0! px-5! py-2.5! rounded-full! font-semibold! text-sm! shadow-lg! shadow-indigo-500/25! hover:opacity-95!"></button>
                         </div>
                     </div>
 
@@ -38,12 +45,14 @@ import { LayoutService } from '../../../layout/service/layout.service';
                 </div>
 
                 <div [class.hidden]="!mobileMenuOpen" class="lg:hidden">
-                    <div class="px-6 py-4 space-y-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+                    <div class="px-5 py-4 space-y-3 bg-white/95 dark:bg-slate-950/95 border-t border-slate-200/80 dark:border-slate-800 rounded-b-[1.4rem]">
                         <a (click)="scrollToSection('features')" class="block text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium cursor-pointer py-2">Funciones</a>
-                        <a (click)="scrollToSection('testimonials')" class="block text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium cursor-pointer py-2">Resultados</a>
+                        <a (click)="scrollToSection('highlights')" class="block text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium cursor-pointer py-2">Producto</a>
+                        <a (click)="scrollToSection('testimonials')" class="block text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium cursor-pointer py-2">Casos</a>
                         <a (click)="scrollToSection('pricing')" class="block text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium cursor-pointer py-2">Planes</a>
-                        <div class="pt-3 border-t border-slate-200 dark:border-slate-700">
-                            <button pButton routerLink="/auth/register" label="Empezar prueba" class="w-full bg-indigo-600! text-white! hover:bg-indigo-700! border-0! py-3! rounded-lg! font-medium!"></button>
+                        <div class="pt-3 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                            <button pButton type="button" (onClick)="openDemo()" label="Ver demo" class="w-full !rounded-full !border !border-slate-300 dark:!border-slate-700 !bg-transparent !text-slate-800 dark:!text-slate-100 !py-3 !font-semibold"></button>
+                            <button pButton routerLink="/auth/register" label="Empieza gratis" class="w-full bg-linear-to-r! from-indigo-600! to-sky-500! text-white! border-0! py-3! rounded-full! font-semibold!"></button>
                         </div>
                     </div>
                 </div>
@@ -65,6 +74,12 @@ export class TopbarWidget {
 
     toggleMobileMenu() {
         this.mobileMenuOpen = !this.mobileMenuOpen;
+    }
+
+    openDemo() {
+        const event = new CustomEvent('openVideoModal');
+        window.dispatchEvent(event);
+        this.mobileMenuOpen = false;
     }
 
     scrollToSection(sectionId: string) {

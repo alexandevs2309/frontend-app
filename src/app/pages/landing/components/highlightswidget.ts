@@ -8,7 +8,7 @@ import { RippleModule } from 'primeng/ripple';
     standalone: true,
     imports: [CommonModule, ButtonModule, RippleModule],
     template: `
-        <section class="max-w-7xl mx-auto px-6 lg:px-8">
+        <section class="max-w-[92rem] mx-auto px-6 lg:px-8">
             <div class="text-center mb-20">
                 <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-white/10 text-white mb-4">
                     Operacion en cualquier pantalla
@@ -23,39 +23,15 @@ import { RippleModule } from 'primeng/ripple';
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
                 <div class="order-2 lg:order-1">
-                    <div class="relative mx-auto w-80 h-96">
-                        <div class="bg-slate-800 rounded-3xl p-2 shadow-xl">
-                            <div class="w-full h-full bg-slate-900 rounded-3xl overflow-hidden relative">
-                                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-2xl z-10"></div>
-
-                                <div class="pt-8 px-4 h-full bg-linear-to-br from-indigo-600 to-sky-600">
-                                    <div class="flex items-center justify-between mb-6">
-                                        <div class="text-white font-bold">Auron Suite</div>
-                                        <div class="w-8 h-8 bg-white/20 rounded-full"></div>
-                                    </div>
-
-                                    <div class="space-y-4">
-                                        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                                            <div class="text-white text-sm">Ventas de hoy</div>
-                                            <div class="text-green-300 font-bold text-xl">$847</div>
-                                        </div>
-                                        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                                            <div class="text-white text-sm">Proxima cita</div>
-                                            <div class="text-blue-300 font-bold">15:30</div>
-                                        </div>
-                                        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                                            <div class="text-white text-sm">Empleados activos</div>
-                                            <div class="text-purple-300 font-bold">6/8</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="relative mx-auto max-w-[21rem]">
+                        <div class="rounded-[2rem] border border-white/10 bg-white/6 p-3 backdrop-blur-xl shadow-[0_28px_90px_-54px_rgba(15,23,42,0.8)]">
+                            <img src="assets/demo/auron-mobile-dashboard-1.png" alt="Mockup movil ilustrado de Auron Suite" class="w-full h-auto object-contain rounded-[1.5rem]" />
                         </div>
                     </div>
                 </div>
 
                 <div class="order-1 lg:order-2">
-                    <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700">
+                    <div class="bg-slate-50/95 dark:bg-slate-800 rounded-[2rem] p-8 lg:p-10 border border-slate-200/80 dark:border-slate-700/80 shadow-[0_24px_80px_-56px_rgba(15,23,42,0.28)]">
                         <div class="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mb-8">
                             <i class="pi pi-fw pi-mobile text-4xl! text-indigo-600"></i>
                         </div>
@@ -84,7 +60,7 @@ import { RippleModule } from 'primeng/ripple';
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
                 <div>
-                    <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700">
+                    <div class="bg-slate-50/95 dark:bg-slate-800 rounded-[2rem] p-8 lg:p-10 border border-slate-200/80 dark:border-slate-700/80 shadow-[0_24px_80px_-56px_rgba(15,23,42,0.28)]">
                         <div class="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mb-8">
                             <i class="pi pi-fw pi-desktop text-4xl! text-indigo-600"></i>
                         </div>
@@ -112,45 +88,14 @@ import { RippleModule } from 'primeng/ripple';
 
                 <div>
                     <div class="relative">
-                        <div class="bg-slate-800 rounded-2xl p-4 shadow-xl">
-                            <div class="bg-slate-900 rounded-2xl overflow-hidden">
-                                <div class="h-80 bg-linear-to-br from-slate-800 to-slate-900 p-6">
-                                    <div class="flex items-center gap-2 mb-4">
-                                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                                        <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                                        <div class="ml-4 text-slate-400 text-sm">auron-suite.com/dashboard</div>
-                                    </div>
-
-                                    <div class="grid grid-cols-3 gap-4 mb-4">
-                                        <div class="bg-slate-700/50 rounded p-3 border border-slate-600">
-                                            <div class="text-slate-400 text-xs">Ventas</div>
-                                            <div class="text-green-400 font-bold">$12,847</div>
-                                        </div>
-                                        <div class="bg-slate-700/50 rounded p-3 border border-slate-600">
-                                            <div class="text-slate-400 text-xs">Citas</div>
-                                            <div class="text-blue-400 font-bold">156</div>
-                                        </div>
-                                        <div class="bg-slate-700/50 rounded p-3 border border-slate-600">
-                                            <div class="text-slate-400 text-xs">Empleados</div>
-                                            <div class="text-purple-400 font-bold">24</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="bg-slate-700/50 rounded-lg h-32 flex items-center justify-center border border-slate-600">
-                                        <div class="text-slate-400 text-sm">Panel de analisis operativo</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="w-16 h-4 bg-slate-700 mx-auto mt-2 rounded-b"></div>
-                            <div class="w-24 h-2 bg-slate-600 mx-auto rounded"></div>
+                        <div class="rounded-[2rem] border border-white/10 bg-white/6 p-3 backdrop-blur-xl shadow-[0_28px_90px_-54px_rgba(15,23,42,0.8)]">
+                            <img src="assets/demo/auron-mockups-grid-light.png" alt="Mockups ilustrados de agenda, clientes, inventario y reportes" class="w-full h-auto object-contain rounded-[1.5rem]" />
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-12 border border-slate-200 dark:border-slate-700">
+            <div class="bg-slate-50/95 dark:bg-slate-800 rounded-[2rem] p-10 lg:p-12 border border-slate-200/80 dark:border-slate-700/80 shadow-[0_28px_90px_-58px_rgba(15,23,42,0.32)]">
                 <div class="text-center mb-12">
                     <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-4">Pensado para el ritmo del negocio</h3>
                     <p class="text-lg text-slate-600 dark:text-slate-300">Menos vueltas, mejor visibilidad y una operacion mas comoda para el equipo.</p>

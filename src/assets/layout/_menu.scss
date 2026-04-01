@@ -1,20 +1,35 @@
 @use 'mixins' as *;
 
 .layout-sidebar {
+    --shell-sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.96));
+    --shell-sidebar-border: rgba(148, 163, 184, 0.14);
+    --shell-sidebar-shadow: 0 16px 38px rgba(15, 23, 42, 0.06);
+    --shell-menu-root-text: color-mix(in srgb, var(--text-color-secondary) 88%, #475569 12%);
+    --shell-menu-link-color: color-mix(in srgb, var(--text-color) 85%, #475569 15%);
+    --shell-menu-icon-bg: rgba(148, 163, 184, 0.08);
+    --shell-menu-icon-color: color-mix(in srgb, var(--text-color-secondary) 80%, #334155 20%);
+    --shell-menu-hover-bg: rgba(99, 102, 241, 0.05);
+    --shell-menu-active-bg: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(14, 165, 233, 0.08));
+    --shell-menu-active-color: #0f172a;
+    --shell-menu-active-ring: rgba(99, 102, 241, 0.12);
+    --shell-menu-active-icon-bg: linear-gradient(135deg, #4f46e5, #0ea5e9);
+    --shell-menu-active-icon-color: #fff;
     position: fixed;
-    width: 20rem;
-    height: calc(100vh - 8rem);
+    width: 18.75rem;
+    height: calc(100vh - 8.75rem);
     z-index: 999;
     overflow-y: auto;
     user-select: none;
-    top: 6rem;
+    top: 6.25rem;
     left: 2rem;
     transition:
         transform var(--layout-section-transition-duration),
         left var(--layout-section-transition-duration);
-    background-color: var(--surface-overlay);
-    border-radius: var(--content-border-radius);
-    padding: 0.5rem 1.5rem;
+    background: var(--shell-sidebar-bg);
+    border: 1px solid var(--shell-sidebar-border);
+    box-shadow: var(--shell-sidebar-shadow);
+    border-radius: 1.5rem;
+    padding: 1rem 1rem 1.25rem;
 }
 
 .layout-menu {
@@ -24,11 +39,13 @@
 
     .layout-root-menuitem {
         > .layout-menuitem-root-text {
-            font-size: 0.857rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
             font-weight: 700;
-            color: var(--text-color);
-            margin: 0.75rem 0;
+            letter-spacing: 0.08em;
+            color: var(--shell-menu-root-text);
+            margin: 1rem 0 0.55rem;
+            padding-left: 0.75rem;
         }
 
         > a {
@@ -64,16 +81,27 @@
             align-items: center;
             position: relative;
             outline: 0 none;
-            color: var(--text-color);
+            color: var(--shell-menu-link-color);
             cursor: pointer;
-            padding: 0.75rem 1rem;
-            border-radius: var(--content-border-radius);
+            gap: 0.75rem;
+            padding: 0.8rem 0.9rem;
+            border-radius: 1rem;
             transition:
                 background-color var(--element-transition-duration),
-                box-shadow var(--element-transition-duration);
+                box-shadow var(--element-transition-duration),
+                transform var(--element-transition-duration),
+                color var(--element-transition-duration);
 
             .layout-menuitem-icon {
-                margin-right: 0.5rem;
+                width: 2rem;
+                height: 2rem;
+                margin-right: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.8rem;
+                background: var(--shell-menu-icon-bg);
+                color: var(--shell-menu-icon-color);
             }
 
             .layout-submenu-toggler {
@@ -84,11 +112,19 @@
 
             &.active-route {
                 font-weight: 700;
-                color: var(--primary-color);
+                color: var(--shell-menu-active-color);
+                background: var(--shell-menu-active-bg);
+                box-shadow: inset 0 0 0 1px var(--shell-menu-active-ring);
+
+                .layout-menuitem-icon {
+                    background: var(--shell-menu-active-icon-bg);
+                    color: var(--shell-menu-active-icon-color);
+                }
             }
 
             &:hover {
-                background-color: var(--surface-hover);
+                background-color: var(--shell-menu-hover-bg);
+                transform: translateX(2px);
             }
 
             &:focus {
@@ -136,6 +172,24 @@
                 }
             }
         }
+    }
+}
+
+.app-dark {
+    .layout-sidebar {
+        --shell-sidebar-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.96));
+        --shell-sidebar-border: rgba(148, 163, 184, 0.14);
+        --shell-sidebar-shadow: 0 20px 42px rgba(2, 6, 23, 0.34);
+        --shell-menu-root-text: color-mix(in srgb, var(--text-color-secondary) 84%, #cbd5e1 16%);
+        --shell-menu-link-color: color-mix(in srgb, var(--text-color) 90%, #cbd5e1 10%);
+        --shell-menu-icon-bg: rgba(148, 163, 184, 0.12);
+        --shell-menu-icon-color: color-mix(in srgb, var(--text-color-secondary) 78%, #e2e8f0 22%);
+        --shell-menu-hover-bg: rgba(99, 102, 241, 0.12);
+        --shell-menu-active-bg: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(14, 165, 233, 0.14));
+        --shell-menu-active-color: #e2e8f0;
+        --shell-menu-active-ring: rgba(129, 140, 248, 0.18);
+        --shell-menu-active-icon-bg: linear-gradient(135deg, #818cf8, #38bdf8);
+        --shell-menu-active-icon-color: #0f172a;
     }
 }
 

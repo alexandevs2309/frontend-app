@@ -1,7 +1,6 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -14,6 +13,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { DashboardService } from '../../../core/services/dashboard/dashboard.service';
 import { TenantService } from '../../../core/services/tenant/tenant.service';
+import { SettingsService } from '../../../core/services/settings/settings.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -33,6 +33,7 @@ import { environment } from '../../../../environments/environment';
         ToastModule
     ],
     providers: [MessageService],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
 
 <div class="p-6 space-y-10 transition-colors">
@@ -56,6 +57,17 @@ import { environment } from '../../../../environments/environment';
     </div>
   </div>
 
+  @if (loading()) {
+    <div class="rounded-2xl p-10 shadow-sm bg-white dark:bg-gray-800 text-center text-gray-500 dark:text-gray-300">
+      Cargando reportes...
+    </div>
+  } @else if (loadError(); as errorMessage) {
+    <div class="rounded-2xl p-10 shadow-sm bg-white dark:bg-gray-800 text-center">
+      <div class="text-lg font-semibold text-red-600 mb-2">No se pudieron cargar los reportes</div>
+      <p class="text-gray-600 dark:text-gray-300 mb-4">{{ errorMessage }}</p>
+      <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="cargarDatos()"></button>
+    </div>
+  } @else {
   <!-- KPIs REALES -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <div *ngFor="let card of kpiCards" class="rounded-2xl p-6 shadow-sm transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md bg-white dark:bg-gray-800">
@@ -70,11 +82,44 @@ import { environment } from '../../../../environments/environment';
   <!-- Gráfico de Ingresos REALES -->
   <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800 transition-colors">
     <h5 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Ingresos por Mes (Últimos 6 meses)</h5>
-    <div class="h-72">
-      <p-chart type="line" [data]="chartIngresos" [options]="chartOptions"></p-chart>
-    </div>
+    @if (filteredRevenue().length > 0) {
+      <div class="h-72">
+        <p-chart type="line" [data]="chartIngresos" [options]="chartOptions"></p-chart>
+      </div>
+    } @else {
+      <div class="h-72 flex items-center justify-center text-gray-500 dark:text-gray-400">
+        No hay datos en el rango seleccionado.
+      </div>
+    }
   </div>
 
+  <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800 transition-colors">
+    <div class="flex items-center justify-between mb-4">
+      <h5 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Detalle mensual</h5>
+      <span class="text-sm text-gray-500 dark:text-gray-400">{{ filteredRevenue().length }} meses</span>
+    </div>
+    @if (filteredRevenue().length > 0) {
+      <p-table [value]="filteredRevenue()" responsiveLayout="scroll">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Mes</th>
+            <th>Ingresos</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td>{{ row.month || 'Mes' }}</td>
+            <td>{{ formatearMoneda(toRevenueValue(row.revenue)) }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    } @else {
+      <div class="py-10 text-center text-gray-500 dark:text-gray-400">
+        No hay ingresos para mostrar en este periodo.
+      </div>
+    }
+  </div>
+  }
 
 </div>
 <p-toast></p-toast>
@@ -84,11 +129,13 @@ import { environment } from '../../../../environments/environment';
 export class ClientReports implements OnInit {
     private dashboardService = inject(DashboardService);
     private fb = inject(FormBuilder);
-    private http = inject(HttpClient);
     private messageService = inject(MessageService);
     private tenantService = inject(TenantService);
+    private settingsService = inject(SettingsService);
 
     activeTab = 'dashboard';
+    loading = signal(false);
+    loadError = signal<string | null>(null);
 
     // SOLO datos reales del backend
     kpis = signal({
@@ -147,6 +194,7 @@ export class ClientReports implements OnInit {
     chartIngresos: any;
     chartOptions: any;
     monthlyRevenueRaw: any[] = [];
+    filteredRevenue = signal<any[]>([]);
     currencyCode = signal('DOP');
     branding = signal<{ businessName: string; logoUrl: string | null }>({
         businessName: 'Mi Barbería',
@@ -183,13 +231,16 @@ export class ClientReports implements OnInit {
     }
 
     cargarMoneda() {
-        this.http.get<any>(`${environment.apiUrl}/settings/barbershop/`).subscribe({
+        this.settingsService.getBarbershopSettings().subscribe({
             next: (settings) => {
+                const posConfigBusinessName = typeof settings?.pos_config?.['business_name'] === 'string'
+                    ? settings.pos_config['business_name']
+                    : null;
                 if (settings?.currency) {
                     this.currencyCode.set(settings.currency);
                 }
                 this.branding.set({
-                    businessName: settings?.name || settings?.pos_config?.business_name || 'Mi Barbería',
+                    businessName: settings?.name || posConfigBusinessName || 'Mi Barbería',
                     logoUrl: this.normalizeLogoUrl(settings?.logo || null)
                 });
             },
@@ -226,22 +277,31 @@ export class ClientReports implements OnInit {
     }
 
     cargarDatos() {
+        this.loading.set(true);
+        this.loadError.set(null);
         this.dashboardService.getDashboardStats().subscribe({
             next: (stats: any) => {
                 const monthlyRevenue = stats.monthly_revenue || [];
                 this.monthlyRevenueRaw = monthlyRevenue;
                 this.actualizarKPIsYGrafico(monthlyRevenue);
+                this.loading.set(false);
             },
             error: (error) => {
                 console.error('❌ Error cargando reportes:', error);
                 if (!environment.production) {
                     console.error('Error completo:', error);
                 }
+                this.monthlyRevenueRaw = [];
+                this.filteredRevenue.set([]);
+                this.actualizarKPIsYGrafico([]);
+                this.loadError.set('No fue posible obtener las metricas del dashboard en este momento.');
+                this.loading.set(false);
             }
         });
     }
 
     actualizarGraficoIngresosMensuales(monthlyRevenue: any[]) {
+        this.filteredRevenue.set(monthlyRevenue);
         const labels = monthlyRevenue.map(item => item.month || 'Mes');
         const data = monthlyRevenue.map(item => item.revenue || 0);
 
@@ -321,8 +381,12 @@ export class ClientReports implements OnInit {
         }).format(valor);
     }
 
+    toRevenueValue(valor: unknown): number {
+        return Number(valor || 0);
+    }
+
     descargarReportePDF() {
-        if (!this.monthlyRevenueRaw.length) {
+        if (!this.filteredRevenue().length) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Sin datos',
@@ -354,7 +418,7 @@ export class ClientReports implements OnInit {
             ? `<img src="${branding.logoUrl}" alt="Logo" style="max-height:56px;max-width:180px;object-fit:contain;margin-bottom:8px;" />`
             : '';
         const fecha = new Date().toLocaleDateString();
-        const rows = this.monthlyRevenueRaw.map((r: any) => `
+        const rows = this.filteredRevenue().map((r: any) => `
             <tr>
                 <td>${this.escapeHtml(r.month || 'Mes')}</td>
                 <td>${this.formatearMoneda(Number(r.revenue || 0))}</td>

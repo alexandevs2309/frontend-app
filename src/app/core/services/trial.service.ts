@@ -24,6 +24,10 @@ export class TrialService extends BaseApiService {
     return this.get<TrialStatus>('/subscriptions/me/entitlements/');
   }
 
+  getSubscriptionStatus(): Observable<any> {
+    return this.get('/tenants/subscription-status/');
+  }
+
   loadTrialStatus(): void {
     this.getEntitlements().subscribe({
       next: (status) => {

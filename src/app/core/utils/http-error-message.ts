@@ -1,5 +1,7 @@
 export function getHttpErrorMessage(error: any, fallbackMessage: string): string {
     const status = error?.status;
+    const backendCode = error?.error?.code;
+    const backendReason = error?.error?.reason;
     const backendDetail =
         error?.error?.detail ||
         error?.error?.message ||
@@ -22,6 +24,26 @@ export function getHttpErrorMessage(error: any, fallbackMessage: string): string
     }
 
     if (status === 403) {
+        if (backendCode === 'TENANT_INACTIVE') {
+            if (backendReason === 'trial_expired') {
+                return 'El periodo de prueba de tu empresa ha expirado. Contacta al soporte o al administrador del SaaS.';
+            }
+
+            if (backendReason === 'paid_access_expired') {
+                return 'El acceso de pago de tu empresa ha expirado. Contacta al soporte o al administrador del SaaS.';
+            }
+
+            if (backendReason === 'tenant_suspended') {
+                return 'La cuenta de tu empresa esta suspendida. Contacta al soporte o al administrador del SaaS.';
+            }
+
+            if (backendReason === 'tenant_deleted') {
+                return 'La cuenta de tu empresa fue desactivada. Contacta al soporte o al administrador del SaaS.';
+            }
+
+            return 'La cuenta de tu empresa esta inactiva. Contacta al soporte o al administrador del SaaS.';
+        }
+
         return backendDetail || 'No tienes permisos para realizar esta accion.';
     }
 

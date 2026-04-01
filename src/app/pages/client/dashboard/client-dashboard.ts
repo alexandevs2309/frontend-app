@@ -1,9 +1,12 @@
 import { Component, signal, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth/auth.service';
 import { TrialService } from '../../../core/services/trial.service';
 import { NotificationBadgeService } from '../../../core/services/notification/notification-badge.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
+import { ButtonModule } from 'primeng/button';
 import { TrialBannerComponent } from '../../../shared/components/trial-banner.component';
 import { StatsWidget } from '../../dashboard/components/statswidget';
 import { RecentSalesWidget } from '../../dashboard/components/recentsaleswidget';
@@ -16,31 +19,42 @@ import { LocaleService } from '../../../core/services/locale/locale.service';
 @Component({
     selector: 'app-client-dashboard',
     standalone: true,
-    imports: [ToastModule, TrialBannerComponent, StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget],
+    imports: [CommonModule, RouterModule, ButtonModule, ToastModule, TrialBannerComponent, StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget],
     providers: [MessageService],
     template: `
         <p-toast position="top-right" />
         <app-trial-banner></app-trial-banner>
         
         @if (currentUser(); as user) {
-            <!-- Hero Header -->
-            <div id="onb-dashboard-welcome" class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-8 rounded-xl mb-8">
-                <div class="flex items-center gap-6">
-                    <div class="p-4 bg-indigo-600 rounded-xl">
-                        <i class="pi pi-cut text-white text-4xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-1">
-                            {{ t('dashboard.welcome') }}, {{user.full_name}}
-                        </h1>
-                        <p class="text-slate-600 dark:text-slate-400 text-base">
-                            <span class="font-medium">{{getRoleDisplayName(user.role)}}</span>
-                            <span class="mx-2">•</span>
-                            <span>{{ t('dashboard.control_panel') }}</span>
-                        </p>
+            <section id="onb-dashboard-welcome" class="dashboard-hero mb-8">
+                <div class="dashboard-hero__content">
+                    <div class="dashboard-hero__eyebrow">Workspace overview</div>
+                    <h1 class="dashboard-hero__title">
+                        {{ t('dashboard.welcome') }}, {{ user.full_name }}
+                    </h1>
+                    <p class="dashboard-hero__subtitle">
+                        {{ getHeroSummary() }}
+                    </p>
+                    <div class="dashboard-hero__actions">
+                        <button pButton type="button" label="Ver agenda" icon="pi pi-calendar" class="p-button-sm" (click)="goTo('/client/appointments')"></button>
+                        <button pButton type="button" label="Abrir POS" icon="pi pi-shopping-cart" class="p-button-sm p-button-outlined" (click)="goTo('/client/pos')"></button>
                     </div>
                 </div>
-            </div>
+                <div class="dashboard-hero__aside">
+                    <div class="dashboard-hero__pulse">
+                        <span class="dashboard-hero__pulse-dot"></span>
+                        {{ getRoleDisplayName(user.role) }}
+                    </div>
+                    <div class="dashboard-hero__stat">
+                        <strong>{{ appointmentCount() }}</strong>
+                        <span>Citas visibles hoy</span>
+                    </div>
+                    <div class="dashboard-hero__stat">
+                        <strong>{{ overdueCount() }}</strong>
+                        <span>Pendientes urgentes</span>
+                    </div>
+                </div>
+            </section>
             
             <div class="grid grid-cols-12 gap-8">
                 <app-stats-widget class="contents" />
@@ -64,13 +78,160 @@ import { LocaleService } from '../../../core/services/locale/locale.service';
             </div>
         }
     `,
-    styles: [``]
+    styles: [`
+        .dashboard-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.7fr) minmax(16rem, 0.9fr);
+            gap: 1.5rem;
+            padding: 1.75rem;
+            border-radius: 1.75rem;
+            background:
+                linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(238, 242, 255, 0.96));
+            color: #0f172a;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+        }
+
+        .dashboard-hero__content {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .dashboard-hero__eyebrow {
+            font-size: 0.74rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: rgba(79, 70, 229, 0.78);
+            font-weight: 700;
+        }
+
+        .dashboard-hero__title {
+            margin: 0;
+            font-size: clamp(2rem, 4vw, 3rem);
+            line-height: 1.02;
+            font-weight: 800;
+        }
+
+        .dashboard-hero__subtitle {
+            margin: 0;
+            max-width: 52rem;
+            color: rgba(51, 65, 85, 0.88);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .dashboard-hero__actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            padding-top: 0.5rem;
+        }
+
+        .dashboard-hero__aside {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 0.85rem;
+            padding: 1.1rem;
+            border-radius: 1.35rem;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .dashboard-hero__pulse {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.88rem;
+            color: rgba(30, 41, 59, 0.92);
+        }
+
+        .dashboard-hero__pulse-dot {
+            width: 0.55rem;
+            height: 0.55rem;
+            border-radius: 999px;
+            background: #22c55e;
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+            animation: pulseGlow 1.8s infinite;
+        }
+
+        .dashboard-hero__stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            padding: 0.9rem 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .dashboard-hero__stat:first-of-type {
+            border-top: 0;
+            padding-top: 0;
+        }
+
+        .dashboard-hero__stat strong {
+            font-size: 2rem;
+            line-height: 1;
+            font-weight: 800;
+        }
+
+        .dashboard-hero__stat span {
+            color: rgba(71, 85, 105, 0.88);
+            font-size: 0.92rem;
+        }
+
+        :host-context(.app-dark) .dashboard-hero {
+            background:
+                linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+            color: #f8fafc;
+            border-color: rgba(148, 163, 184, 0.12);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
+        }
+
+        :host-context(.app-dark) .dashboard-hero__eyebrow {
+            color: rgba(191, 219, 254, 0.78);
+        }
+
+        :host-context(.app-dark) .dashboard-hero__subtitle {
+            color: rgba(226, 232, 240, 0.9);
+        }
+
+        :host-context(.app-dark) .dashboard-hero__aside {
+            background: rgba(148, 163, 184, 0.12);
+            border-color: rgba(148, 163, 184, 0.16);
+        }
+
+        :host-context(.app-dark) .dashboard-hero__pulse {
+            color: rgba(226, 232, 240, 0.92);
+        }
+
+        :host-context(.app-dark) .dashboard-hero__stat {
+            border-top-color: rgba(148, 163, 184, 0.16);
+        }
+
+        :host-context(.app-dark) .dashboard-hero__stat span {
+            color: rgba(226, 232, 240, 0.78);
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35); }
+            70% { box-shadow: 0 0 0 0.65rem rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        @media (max-width: 960px) {
+            .dashboard-hero {
+                grid-template-columns: 1fr;
+            }
+        }
+    `]
 })
 export class ClientDashboard implements OnInit, OnDestroy {
     currentUser = signal<any>(null);
     private subscription = new Subscription();
     private notificationService = inject(NotificationBadgeService);
     private messageService = inject(MessageService);
+    private router = inject(Router);
 
     constructor(
         private authService: AuthService,
@@ -149,6 +310,27 @@ export class ClientDashboard implements OnInit, OnDestroy {
 
     getRoleDisplayName(role: string): string {
         return this.roleNames[role as keyof typeof this.roleNames] || role;
+    }
+
+    appointmentCount(): number {
+        return this.notificationService.todayAppointments().length;
+    }
+
+    overdueCount(): number {
+        return this.notificationService.overdueAppointments().length;
+    }
+
+    getHeroSummary(): string {
+        const appointmentCount = this.appointmentCount();
+        const overdueCount = this.overdueCount();
+        if (appointmentCount === 0 && overdueCount === 0) {
+            return 'Tu panel esta listo. Revisa la operacion del negocio, abre el POS o navega directo a la agenda.';
+        }
+        return `Hoy tienes ${appointmentCount} citas visibles y ${overdueCount} alertas que conviene revisar primero. Usa este panel como centro de control rapido del negocio.`;
+    }
+
+    goTo(route: string): void {
+        this.router.navigate([route]);
     }
 
     canAccessFeature(feature: string): boolean {

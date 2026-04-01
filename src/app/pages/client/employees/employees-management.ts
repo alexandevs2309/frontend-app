@@ -877,16 +877,11 @@ export class EmployeesManagement implements OnInit {
 
   async cargarConfiguracionDefecto() {
     try {
-      const response = await fetch(`${environment.apiUrl}/settings/barbershop/`, {
-        credentials: 'include'
+      const config = await this.settingsService.getBarbershopSettings().toPromise();
+      this.formularioNomina.patchValue({
+        commission_percentage: (config as any)?.default_commission_rate || 40,
+        contractual_monthly_salary: (config as any)?.default_fixed_salary || 0
       });
-      if (response.ok) {
-        const config = await response.json();
-        this.formularioNomina.patchValue({
-          commission_percentage: config.default_commission_rate || 40,
-          contractual_monthly_salary: config.default_fixed_salary || 0
-        });
-      }
     } catch {}
   }
 

@@ -1,27 +1,27 @@
 .onboarding-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(6, 9, 16, 0.42); /* ↓ menos oscuro */
-    backdrop-filter: blur(1.5px);       /* ↓ menos blur */
+    background: rgba(2, 6, 23, 0.5);
+    backdrop-filter: blur(3px);
     z-index: 2140;
     animation: onboardingFadeIn 240ms cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: auto;
 }
 
 .onboarding-backdrop.with-spotlight {
-    background: rgba(6, 9, 16, 0.42);
-    backdrop-filter: blur(1.5px);
+    background: rgba(2, 6, 23, 0.5);
+    backdrop-filter: blur(3px);
 }
 
 .onboarding-spotlight {
     position: fixed;
     border-radius: 18px;
     z-index: 2145;
-    border: 1px solid rgba(255, 255, 255, 0.65); /* ↓ menos agresivo */
+    border: 1px solid rgba(255, 255, 255, 0.82);
     box-shadow:
-        0 0 0 9999px rgba(6, 9, 16, 0.48),        /* coherente con backdrop */
-        0 0 0 8px rgba(15, 118, 110, 0.18),
-        0 0 24px rgba(15, 118, 110, 0.35);
+        0 0 0 9999px rgba(2, 6, 23, 0.52),
+        0 0 0 10px rgba(79, 70, 229, 0.14),
+        0 0 34px rgba(14, 165, 233, 0.24);
     transition: 
         top 280ms cubic-bezier(0.4, 0, 0.2, 1),
         left 280ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -36,8 +36,8 @@
     position: absolute;
     inset: -7px;
     border-radius: inherit;
-    border: 1px solid rgba(15, 118, 110, 0.2);
-    box-shadow: 0 0 14px rgba(15, 118, 110, 0.2);
+    border: 1px solid rgba(14, 165, 233, 0.22);
+    box-shadow: 0 0 18px rgba(79, 70, 229, 0.22);
     animation: onboardingHaloPulse 2200ms ease-in-out infinite;
     pointer-events: none;
 }
@@ -50,42 +50,61 @@
     position: fixed;
     right: 20px;
     bottom: 20px;
-    width: min(520px, calc(100vw - 32px));
+    width: min(420px, calc(100vw - 32px));
     z-index: 2150;
-    border-radius: 1.15rem;
-    background: var(--surface-card);
+    border-radius: 1.5rem;
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 96%, #fff 4%), color-mix(in srgb, var(--surface-card) 100%, transparent));
     border: 1px solid color-mix(in srgb, var(--surface-border) 72%, #fff 28%);
-    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
-    padding: 1rem 1rem 0.95rem;
-    transform-origin: var(--onboarding-origin, bottom right);
+    box-shadow: 0 24px 70px rgba(2, 6, 23, 0.34);
+    padding: 1.15rem 1.15rem 1.05rem;
+    transform-origin: center;
     animation: onboardingCardIn 260ms cubic-bezier(0.4, 0, 0.2, 1);
     transition:
         box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1),
         transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     pointer-events: auto;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+}
+
+.onboarding-tooltip.tour-main {
+    --onboarding-accent: #4f46e5;
+    --onboarding-accent-soft: rgba(79, 70, 229, 0.12);
+}
+
+.onboarding-tooltip.tour-ops {
+    --onboarding-accent: #0ea5e9;
+    --onboarding-accent-soft: rgba(14, 165, 233, 0.12);
+}
+
+.onboarding-tooltip.tour-pos {
+    --onboarding-accent: #10b981;
+    --onboarding-accent-soft: rgba(16, 185, 129, 0.12);
+}
+
+.onboarding-tooltip.tour-earnings {
+    --onboarding-accent: #f59e0b;
+    --onboarding-accent-soft: rgba(245, 158, 11, 0.12);
 }
 
 .onboarding-tooltip::before {
     content: '';
     position: absolute;
-    left: 28px;
-    top: -8px;
-    width: 14px;
-    height: 14px;
-    transform: rotate(45deg);
-    background: var(--surface-card);
-    border-left: 1px solid color-mix(in srgb, var(--surface-border) 72%, #fff 28%);
-    border-top: 1px solid color-mix(in srgb, var(--surface-border) 72%, #fff 28%);
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 35%),
+        linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.02) 100%);
 }
 
 .onboarding-progress-meta {
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    margin-bottom: 0.95rem;
+    margin-bottom: 1rem;
 }
 
 .onboarding-progress-track {
@@ -99,7 +118,7 @@
 .onboarding-progress-fill {
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 70%, #fff 30%));
+    background: linear-gradient(90deg, var(--onboarding-accent, var(--primary-color)), color-mix(in srgb, var(--onboarding-accent, var(--primary-color)) 70%, #fff 30%));
     transition: width 260ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -107,7 +126,7 @@
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-color-secondary);
-    min-width: 2.4rem;
+    min-width: 2.8rem;
     text-align: right;
 }
 
@@ -120,18 +139,40 @@
 
 .onboarding-tooltip-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.55rem;
+    margin-bottom: 0.75rem;
 }
 
 .onboarding-tooltip-kicker {
-    font-size: 0.73rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--text-color-secondary) 86%, #fff 14%);
+    color: color-mix(in srgb, var(--onboarding-accent, var(--primary-color)) 78%, #fff 22%);
+    margin-bottom: 0.22rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.onboarding-tooltip-tour-name {
+    font-size: 0.94rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 0.18rem;
+}
+
+.onboarding-tooltip-step-meta {
+    font-size: 0.78rem;
+    color: var(--text-color-secondary);
+}
+
+.onboarding-tooltip-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
 }
 
 .onboarding-step-pill {
@@ -140,27 +181,59 @@
     justify-content: center;
     padding: 0.25rem 0.58rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--primary-color) 16%, transparent);
-    border: 1px solid color-mix(in srgb, var(--primary-color) 42%, transparent);
+    background: color-mix(in srgb, var(--onboarding-accent, var(--primary-color)) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--onboarding-accent, var(--primary-color)) 42%, transparent);
     color: var(--text-color);
     font-size: 0.76rem;
     font-weight: 700;
 }
 
+.onboarding-close {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--surface-border) 72%, transparent);
+    background: color-mix(in srgb, var(--surface-100) 72%, transparent);
+    color: var(--text-color-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 180ms ease;
+}
+
+.onboarding-close:hover {
+    color: var(--text-color);
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--surface-200) 74%, transparent);
+}
+
 .onboarding-tooltip-title {
-    margin: 0 0 0.42rem;
-    font-size: 1.16rem;
-    line-height: 1.2;
+    margin: 0 0 0.5rem;
+    font-size: 1.22rem;
+    line-height: 1.18;
     color: var(--text-color);
     font-weight: 800;
+    letter-spacing: -0.02em;
 }
 
 .onboarding-tooltip-description {
     margin: 0 0 0.88rem;
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 0.98rem;
+    line-height: 1.65;
     color: var(--text-color);
-    opacity: 0.95;
+    opacity: 0.92;
+}
+
+.onboarding-tour-hint {
+    margin: 0 0 0.95rem;
+    padding: 0.8rem 0.9rem;
+    border-radius: 1rem;
+    background: var(--onboarding-accent-soft, color-mix(in srgb, var(--primary-color) 12%, transparent));
+    border: 1px solid color-mix(in srgb, var(--onboarding-accent, var(--primary-color)) 18%, transparent);
+    color: var(--text-color-secondary);
+    font-size: 0.86rem;
+    line-height: 1.5;
 }
 
 .onboarding-tooltip-actions {
@@ -168,13 +241,14 @@
     justify-content: flex-end;
     gap: 0.55rem;
     flex-wrap: wrap;
+    padding-top: 0.2rem;
 }
 
 .onboarding-btn {
-    border-radius: 0.72rem;
+    border-radius: 0.9rem;
     font-size: 0.9rem;
-    font-weight: 600;
-    padding: 0.58rem 1rem;
+    font-weight: 650;
+    padding: 0.62rem 1rem;
     cursor: pointer;
     transition: all 220ms cubic-bezier(0.4, 0, 0.2, 1);
     min-width: 7rem;
@@ -191,9 +265,10 @@
 }
 
 .onboarding-btn.primary {
-    border: 1px solid var(--primary-color);
-    background: var(--primary-color);
+    border: 1px solid var(--onboarding-accent, var(--primary-color));
+    background: linear-gradient(135deg, var(--onboarding-accent, var(--primary-color)), color-mix(in srgb, var(--onboarding-accent, var(--primary-color)) 70%, #0ea5e9 30%));
     color: var(--primary-color-text);
+    box-shadow: 0 12px 30px color-mix(in srgb, var(--onboarding-accent, var(--primary-color)) 22%, transparent);
 }
 
 .onboarding-btn.primary:hover {
@@ -223,10 +298,43 @@
     transform: none;
 }
 
+.onboarding-shortcuts {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.85rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid color-mix(in srgb, var(--surface-border) 72%, transparent);
+    color: var(--text-color-secondary);
+    font-size: 0.74rem;
+}
+
+.onboarding-shortcuts span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.onboarding-shortcuts kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.34rem;
+    border-radius: 0.45rem;
+    border: 1px solid color-mix(in srgb, var(--surface-border) 72%, transparent);
+    background: color-mix(in srgb, var(--surface-100) 82%, transparent);
+    color: var(--text-color);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
 @media (max-width: 900px) {
     .onboarding-tooltip {
-        border-radius: 1rem;
-        padding: 0.9rem;
+        border-radius: 1.15rem;
+        padding: 0.95rem;
     }
 
     .onboarding-tooltip-title {

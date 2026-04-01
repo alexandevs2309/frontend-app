@@ -6,11 +6,11 @@
                 Planes y Precios
             </div>
             <h2 class="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-6 pricing-title">
-                Elige el plan perfecto para
-                <span class="text-indigo-600">tu barberia</span>
+                Elige el plan correcto para
+                <span class="text-indigo-600">tu etapa de crecimiento</span>
             </h2>
             <p class="text-lg text-slate-600 dark:text-slate-300 max-w-4xl mx-auto">
-                Planes claros, con limites y funciones alineados a lo que la plataforma soporta hoy.
+                Precios claros, limites entendibles y una recomendacion simple para no perder tiempo comparando demasiado.
             </p>
         </div>
 
@@ -42,6 +42,12 @@
                         </div>
                         <p class="text-slate-600 dark:text-slate-400 text-sm">{{ getPlanDescription(plan.name) }}</p>
                     </div>
+
+                    @if (isPopularPlan(plan.name)) {
+                        <div class="rounded-2xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200 px-4 py-3 text-sm font-medium mb-6">
+                            Recomendado para negocios que ya manejan mas personal, mas flujo de ventas o mas de una sucursal.
+                        </div>
+                    }
 
                     <div class="mb-8">
                         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-3">
@@ -111,10 +117,10 @@
             <div class="pricing-enterprise bg-linear-to-br from-indigo-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 rounded-[28px] p-8 max-w-4xl mx-auto border border-slate-200 dark:border-indigo-500/30 shadow-[0_28px_90px_-56px_rgba(15,23,42,0.45)] dark:shadow-[0_36px_110px_-60px_rgba(15,23,42,0.9)]">
                 <div class="flex items-center justify-center mb-4">
                     <i class="pi pi-building text-3xl text-indigo-600 mr-4"></i>
-                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Tienes una cadena de barberias?</h3>
+                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Tienes una cadena o un caso especial?</h3>
                 </div>
                 <p class="text-slate-600 dark:text-slate-300 mb-6 text-lg">
-                    Si necesitas una oferta a medida, podemos ayudarte a definir limites, migracion y acompanamiento comercial.
+                    Si necesitas una oferta a medida, podemos ayudarte a definir limites, migracion, branding y acompanamiento comercial.
                 </p>
                 <button pButton pRipple
                         label="Contactar Ventas Empresariales"
@@ -133,11 +139,11 @@
         <div class="mt-16 text-center">
             <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-8">Preguntas frecuentes</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                <div class="bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.32)]">
                     <h4 class="text-slate-900 dark:text-white font-semibold mb-2">Puedo cambiar de plan?</h4>
                     <p class="text-slate-600 dark:text-slate-300 text-sm">Si, puedes actualizar o degradar tu plan en cualquier momento desde tu panel de control.</p>
                 </div>
-                <div class="bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.32)]">
                     <h4 class="text-slate-900 dark:text-white font-semibold mb-2">Hay periodo de prueba?</h4>
                     <p class="text-slate-600 dark:text-slate-300 text-sm">La disponibilidad y duracion de la prueba dependen de la configuracion activa del sistema.</p>
                 </div>

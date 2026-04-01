@@ -1,17 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { Observable, EMPTY } from 'rxjs';
+import { FrontendObservabilityService } from './frontend-observability.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ErrorHandlerService {
   private messageService = inject(MessageService);
+  private observability = inject(FrontendObservabilityService);
 
   handleError(operation: string, error: any, fallbackAction?: () => void): Observable<any> {
-    
-    
     const errorMessage = this.getErrorMessage(error);
+    this.observability.captureWarn(`Error al ${operation}`, error);
     
     this.messageService.add({
       severity: 'warn',
