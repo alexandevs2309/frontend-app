@@ -26,19 +26,19 @@ export class LoggerService {
 
   debug(message: string, data?: any): void {
     if (!environment.production) {
-      );
+      console.debug(`[DEBUG] ${message}`, data !== undefined ? this.sanitize(data) : '');
     }
   }
 
   info(message: string, data?: any): void {
     if (!environment.production) {
-      );
+      console.info(`[INFO] ${message}`, data !== undefined ? this.sanitize(data) : '');
     }
   }
 
   warn(message: string, data?: any): void {
     if (!environment.production) {
-      );
+      console.warn(`[WARN] ${message}`, data !== undefined ? this.sanitize(data) : '');
     }
     // TODO: Enviar a Sentry en producción
   }

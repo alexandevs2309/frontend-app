@@ -134,7 +134,7 @@ export class AuthService extends BaseApiService {
   }
 
   changePassword(data: { old_password: string; new_password: string }): Observable<any> {
-    return this.post(API_CONFIG.ENDPOINTS.AUTH.CHANGE_PASSWORD, data);
+    return this.put(API_CONFIG.ENDPOINTS.AUTH.CHANGE_PASSWORD, data);
   }
 
   resetPassword(email: string): Observable<any> {

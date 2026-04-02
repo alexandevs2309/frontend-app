@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../../../environments/environment';
@@ -11,10 +11,29 @@ export interface TenantLocaleConfig {
   timeZone: string;
 }
 
+export interface LanguageOption {
+  code: SupportedLanguage;
+  label: string;
+  nativeLabel: string;
+  shortLabel: string;
+  region: string;
+  locale: string;
+  icon: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class LocaleService {
+  private readonly relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
+  private readonly languageOptions: LanguageOption[] = [
+    { code: 'es', label: 'Spanish', nativeLabel: 'Español', shortLabel: 'ES', region: 'Latam y Caribe', locale: 'es-DO', icon: '🇩🇴' },
+    { code: 'en', label: 'English', nativeLabel: 'English', shortLabel: 'EN', region: 'Global', locale: 'en-US', icon: '🇺🇸' },
+    { code: 'fr', label: 'French', nativeLabel: 'Français', shortLabel: 'FR', region: 'Europa y Canadá', locale: 'fr-FR', icon: '🇫🇷' },
+    { code: 'pt', label: 'Portuguese', nativeLabel: 'Português', shortLabel: 'PT', region: 'Brasil y Portugal', locale: 'pt-BR', icon: '🇧🇷' },
+    { code: 'de', label: 'German', nativeLabel: 'Deutsch', shortLabel: 'DE', region: 'Alemania y DACH', locale: 'de-DE', icon: '🇩🇪' }
+  ];
+
   private currentLocale = signal<TenantLocaleConfig>({
     locale: 'es-DO',
     currency: 'DOP',
@@ -25,7 +44,9 @@ export class LocaleService {
   private currentLanguage = signal<SupportedLanguage>('es');
   public languageChanged$ = new BehaviorSubject<SupportedLanguage>('es');
 
-  constructor(private http: HttpClient) {
+  private readonly http = inject(HttpClient);
+
+  constructor() {
     const savedLang = localStorage.getItem('language');
     if (savedLang) {
       const lang = savedLang as SupportedLanguage;
@@ -47,31 +68,76 @@ export class LocaleService {
   }
 
   setLanguage(lang: SupportedLanguage) {
+    if (this.currentLanguage() === lang) {
+      return;
+    }
+
     this.currentLanguage.set(lang);
     localStorage.setItem('language', lang);
     this.languageChanged$.next(lang);
   }
 
+  getLanguageOptions(): LanguageOption[] {
+    return this.languageOptions;
+  }
+
+  getCurrentLanguageOption(): LanguageOption {
+    return this.languageOptions.find((option) => option.code === this.currentLanguage()) || this.languageOptions[0];
+  }
+
+  getCurrentAppLocale(): string {
+    return this.getCurrentLanguageOption().locale;
+  }
+
+  formatDate(value: Date | string | number, options?: Intl.DateTimeFormatOptions): string {
+    const date = new Date(value);
+    return new Intl.DateTimeFormat(this.getCurrentAppLocale(), options).format(date);
+  }
+
+  formatTime(value: Date | string | number, options?: Intl.DateTimeFormatOptions): string {
+    const date = new Date(value);
+    return new Intl.DateTimeFormat(this.getCurrentAppLocale(), {
+      hour: '2-digit',
+      minute: '2-digit',
+      ...(options || {})
+    }).format(date);
+  }
+
+  formatRelativeTime(value: Date | string | number): string {
+    const date = new Date(value);
+    const diffMs = date.getTime() - Date.now();
+    const diffMinutes = Math.round(diffMs / 60000);
+    const absMinutes = Math.abs(diffMinutes);
+
+    let unit: Intl.RelativeTimeFormatUnit = 'minute';
+    let valueToFormat = diffMinutes;
+
+    if (absMinutes >= 1440) {
+      unit = 'day';
+      valueToFormat = Math.round(diffMinutes / 1440);
+    } else if (absMinutes >= 60) {
+      unit = 'hour';
+      valueToFormat = Math.round(diffMinutes / 60);
+    }
+
+    const locale = this.getCurrentAppLocale();
+    if (!this.relativeTimeFormatters.has(locale)) {
+      this.relativeTimeFormatters.set(locale, new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }));
+    }
+
+    return this.relativeTimeFormatters.get(locale)!.format(valueToFormat, unit);
+  }
+
   getLanguageLabel(): string {
-    const labels: Record<SupportedLanguage, string> = {
-      es: 'Español',
-      en: 'English',
-      fr: 'Français',
-      pt: 'Português',
-      de: 'Deutsch'
-    };
-    return labels[this.currentLanguage()];
+    return this.getCurrentLanguageOption().nativeLabel;
+  }
+
+  getLanguageShortLabel(): string {
+    return this.getCurrentLanguageOption().shortLabel;
   }
 
   getLanguageIcon(): string {
-    const icons: Record<SupportedLanguage, string> = {
-      es: '🇪🇸',
-      en: '🇬🇧',
-      fr: '🇫🇷',
-      pt: '🇵🇹',
-      de: '🇩🇪'
-    };
-    return icons[this.currentLanguage()];
+    return this.getCurrentLanguageOption().icon;
   }
 
   translate(key: TranslationKey): string {

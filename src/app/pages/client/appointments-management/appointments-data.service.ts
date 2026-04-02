@@ -115,7 +115,6 @@ export class AppointmentsDataService {
             );
             this.employeesOptionsState.set(
                 users
-                    .filter((user: any) => ['Estilista', 'Utility'].includes(user.role))
                     .map((user: any) => {
                         const employee = employees.find((item: any) => (item.user_id_read || item.user?.id) === user.id);
                         const serviceIds = Array.isArray(employee?.service_ids) ? employee.service_ids : [];

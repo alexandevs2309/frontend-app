@@ -17,6 +17,7 @@ export interface TrialStatus {
   providedIn: 'root'
 })
 export class TrialService extends BaseApiService {
+  private readonly fallbackTrialDays = 7;
   private trialStatusSubject = new BehaviorSubject<TrialStatus | null>(null);
   public trialStatus$ = this.trialStatusSubject.asObservable();
 
@@ -35,12 +36,12 @@ export class TrialService extends BaseApiService {
       },
       error: (error) => {
         
-        // Establecer status por defecto para desarrollo
+        // Mantener un fallback alineado con la configuracion real del producto.
         const defaultStatus: TrialStatus = {
           plan: 'trial',
           subscription_status: 'trial',
           trial_end_date: null,
-          trial_days_remaining: 30,
+          trial_days_remaining: this.fallbackTrialDays,
           is_trial: true,
           features: {
             employees_management: true,

@@ -67,39 +67,93 @@ interface PaymentDto {
   ],
   providers: [MessageService, ConfirmationService],
   template: `
-    <div class="card">
-      <!-- Hero Header -->
-      <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-6 rounded-xl mb-6">
-        <div class="flex justify-between items-center">
-          <div class="flex items-center gap-4">
-            <div class="p-3 bg-indigo-600 rounded-xl">
-              <i class="pi pi-briefcase text-white text-3xl"></i>
+    <div class="space-y-6">
+      <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div class="grid gap-6 px-6 py-7 xl:grid-cols-[1.35fr,0.85fr] xl:px-8">
+          <div class="space-y-5">
+            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+              Equipo activo
             </div>
+
             <div>
-              <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Gestión de Empleados</h2>
-              <p class="text-slate-600 dark:text-slate-400 mt-1">Administra tu equipo de trabajo</p>
+              <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Gestión de empleados</h2>
+              <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
+                Administra tu equipo, revisa roles operativos y mantén visible quién está activo, asignado y listo para atender.
+              </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+              <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                <i class="pi pi-users text-xs"></i>
+                {{ empleados().length }} empleados registrados
+              </div>
+              <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                <i class="pi pi-check-circle text-xs"></i>
+                {{ getActiveEmployeesCount() }} activos
+              </div>
+              <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                <i class="pi pi-briefcase text-xs"></i>
+                {{ getServiceAssignableCount() }} atienden servicios
+              </div>
             </div>
           </div>
-          <div class="flex gap-2">
-            <button pButton icon="pi pi-refresh" (click)="cargarDatos()"
-                    [loading]="cargando()" class="!bg-slate-100 dark:!bg-slate-800 !text-slate-700 dark:!text-slate-300 !border-0"></button>
-            <button pButton label="Nuevo Empleado" icon="pi pi-plus" (click)="abrirDialogo()"
-                    class="!bg-indigo-600 !text-white hover:!bg-indigo-700 !border-0 !shadow-lg"></button>
+
+          <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Resumen operativo</div>
+                <div class="mt-2 text-2xl font-black">Equipo de trabajo</div>
+              </div>
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+                <i class="pi pi-briefcase text-lg"></i>
+              </div>
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+              <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Roles con agenda</div>
+                <div class="mt-1 text-lg font-bold">{{ getServiceAssignableCount() }}</div>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Inactivos</div>
+                <div class="mt-1 text-lg font-bold">{{ getInactiveEmployeesCount() }}</div>
+              </div>
+            </div>
+
+            <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+              {{ getEmployeesNarrative() }}
+            </div>
           </div>
         </div>
-      </div>
 
+        <div class="border-t border-slate-200/80 px-6 py-5 dark:border-slate-800 xl:px-8">
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-wrap gap-2">
+              <button pButton icon="pi pi-refresh" (click)="cargarDatos()"
+                      [loading]="cargando()" class="p-button-outlined"></button>
+              <button pButton label="Nuevo empleado" icon="pi pi-plus" (click)="abrirDialogo()"></button>
+            </div>
+            <div class="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+              Mantén al día roles, especialidades y disponibilidad del equipo.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <p-table [value]="empleados()" [loading]="cargando()"
                [globalFilterFields]="['user.full_name', 'user.email', 'specialty']"
                #dt>
         <ng-template pTemplate="caption">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">
+          <div class="flex flex-col gap-3 p-2 lg:flex-row lg:items-center lg:justify-between">
+            <span class="text-sm text-slate-600 dark:text-slate-300">
               Total: {{empleados().length}} empleados
             </span>
-            <span class="p-input-icon-left">
+            <span class="p-input-icon-left w-full lg:w-80">
               <i class="pi pi-search"></i>
               <input pInputText type="text" placeholder="Buscar empleados..."
+                     class="w-full"
                      (input)="dt.filterGlobal($any($event.target).value, 'contains')">
             </span>
           </div>
@@ -121,8 +175,15 @@ interface PaymentDto {
 
         <ng-template pTemplate="body" let-emp>
           <tr>
-            <td>{{emp.user.full_name}}</td>
-            <td>{{emp.user.email}}</td>
+            <td>
+              <div class="flex flex-col">
+                <span class="font-semibold text-slate-900 dark:text-white">{{emp.user.full_name}}</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">ID {{ emp.id }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="text-slate-700 dark:text-slate-300">{{emp.user.email}}</span>
+            </td>
             <td>
               <p-tag [value]="getRoleDisplayName(emp.user.role)"
                      [severity]="getRoleSeverity(getRoleDisplayName(emp.user.role))"></p-tag>
@@ -169,11 +230,19 @@ interface PaymentDto {
           <tr><td colspan="9" class="text-center py-4">No hay empleados registrados</td></tr>
         </ng-template>
       </p-table>
+      </section>
 
-      <p-dialog header="{{empleadoSeleccionado ? 'Editar' : 'Nuevo'}} Empleado"
-                [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '500px'}"
+      <p-dialog header="{{empleadoSeleccionado ? 'Editar' : 'Nuevo'}} empleado"
+                [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '620px'}"
+                styleClass="shadow-2xl"
                 [closable]="!guardando()" [closeOnEscape]="!guardando()">
-        <div [formGroup]="formulario" class="grid gap-4">
+        <div [formGroup]="formulario" class="grid gap-5 p-1">
+          <div class="rounded-2xl bg-slate-950 p-4 text-white">
+            <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Perfil del equipo</div>
+            <div class="mt-2 text-xl font-black">{{ empleadoSeleccionado ? 'Actualizar colaborador' : 'Registrar nuevo colaborador' }}</div>
+            <div class="mt-2 text-sm text-slate-300">Configura rol, contacto y disponibilidad del miembro del equipo desde una sola vista.</div>
+          </div>
+
           <div>
             <label class="block font-medium mb-1">Nombre Completo *</label>
             <input pInputText formControlName="full_name" class="w-full"
@@ -241,7 +310,7 @@ interface PaymentDto {
             <label for="activo" class="ml-2 font-medium">Empleado Activo</label>
           </div>
 
-          <div class="flex justify-end gap-2 mt-4">
+          <div class="flex justify-end gap-2 mt-2">
             <button pButton label="Cancelar" type="button" class="p-button-text"
                     (click)="cerrarDialogo()" [disabled]="guardando()"></button>
             <button pButton [label]="empleadoSeleccionado ? 'Actualizar' : 'Crear'"
@@ -252,11 +321,17 @@ interface PaymentDto {
       </p-dialog>
 
       <!-- Diálogo de Configuración de Nómina -->
-      <p-dialog header="Configuración de Nómina - {{empleadoDetalle?.user?.full_name}}"
-                [(visible)]="mostrarConfigNomina" [modal]="true" [style]="{width: '600px'}"
+      <p-dialog header="Configuración de nómina"
+                [(visible)]="mostrarConfigNomina" [modal]="true" [style]="{width: '680px'}"
+                styleClass="shadow-2xl"
                 [closable]="true">
         <div class="p-4" *ngIf="empleadoDetalle">
           <div [formGroup]="formularioNomina" class="grid gap-4">
+            <div class="rounded-2xl bg-slate-950 p-4 text-white">
+              <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Compensación</div>
+              <div class="mt-2 text-xl font-black">{{ getSelectedEmployeeDisplayName() }}</div>
+              <div class="mt-2 text-sm text-slate-300">Define modalidad de pago, frecuencia y descuentos legales del colaborador.</div>
+            </div>
             <div>
               <label class="block font-medium mb-1">Tipo de Pago</label>
               <select formControlName="salary_type" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
@@ -313,6 +388,7 @@ interface PaymentDto {
       <!-- Diálogo de Préstamos -->
       <p-dialog header="Préstamos - {{empleadoDetalle?.user?.full_name}}"
                 [(visible)]="mostrarPrestamos" [modal]="true" [style]="{width: '90vw', maxWidth: '1000px'}"
+                styleClass="shadow-2xl"
                 [closable]="true">
         <div class="p-4" *ngIf="empleadoDetalle">
 
@@ -425,10 +501,16 @@ interface PaymentDto {
       </p-dialog>
 
       <!-- Diálogo Nuevo Préstamo -->
-      <p-dialog header="Nuevo Préstamo - {{empleadoDetalle?.user?.full_name}}"
-                [(visible)]="mostrarNuevoPrestamo" [modal]="true" [style]="{width: '500px'}"
+      <p-dialog header="Nuevo préstamo - {{empleadoDetalle?.user?.full_name}}"
+                [(visible)]="mostrarNuevoPrestamo" [modal]="true" [style]="{width: '560px'}"
+                styleClass="shadow-2xl"
                 [closable]="!guardandoPrestamo()" [closeOnEscape]="!guardandoPrestamo()">
         <div [formGroup]="formularioPrestamo" class="grid gap-4">
+          <div class="rounded-2xl bg-slate-950 p-4 text-white">
+            <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Financiamiento interno</div>
+            <div class="mt-2 text-xl font-black">Crear préstamo</div>
+            <div class="mt-2 text-sm text-slate-300">Registra monto, cuotas y motivo para mantener el descuento mensual bajo control.</div>
+          </div>
           <div>
             <label class="block font-medium mb-1">Tipo de Préstamo *</label>
             <p-select formControlName="loan_type" [options]="loanTypeOptions" appendTo="body"
@@ -486,8 +568,9 @@ interface PaymentDto {
       </p-dialog>
 
       <!-- Diálogo de Historial de Pagos -->
-      <p-dialog header="Historial de Pagos - {{empleadoDetalle?.user?.full_name}}"
+      <p-dialog header="Historial de pagos - {{empleadoDetalle?.user?.full_name}}"
                 [(visible)]="mostrarHistorial" [modal]="true" [style]="{width: '90vw', maxWidth: '1200px'}"
+                styleClass="shadow-2xl"
                 [closable]="true">
         <div class="p-4" *ngIf="empleadoDetalle">
 
@@ -613,8 +696,8 @@ interface PaymentDto {
       </p-dialog>
 
       <!-- Diálogo de Recibo de Pago -->
-      <p-dialog header="Recibo de Pago" [(visible)]="mostrarRecibo" [modal]="true"
-                [style]="{width: '800px'}" [closable]="true">
+      <p-dialog header="Recibo de pago" [(visible)]="mostrarRecibo" [modal]="true"
+                [style]="{width: '860px'}" [closable]="true" styleClass="shadow-2xl">
         <div class="recibo-container rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-4" *ngIf="reciboActual()">
           <!-- Header del recibo -->
           <div class="text-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">
@@ -760,6 +843,34 @@ export class EmployeesManagement implements OnInit {
   currencyCode = computed(() => this.settingsService.settings().currency || 'DOP');
   currencyLocale = computed(() => this.settingsService.getCurrencyLocale());
   currencySymbol = computed(() => this.settingsService.getCurrencySymbol() || 'RD$');
+
+  getActiveEmployeesCount(): number {
+    return this.empleados().filter((emp) => emp.is_active).length;
+  }
+
+  getInactiveEmployeesCount(): number {
+    return this.empleados().filter((emp) => !emp.is_active).length;
+  }
+
+  getServiceAssignableCount(): number {
+    return this.empleados().filter((emp) => this.isServiceAssignableRole(emp.user.role)).length;
+  }
+
+  getEmployeesNarrative(): string {
+    const total = this.empleados().length;
+    const active = this.getActiveEmployeesCount();
+    const assignable = this.getServiceAssignableCount();
+
+    if (!total) {
+      return 'Aun no hay miembros registrados en el equipo. Agrega tu primer empleado para comenzar a organizar operaciones y servicios.';
+    }
+
+    return `${active} de ${total} colaboradores estan activos y ${assignable} pueden atender servicios o citas. Usa esta vista para mantener roles, especialidades y disponibilidad bajo control.`;
+  }
+
+  getSelectedEmployeeDisplayName(): string {
+    return this.empleadoDetalle?.user?.full_name || 'Colaborador';
+  }
 
   rolesOptions = [
     { label: 'Estilista', value: 'Estilista' },

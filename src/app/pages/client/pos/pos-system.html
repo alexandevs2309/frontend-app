@@ -1,21 +1,40 @@
 <div class="p-4 flex flex-col gap-4">
 
   <!-- HEADER -->
-  <div id="pos-tour-header" class="rounded-2xl p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div class="flex items-center gap-4">
-        <div class="p-4 bg-indigo-600 rounded-xl shadow">
-          <i class="pi pi-shopping-cart text-5xl text-white"></i>
+  <div id="pos-tour-header" class="rounded-[1.75rem] p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5">
+      <div class="flex items-start gap-4">
+        <div class="p-4 rounded-2xl shadow-lg bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400">
+          <i class="pi pi-shopping-cart text-4xl text-white"></i>
         </div>
         <div>
-          <h2 class="text-4xl font-bold mb-1 text-slate-900 dark:text-white">Sistema POS</h2>
-          <p class="text-slate-600 dark:text-slate-400 text-lg">{{ getCurrentDateTime() }}</p>
-          <p *ngIf="cajaAbierta() && nombreCajeroTurno" class="text-slate-600 dark:text-slate-400 text-sm mt-1">
-            Caja abierta por: <strong>{{ nombreCajeroTurno }}</strong>
-          </p>
+          <div class="text-[0.72rem] uppercase tracking-[0.18em] font-bold text-indigo-600 dark:text-sky-300 mb-2">POS</div>
+          <h2 class="text-3xl font-bold mb-1 text-slate-900 dark:text-white">Terminal de venta</h2>
+          <div class="flex flex-wrap items-center gap-2 mt-2 text-sm">
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+              <i class="pi pi-clock text-[0.8rem] text-indigo-500"></i>
+              {{ getCurrentDateTime() }}
+            </span>
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+              <i class="pi pi-user text-[0.8rem] text-sky-500"></i>
+              {{ obtenerUsuarioActual() }}
+            </span>
+          </div>
         </div>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="w-full xl:w-auto flex flex-col items-stretch xl:items-end gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border"
+               [class]="cajaAbierta() ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300' : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-300'">
+            <i class="pi pi-circle-fill text-[0.5rem]"></i>
+            <span class="text-sm font-semibold">{{ cajaAbierta() ? 'Caja abierta' : 'Caja cerrada' }}</span>
+          </div>
+          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+            <i class="pi pi-chart-line text-indigo-500 text-sm"></i>
+            <span class="text-sm font-semibold">{{ estadisticasDia().ventas }} ventas hoy</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
         <button *ngIf="!cajaAbierta()" pButton label="Abrir Caja" icon="pi pi-unlock" 
                 (click)="mostrarDialogoAbrirCaja = true"
                 [disabled]="!puedeAbrirCaja()"
@@ -28,12 +47,8 @@
         <button *ngIf="cajaAbierta()" pButton label="Arqueo" icon="pi pi-calculator" 
                 (click)="mostrarDialogoArqueo = true"
                 class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
-        <div *ngIf="cajaAbierta()" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 shadow">
-          <i class="pi pi-circle-fill text-xs"></i>
-          <span class="text-sm font-semibold">Caja Abierta</span>
         </div>
       </div>
-    </div>
   </div>
 
   <!-- CONTENIDO PRINCIPAL -->
@@ -42,12 +57,24 @@
     <!-- PANEL IZQUIERDO: Productos y Servicios -->
     <div class="lg:col-span-2 flex flex-col gap-4">
       <!-- Filtros -->
-      <div id="pos-tour-filters" class="flex gap-2">
+      <div id="pos-tour-filters" class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 shadow-sm p-4 flex flex-col gap-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div>
+            <div class="text-sm font-semibold text-slate-900 dark:text-white">Catalogo de venta</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Filtra rapido y agrega al carrito sin salir del flujo.</div>
+          </div>
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
+            <i class="pi pi-layers text-[0.72rem]"></i>
+            {{ itemsFiltrados.length }} resultados
+          </div>
+        </div>
+        <div class="flex flex-col xl:flex-row gap-2">
         <p-select [options]="categorias" [(ngModel)]="categoriaSeleccionada"
                   optionLabel="name" optionValue="value"
-                  placeholder="Categorías"
-                  (onChange)="onCategoryChange($event.value)" class="w-48" [disabled]="cargandoDatos"></p-select>
-        <input pInputText [ngModel]="busqueda" placeholder="Buscar..." (input)="onSearchChange($event.target.value)" class="w-64" [disabled]="cargandoDatos" style="padding: 0.5rem;">
+                  placeholder="Categorias"
+                  (onChange)="onCategoryChange($event.value)" class="w-full xl:w-48" [disabled]="cargandoDatos"></p-select>
+        <input pInputText [ngModel]="busqueda" placeholder="Buscar servicio o producto..." (input)="onSearchChange($event.target.value)" class="w-full xl:flex-1" [disabled]="cargandoDatos" style="padding: 0.7rem 0.85rem;">
+        <div class="flex flex-wrap gap-2">
         <button pButton [icon]="vistaCompacta ? 'pi pi-th-large' : 'pi pi-list'"
                 [class]="vistaCompacta ? 'p-button-success' : 'p-button-outlined'"
                 (click)="vistaCompacta = !vistaCompacta"
@@ -56,6 +83,8 @@
                 class="p-button-sm"></button>
         <button pButton icon="pi pi-qrcode" [class]="modoScanner ? 'p-button-success' : 'p-button-outlined'" (click)="modoScanner = !modoScanner" pTooltip="Scanner" [disabled]="cargandoDatos" class="p-button-sm"></button>
         <button pButton icon="pi pi-refresh" (click)="limpiarCache(); cargarDatos()" [loading]="cargandoDatos" pTooltip="Recargar datos" class="p-button-outlined p-button-sm"></button>
+        </div>
+        </div>
       </div>
 
       <!-- Scanner de Código de Barras -->
@@ -214,156 +243,178 @@
         </div>
       </ng-template>
 
-      <!-- CARRITO -->
-      <div *ngIf="carrito().length>0" class="mt-4 p-4 rounded-lg shadow-inner bg-surface-50 dark:bg-surface-900">
-        <h5 class="font-bold mb-3 text-lg text-surface-900 dark:text-surface-0">Carrito</h5>
-        <div class="flex flex-col gap-2">
-          <div *ngFor="let item of carrito(); let i=index; trackBy: trackByCartItem" class="flex justify-between items-center p-2 rounded-lg shadow bg-surface-0 dark:bg-surface-800">
-            <div class="flex-1">
-              <h6 class="font-medium">{{ item.item.name }}</h6>
-              <p class="text-sm m-0" style="color: var(--text-color-secondary);">{{ item.type==='service'?'Servicio':'Producto' }}</p>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="flex items-center gap-1">
-                <button pButton icon="pi pi-minus" size="small" (click)="cambiarCantidad(i,-1)" [text]="true"></button>
-                <span class="font-medium">{{ item.quantity }}</span>
-                <button pButton icon="pi pi-plus" size="small" (click)="cambiarCantidad(i,1)" [text]="true"></button>
-              </div>
-              <span class="font-bold" style="color: var(--primary-color);">{{ formatearMoneda(item.subtotal) }}</span>
-              <button pButton icon="pi pi-trash" severity="danger" size="small" (click)="removerDelCarrito(i)" [text]="true"></button>
-            </div>
-          </div>
-        </div>
+      <div class="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/60 px-4 py-3 flex flex-col gap-1">
+        <div class="text-sm font-semibold text-slate-900 dark:text-white">Flujo de caja rapido</div>
+        <p class="text-xs text-slate-500 dark:text-slate-400 m-0">
+          Busca, agrega al cobro y confirma desde el panel derecho sin cambiar de pantalla.
+        </p>
       </div>
     </div>
 
-    <!-- PANEL DERECHO: Resumen -->
-    <div class="flex flex-col gap-4 sticky top-4">
-      <div id="pos-tour-summary" class="p-6 rounded-2xl shadow-sm flex flex-col gap-4 bg-surface-0 dark:bg-surface-800 border border-surface-200 dark:border-surface-700">
+    <!-- PANEL DERECHO: Checkout -->
+    <div class="sticky top-4">
+      <div id="pos-tour-summary" class="pos-checkout-panel p-5 rounded-[1.75rem] shadow-sm flex flex-col gap-5 bg-surface-0 dark:bg-surface-800 border border-surface-200 dark:border-surface-700">
 
-        <div class="flex items-center gap-3 pb-3 border-b relative z-10 border-surface-200 dark:border-surface-700">
-          <div class="p-3 rounded-xl bg-primary-500">
-            <i class="pi pi-shopping-bag text-2xl text-white"></i>
-          </div>
-          <div>
-            <h5 class="font-bold text-xl text-primary-600 dark:text-primary-400">Resumen de Venta</h5>
-            <p class="text-xs text-surface-600 dark:text-surface-400">{{carrito().length}} items en carrito</p>
-          </div>
-        </div>
-
-        <!-- Cliente -->
-        <div>
-          <label class="block font-medium mb-1">Cliente</label>
-          <p-select [options]="clientes" [(ngModel)]="clienteSeleccionado"
-                    optionLabel="full_name" placeholder="Cliente general"
-                    [showClear]="true" class="w-full"
-                    (onChange)="aplicarDescuentoClienteFrecuente()">
-            <ng-template pTemplate="item" let-cliente>
-              <div class="flex items-center justify-between w-full">
-                <span>{{ cliente.full_name }}</span>
-                <span *ngIf="esClienteFrecuente(cliente)" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                  VIP
-                </span>
-              </div>
-            </ng-template>
-          </p-select>
-        </div>
-
-        <!-- Empleado -->
-        <div *ngIf="tieneServicios()">
-          <label class="block font-medium mb-1">Empleado ({{ empleados.length }} disponibles)</label>
-          <p-select [options]="empleados" [ngModel]="empleadoSeleccionado()" (ngModelChange)="empleadoSeleccionado.set($event)"
-                    optionLabel="displayName"
-                    placeholder="Seleccionar empleado"
-                    class="w-full">
-            <ng-template pTemplate="item" let-empleado>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-user text-primary-500"></i>
-                <span>{{ empleado?.displayName || empleado?.name || 'Sin nombre' }}</span>
-              </div>
-            </ng-template>
-          </p-select>
-        </div>
-
-        <!-- Totales -->
-        <div class="p-4 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700">
-          <div class="flex justify-between mb-2 text-surface-700 dark:text-surface-300"><span class="font-medium">Subtotal:</span><span class="font-semibold">{{ formatearMoneda(calcularSubtotal()) }}</span></div>
-          <div class="flex justify-between mb-3 text-surface-700 dark:text-surface-300">
-            <span class="font-medium text-gray-700">Descuento:</span>
-            <div class="flex items-center gap-2">
-              <input type="number" pInputText [ngModel]="descuento()" (ngModelChange)="descuento.set($event); validarDescuento()" class="w-16 text-right" min="0" [max]="tipoDescuento() === '%' ? limiteDescuento : calcularSubtotal()">
-              <button pButton [label]="tipoDescuento()" size="small" class="p-button-outlined w-8" (click)="alternarTipoDescuento()"></button>
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-sky-500 shadow">
+              <i class="pi pi-credit-card text-xl text-white"></i>
+            </div>
+            <div>
+              <h5 class="font-bold text-xl text-slate-900 dark:text-white">Cobro actual</h5>
+              <p class="text-xs text-surface-600 dark:text-surface-400">{{ carrito().length }} items listos para caja</p>
             </div>
           </div>
-          <hr class="my-3 border-surface-200 dark:border-surface-700">
-          <div class="flex justify-between font-bold text-2xl">
-            <span class="text-primary-600 dark:text-primary-400">Total:</span>
-            <span class="text-primary-600 dark:text-primary-400">{{ formatearMoneda(calcularTotal()) }}</span>
+          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-semibold"
+               [ngClass]="getSaleReadinessClass()">
+            <i class="pi" [ngClass]="puedeVenderComputed() ? 'pi-check-circle' : (procesandoVenta ? 'pi-spin pi-spinner' : 'pi-info-circle')"></i>
+            <span>{{ getSaleReadinessLabel() }}</span>
           </div>
         </div>
 
-        <!-- Método de pago -->
-        <div>
-          <label class="block font-medium mb-1">Método de Pago</label>
-          <p-select [options]="metodosPago" [ngModel]="metodoPagoSeleccionado()" (ngModelChange)="metodoPagoSeleccionado.set($event)" optionLabel="label" optionValue="value" placeholder="Seleccionar método" class="w-full"></p-select>
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/70 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <div class="text-sm font-semibold text-slate-900 dark:text-white">Orden en curso</div>
+            <button pButton label="Limpiar" icon="pi pi-trash" (click)="limpiarCarrito()" class="p-button-text p-button-sm" [disabled]="carrito().length === 0 || procesandoVenta"></button>
+          </div>
+
+          <div *ngIf="carrito().length > 0; else checkoutEmptyState" class="max-h-[18rem] overflow-y-auto px-3 py-3 flex flex-col gap-2">
+            <div *ngFor="let item of carrito(); let i=index; trackBy: trackByCartItem" class="pos-checkout-item rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 grid place-items-center shrink-0">
+                <i class="pi" [ngClass]="item.type==='service' ? 'pi pi-cut text-sky-500' : 'pi pi-box text-indigo-500'"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm text-slate-900 dark:text-white truncate">{{ item.item.name }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">{{ item.type==='service'?'Servicio':'Producto' }}</div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button pButton icon="pi pi-minus" size="small" (click)="cambiarCantidad(i,-1)" [text]="true"></button>
+                <span class="w-6 text-center text-sm font-semibold">{{ item.quantity }}</span>
+                <button pButton icon="pi pi-plus" size="small" (click)="cambiarCantidad(i,1)" [text]="true"></button>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="font-bold text-sm text-slate-900 dark:text-white">{{ formatearMoneda(item.subtotal) }}</div>
+                <button pButton icon="pi pi-trash" severity="danger" size="small" (click)="removerDelCarrito(i)" [text]="true"></button>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #checkoutEmptyState>
+            <div class="px-5 py-10 text-center">
+              <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 grid place-items-center">
+                <i class="pi pi-shopping-bag text-2xl text-slate-400"></i>
+              </div>
+              <div class="font-semibold text-slate-900 dark:text-white mb-2">Sin articulos en la orden</div>
+              <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">Agrega productos o servicios desde la izquierda para empezar a cobrar.</p>
+            </div>
+          </ng-template>
         </div>
 
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block font-medium mb-1">Cliente</label>
+            <p-select [options]="clientes" [(ngModel)]="clienteSeleccionado"
+                      optionLabel="full_name" placeholder="Cliente general"
+                      [showClear]="true" class="w-full"
+                      (onChange)="aplicarDescuentoClienteFrecuente()">
+              <ng-template pTemplate="item" let-cliente>
+                <div class="flex items-center justify-between w-full">
+                  <span>{{ cliente.full_name }}</span>
+                  <span *ngIf="esClienteFrecuente(cliente)" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">VIP</span>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
 
-        <!-- Botones -->
-        <div class="flex flex-col gap-2">
+          <div *ngIf="tieneServicios()">
+            <label class="block font-medium mb-1">Empleado</label>
+            <p-select [options]="empleados" [ngModel]="empleadoSeleccionado()" (ngModelChange)="empleadoSeleccionado.set($event)"
+                      optionLabel="displayName"
+                      placeholder="Seleccionar empleado"
+                      class="w-full">
+              <ng-template pTemplate="item" let-empleado>
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-user text-primary-500"></i>
+                  <span>{{ empleado?.displayName || empleado?.name || 'Sin nombre' }}</span>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+
+        <div class="pos-totals-card rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-950 text-white p-5">
+          <div class="flex justify-between items-start gap-3 mb-4">
+            <div>
+              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 font-semibold">Total a cobrar</div>
+              <div class="text-4xl font-black mt-2">{{ formatearMoneda(calcularTotal()) }}</div>
+            </div>
+            <div class="text-right text-sm text-slate-300">
+              <div>{{ carrito().length }} items</div>
+              <div>{{ getSelectedPaymentMethodLabel() }}</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-xl bg-white/5 px-3 py-3">
+              <div class="text-slate-400">Subtotal</div>
+              <div class="font-semibold mt-1">{{ formatearMoneda(calcularSubtotal()) }}</div>
+            </div>
+            <div class="rounded-xl bg-white/5 px-3 py-3">
+              <div class="text-slate-400">Descuento</div>
+              <div class="flex items-center justify-between gap-2 mt-1">
+                <input type="number" pInputText [ngModel]="descuento()" (ngModelChange)="descuento.set($event); validarDescuento()" class="w-16 text-right bg-transparent border-white/10 text-white" min="0" [max]="tipoDescuento() === '%' ? limiteDescuento : calcularSubtotal()">
+                <button pButton [label]="tipoDescuento()" size="small" class="p-button-outlined p-button-sm" (click)="alternarTipoDescuento()"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium mb-1">Metodo de pago</label>
+          <p-select [options]="metodosPago" [ngModel]="metodoPagoSeleccionado()" (ngModelChange)="metodoPagoSeleccionado.set($event)" optionLabel="label" optionValue="value" placeholder="Seleccionar metodo" class="w-full"></p-select>
+        </div>
+
+        <div class="grid gap-2">
           <button id="pos-tour-process-btn" pButton
-                  [label]="procesandoVenta ? 'Procesando...' : (puedeVenderComputed() ? 'Procesar Venta' : 'Completar datos')"
+                  [label]="procesandoVenta ? 'Procesando...' : (puedeVenderComputed() ? 'Cobrar ahora' : 'Completar datos')"
                   [icon]="procesandoVenta ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
                   [disabled]="!puedeVenderComputed() || procesandoVenta"
                   [loading]="procesandoVenta"
                   (click)="procesarVenta()"
-                  class="w-full shadow-lg transform hover:scale-105 transition-all"
+                  class="w-full shadow-lg"
                   severity="success"
                   [pTooltip]="!puedeVenderComputed() ? obtenerMensajeValidacion() : 'Procesar venta'"></button>
-          <button pButton label="Limpiar" icon="pi pi-trash" (click)="limpiarCarrito()" class="p-button-outlined w-full" [disabled]="carrito().length === 0 || procesandoVenta"></button>
-          <button pButton label="Historial" icon="pi pi-history" 
+          <button pButton label="Ver historial" icon="pi pi-history" 
                   (click)="mostrarDialogoHistorial=true; cargarHistorialVentas()" 
                   [disabled]="procesandoVenta || !puedeVerHistorial()"
                   [pTooltip]="!puedeVerHistorial() ? 'Sin permisos para ver historial' : ''"
-                  class="p-button-outlined w-full" size="small"></button>
+                  class="p-button-outlined w-full"></button>
         </div>
 
-        <!-- Estadísticas -->
-        <div class="p-4 rounded-xl shadow-sm bg-surface-50 dark:bg-surface-900 border border-slate-200 dark:border-slate-700">
-          <h6 class="font-bold mb-3 flex items-center gap-2 text-slate-900 dark:text-white">
-            <i class="pi pi-chart-line text-indigo-600"></i>
-            Estadísticas del Día
-          </h6>
-          <div class="space-y-2">
-            <div class="flex justify-between items-center p-2 rounded-lg bg-surface-0 dark:bg-surface-800">
-              <span class="text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2"><i class="pi pi-shopping-cart text-slate-600"></i>Ventas:</span>
-              <span class="font-bold text-lg text-slate-700 dark:text-slate-300">{{ estadisticasDia().ventas }}</span>
-            </div>
-            <div class="flex justify-between items-center p-2 rounded-lg bg-surface-0 dark:bg-surface-800">
-              <span class="text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2"><i class="pi pi-dollar text-indigo-600"></i>Ingresos:</span>
-              <span class="font-bold text-lg text-indigo-600">{{ formatearMoneda(estadisticasDia().ingresos) }}</span>
-            </div>
-            <div class="flex justify-between items-center p-2 rounded-lg bg-surface-0 dark:bg-surface-800">
-              <span class="text-sm text-surface-700 dark:text-surface-300 flex items-center gap-2"><i class="pi pi-ticket text-indigo-600"></i>Ticket Promedio:</span>
-              <span class="font-bold text-lg text-indigo-600">{{ formatearMoneda(estadisticasDia().ticketPromedio) }}</span>
-            </div>
+        <div class="grid gap-3 sm:grid-cols-3">
+          <div class="pos-insight-card rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-4">
+            <div class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 font-semibold">Ventas</div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white mt-2">{{ estadisticasDia().ventas }}</div>
+          </div>
+          <div class="pos-insight-card rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-4">
+            <div class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 font-semibold">Ingresos</div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white mt-2">{{ formatearMoneda(estadisticasDia().ingresos) }}</div>
+          </div>
+          <div class="pos-insight-card rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-4">
+            <div class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 font-semibold">Ticket</div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white mt-2">{{ formatearMoneda(estadisticasDia().ticketPromedio) }}</div>
           </div>
         </div>
 
-        <!-- Pagos NO en Efectivo (Solo Informativo) -->
-        <div *ngIf="pagosNoCash().length > 0" class="p-3 bg-amber-50 dark:bg-amber-900 rounded-lg border border-amber-200">
-          <h6 class="text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
+        <div *ngIf="pagosNoCash().length > 0" class="pos-info-card rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 px-4 py-4">
+          <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-semibold mb-2">
             <i class="pi pi-info-circle"></i>
-            Ingresos por Otros Métodos
-          </h6>
-          <div *ngFor="let pago of pagosNoCash()" class="flex justify-between text-sm mb-1">
+            Otros metodos del dia
+          </div>
+          <div *ngFor="let pago of pagosNoCash()" class="flex justify-between text-sm mb-1 text-amber-900 dark:text-amber-200">
             <span>{{ pago.payment_method }}:</span>
-            <span class="font-semibold text-amber-700">{{ formatearMoneda(pago.total) }}</span>
+            <span class="font-semibold">{{ formatearMoneda(pago.total) }}</span>
           </div>
-          <div class="text-xs text-amber-700 mt-2 p-2 bg-amber-100 rounded border-l-4 border-amber-400">
-            <i class="pi pi-exclamation-triangle mr-1"></i>
-            <strong>Nota:</strong> Estos montos NO afectan el arqueo de caja
-          </div>
+          <div class="text-xs text-amber-700 dark:text-amber-300 mt-3">Estos montos no entran en el arqueo fisico.</div>
         </div>
 
       </div>
@@ -372,7 +423,7 @@
   </div>
 
   <!-- DIALOGS Y TOAST -->
-  <p-dialog header="Abrir Caja" [(visible)]="mostrarDialogoAbrirCaja" [modal]="true" [style]="{width:'400px'}">
+  <p-dialog header="Abrir Caja" [(visible)]="mostrarDialogoAbrirCaja" [modal]="true" [style]="{width:'400px'}" styleClass="pos-dialog pos-dialog--cash">
     <div class="flex flex-col gap-3">
       <label class="font-medium">Monto Inicial</label>
       <p-inputNumber [(ngModel)]="montoInicialCaja" mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()" class="w-full"></p-inputNumber>
@@ -383,7 +434,7 @@
     </div>
   </p-dialog>
 
-  <p-dialog header="Cuadre y Cierre de Caja" [(visible)]="mostrarDialogoCerrarCaja" [modal]="true" [style]="{width:'500px'}">
+  <p-dialog header="Cuadre y Cierre de Caja" [(visible)]="mostrarDialogoCerrarCaja" [modal]="true" [style]="{width:'500px'}" styleClass="pos-dialog pos-dialog--cash">
     <div class="flex flex-col gap-4">
       <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded">
         <h5 class="font-bold mb-2">Resumen del día (efectivo)</h5>
@@ -457,154 +508,128 @@
   </p-dialog>
 
   <!-- DIÁLOGO DE TICKET PROFESIONAL -->
-  <p-dialog [(visible)]="mostrarDialogoTicket" [modal]="true" [style]="{width:'420px'}" [closable]="false" [showHeader]="false">
-    <div class="ticket-profesional" *ngIf="ventaActual">
-      <!-- Header elegante -->
-      <div class="ticket-header">
-        <div class="logo-section">
-          <img *ngIf="getBusinessLogo(); else fallbackTicketLogo" [src]="getBusinessLogo()!" alt="Logo negocio" class="logo-image">
-          <ng-template #fallbackTicketLogo>
-            <div class="logo-placeholder">✂️</div>
-          </ng-template>
-          <h1 class="business-name">{{ configuracionPos?.business_name || obtenerNombreNegocio() }}</h1>
-          <p class="business-tagline">Estilo y Tradición</p>
-        </div>
-        <div class="business-info">
-          <p>📍 {{ configuracionPos?.address || 'Dirección no configurada' }}</p>
-          <p>📞 {{ configuracionPos?.phone || 'Teléfono no configurado' }}</p>
-          <p *ngIf="configuracionPos?.website">🌐 {{ configuracionPos.website }}</p>
-          <p *ngIf="configuracionPos?.email">📧 {{ configuracionPos.email }}</p>
-        </div>
-        <div class="separator"></div>
-      </div>
-
-      <!-- Info de transacción -->
-      <div class="transaction-info">
-        <div class="info-row">
-          <span class="label">TICKET #</span>
-          <span class="value">{{ ventaActual.id.toString().padStart(6, '0') }}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">FECHA</span>
-          <span class="value">{{ getCurrentDateTime().split(',')[0] }}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">HORA</span>
-          <span class="value">{{ getCurrentDateTime().split(',')[1] }}</span>
-        </div>
-        <div class="info-row" *ngIf="ventaActual.client || ventaActual.client_name">
-          <span class="label">CLIENTE</span>
-          <span class="value">{{ ventaActual.client_name || ('ID ' + ventaActual.client) }}</span>
-        </div>
-        <div class="info-row" *ngIf="ventaActual.employee_name">
-          <span class="label">BARBERO</span>
-          <span class="value">{{ ventaActual.employee_name }}</span>
-        </div>
-      </div>
-      <div class="separator"></div>
-
-      <!-- Items vendidos -->
-      <div class="items-section">
-        <div class="items-header">
-          <span class="col-desc">DESCRIPCIÓN</span>
-          <span class="col-qty">CANT</span>
-          <span class="col-price">PRECIO</span>
-          <span class="col-total">TOTAL</span>
-        </div>
-        <div class="separator-thin"></div>
-        <div *ngFor="let item of ventaActual.details" class="item-row">
-          <div class="item-desc">
-            <span class="item-name">{{ item.name }}</span>
-            <span class="item-type">{{ item.content_type === 'service' ? '🔧 Servicio' : '📦 Producto' }}</span>
+  <p-dialog [(visible)]="mostrarDialogoTicket" [modal]="true" [style]="{width:'520px'}" [closable]="false" [showHeader]="false" styleClass="pos-dialog pos-dialog--ticket">
+    <div class="ticket-profesional ticket-profesional--premium" *ngIf="ventaActual">
+      <div class="ticket-premium-shell">
+        <div class="ticket-premium-header">
+          <div class="ticket-premium-brand">
+            <div class="ticket-premium-mark">
+              <img *ngIf="getBusinessLogo(); else fallbackTicketLogoPremium" [src]="getBusinessLogo()!" alt="Logo negocio" class="logo-image">
+              <ng-template #fallbackTicketLogoPremium>
+                <div class="ticket-premium-mark-fallback">
+                  <i class="pi pi-receipt"></i>
+                </div>
+              </ng-template>
+            </div>
+            <div>
+              <div class="ticket-premium-eyebrow">Auron POS</div>
+              <h1 class="business-name">{{ configuracionPos?.business_name || obtenerNombreNegocio() }}</h1>
+              <p class="ticket-premium-subtitle">Comprobante digital de venta</p>
+            </div>
           </div>
-          <span class="item-qty">{{ item.quantity }}</span>
-          <span class="item-price">{{ formatearMoneda(item.price) }}</span>
-          <span class="item-total">{{ formatearMoneda(item.price * item.quantity) }}</span>
+          <div class="ticket-premium-total">
+            <span>Total</span>
+            <strong>{{ formatearMoneda(ventaActual.total) }}</strong>
+            <small>{{ getPaymentMethodName(ventaActual.payment_method) }}</small>
+          </div>
         </div>
-      </div>
-      <div class="separator"></div>
 
-    <!-- Totales -->
-<div class="totals-section">
-  <div class="total-row">
-    <span class="total-label">SUBTOTAL</span>
-    <span class="total-value">
-      {{ formatearMoneda(getSubtotal(ventaActual)) }}
-    </span>
-  </div>
-
-  <div class="total-row" *ngIf="ventaActual.discount > 0">
-    <span class="total-label">DESCUENTO</span>
-    <span class="total-value discount">
-      -{{ formatearMoneda(ventaActual.discount) }}
-    </span>
-  </div>
-
-  <div class="separator-thin"></div>
-
-  <div class="total-row final">
-    <span class="total-label">TOTAL PAGADO</span>
-    <span class="total-value">
-      {{ formatearMoneda(ventaActual.total) }}
-    </span>
-  </div>
-
-  <!-- Desglose de pagos mixtos -->
-  <div class="payment-info">
-    <div *ngIf="ventaActual.payment_method === 'mixed' && ventaActual.payments && ventaActual.payments.length > 1">
-      <div class="separator-thin" style="margin: 8px 0;"></div>
-      <div style="font-size: 10px; font-weight: bold; margin-bottom: 4px; color: #666;">DESGLOSE DE PAGOS:</div>
-      <div *ngFor="let pago of ventaActual.payments" 
-           style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; padding: 2px 4px; background: #f8f9fa; border-radius: 2px;">
-        <span>💳 {{ getPaymentMethodName(pago.method) }}</span>
-        <span style="font-family: 'Courier New', monospace; font-weight: bold;">{{ formatearMoneda(pago.amount) }}</span>
-      </div>
-    </div>
-    <div *ngIf="ventaActual.payment_method !== 'mixed' || !ventaActual.payments || ventaActual.payments.length <= 1">
-      <span class="payment-method">
-        💳 {{ getPaymentMethodName(ventaActual.payment_method) }}
-      </span>
-    </div>
-  </div>
-</div>
-
-      <!-- Firma del cliente -->
-      <div *ngIf="firmaCliente" class="signature-section">
-        <div class="separator"></div>
-        <p class="signature-label">Firma del cliente:</p>
-        <img [src]="firmaCliente" class="signature-image">
-      </div>
-
-      <!-- Código QR -->
-      <div class="qr-section">
-        <div class="separator"></div>
-        <div class="qr-container">
-          <canvas #qrCanvas width="80" height="80" class="qr-code"></canvas>
+        <div class="ticket-premium-grid">
+          <div class="ticket-premium-stat">
+            <span>Ticket</span>
+            <strong>#{{ ventaActual.id.toString().padStart(6, '0') }}</strong>
+          </div>
+          <div class="ticket-premium-stat">
+            <span>Fecha</span>
+            <strong>{{ getCurrentDateTime().split(',')[0] }}</strong>
+          </div>
+          <div class="ticket-premium-stat">
+            <span>Hora</span>
+            <strong>{{ getCurrentDateTime().split(',')[1] }}</strong>
+          </div>
+          <div class="ticket-premium-stat">
+            <span>Estado</span>
+            <strong>{{ ventaActual.paid ? 'Pagada' : 'Pendiente' }}</strong>
+          </div>
         </div>
-        <p class="qr-label">Escanea para ver detalles</p>
-      </div>
 
-      <!-- Footer profesional -->
-      <div class="separator"></div>
-        <div class="footer-section">
+        <div class="ticket-premium-grid ticket-premium-grid--people">
+          <div class="ticket-premium-person" *ngIf="ventaActual.client || ventaActual.client_name">
+            <span>Cliente</span>
+            <strong>{{ ventaActual.client_name || ('ID ' + ventaActual.client) }}</strong>
+            <small>Venta atendida en mostrador</small>
+          </div>
+          <div class="ticket-premium-person" *ngIf="ventaActual.employee_name">
+            <span>Responsable</span>
+            <strong>{{ ventaActual.employee_name }}</strong>
+            <small>Operacion registrada por el equipo</small>
+          </div>
+        </div>
+
+        <div class="ticket-premium-items">
+          <div class="ticket-premium-items-head">
+            <span>Concepto</span>
+            <span>Cant.</span>
+            <span>Precio</span>
+            <span>Total</span>
+          </div>
+          <div *ngFor="let item of ventaActual.details" class="ticket-premium-item-row">
+            <div class="ticket-premium-item-main">
+              <strong>{{ item.name }}</strong>
+              <small>{{ item.content_type === 'service' ? 'Servicio' : 'Producto' }}</small>
+            </div>
+            <span>{{ item.quantity }}</span>
+            <span>{{ formatearMoneda(item.price) }}</span>
+            <span>{{ formatearMoneda(item.price * item.quantity) }}</span>
+          </div>
+        </div>
+
+        <div class="ticket-premium-totals">
+          <div class="ticket-premium-total-row">
+            <span>Subtotal</span>
+            <strong>{{ formatearMoneda(getSubtotal(ventaActual)) }}</strong>
+          </div>
+          <div class="ticket-premium-total-row" *ngIf="ventaActual.discount > 0">
+            <span>Descuento</span>
+            <strong class="text-emerald-300">-{{ formatearMoneda(ventaActual.discount) }}</strong>
+          </div>
+          <div class="ticket-premium-total-row ticket-premium-total-row--final">
+            <span>Total cobrado</span>
+            <strong>{{ formatearMoneda(ventaActual.total) }}</strong>
+          </div>
+        </div>
+
+        <div *ngIf="ventaActual.payment_method === 'mixed' && ventaActual.payments && ventaActual.payments.length > 1" class="ticket-premium-breakdown">
+          <div class="ticket-premium-breakdown-title">Distribucion del pago</div>
+          <div *ngFor="let pago of ventaActual.payments" class="ticket-premium-breakdown-row">
+            <span>{{ getPaymentMethodName(pago.method) }}</span>
+            <strong>{{ formatearMoneda(pago.amount) }}</strong>
+          </div>
+        </div>
+
+        <div class="ticket-premium-evidence">
+          <div *ngIf="firmaCliente" class="ticket-premium-evidence-card">
+            <span>Firma del cliente</span>
+            <img [src]="firmaCliente" class="signature-image">
+          </div>
+          <div class="ticket-premium-evidence-card">
+            <span>Verificacion</span>
+            <div class="qr-container">
+              <canvas #qrCanvas width="80" height="80" class="qr-code"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="ticket-premium-footer">
           <div class="thank-you">
-          <p class="main-message">¡GRACIAS POR SU VISITA!</p>
-          <p class="sub-message">Su satisfacción es nuestra prioridad</p>
-          <p class="sub-message" *ngIf="ventaActual.employee_name" style="margin-top: 8px;">
-            Le atendió: <strong style="text-transform: capitalize; color: #000;">{{ ventaActual.employee_name }}</strong>
-          </p>
-          <p class="sub-message" *ngIf="ventaActual.cashier_name || ventaActual.user_name" style="margin-top: 4px;">
-            Cajera de turno: <strong style="text-transform: capitalize; color: #000;">{{ ventaActual.cashier_name || ventaActual.user_name }}</strong>
-          </p>
-        </div>
-        <div class="footer-info">
-          <p>⭐ Síguenos en redes sociales</p>
-          <p>📱 Descarga nuestra app</p>
-          <p>🎁 Programa de fidelidad disponible</p>
-        </div>
-        <div class="legal-info">
-          <p>RUC: 20123456789</p>
-          <p>Autorizado por SUNAT</p>
+            <p class="main-message">Operacion completada</p>
+            <p class="sub-message">Gracias por confiar en {{ configuracionPos?.business_name || obtenerNombreNegocio() }}</p>
+          </div>
+          <div class="ticket-premium-meta">
+            <span *ngIf="configuracionPos?.phone">{{ configuracionPos.phone }}</span>
+            <span *ngIf="configuracionPos?.phone && configuracionPos?.address">·</span>
+            <span *ngIf="configuracionPos?.address">{{ configuracionPos.address }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -617,35 +642,42 @@
   </p-dialog>
 
   <!-- DIÁLOGO DE PAGO EFECTIVO -->
-  <p-dialog header="Pago en Efectivo" [(visible)]="mostrarDialogoPago" [modal]="true" [style]="{width:'400px'}">
-    <div class="flex flex-col gap-4">
-      <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded">
-        <div class="flex justify-between text-lg font-bold">
-          <span>Total a pagar:</span>
-          <span class="text-primary-600">{{ formatearMoneda(calcularTotal()) }}</span>
-        </div>
+  <p-dialog header="Cobro en efectivo" [(visible)]="mostrarDialogoPago" [modal]="true" [style]="{width:'460px'}" styleClass="pos-dialog pos-dialog--payment">
+    <div class="flex flex-col gap-5">
+      <div class="rounded-[1.75rem] bg-slate-950 p-5 text-white shadow-lg">
+        <div class="text-[11px] uppercase tracking-[0.28em] text-slate-400">Total a cobrar</div>
+        <div class="mt-2 text-4xl font-black">{{ formatearMoneda(calcularTotal()) }}</div>
+        <div class="mt-2 text-sm text-slate-300">Ingresa el monto entregado para calcular el cambio y confirmar la venta.</div>
       </div>
 
-      <div>
-        <label class="font-medium block mb-2">Monto recibido:</label>
+      <div class="rounded-[1.35rem] border border-surface-200 p-4 dark:border-slate-700">
+        <label class="mb-2 block text-sm font-semibold text-surface-700 dark:text-slate-200">Monto recibido</label>
         <p-inputNumber [(ngModel)]="montoRecibido"
                        mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()"
                        class="w-full"
                        (onInput)="cambio = calcularCambio()"></p-inputNumber>
+        <div class="mt-3 text-xs text-surface-500 dark:text-slate-400">La venta se confirma cuando el efectivo cubre el total completo.</div>
       </div>
 
-      <div class="p-3 rounded" [class]="validarMontoRecibido() ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
-        <div class="flex justify-between font-bold">
-          <span>Cambio:</span>
-          <span class="font-mono" [class]="cambio >= 0 ? 'text-green-600' : 'text-red-600'">
+      <div class="grid gap-3 md:grid-cols-2">
+        <div class="rounded-2xl border border-surface-200 bg-surface-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+          <span class="text-[11px] uppercase tracking-[0.22em] text-surface-500 dark:text-slate-400">Recibido</span>
+          <div class="mt-1 text-2xl font-black text-surface-900 dark:text-white">{{ formatearMoneda(montoRecibido || 0) }}</div>
+        </div>
+        <div class="rounded-2xl border p-4"
+             [class]="validarMontoRecibido() ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10'">
+          <span class="text-[11px] uppercase tracking-[0.22em]"
+                [class]="validarMontoRecibido() ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'">Cambio</span>
+          <div class="mt-1 text-2xl font-black"
+               [class]="validarMontoRecibido() ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'">
             {{ formatearMoneda(calcularCambio()) }}
-          </span>
+          </div>
         </div>
       </div>
 
       <div class="flex justify-end gap-2">
         <button pButton label="Cancelar" (click)="mostrarDialogoPago=false" class="p-button-text"></button>
-        <button pButton label="Confirmar Pago"
+        <button pButton label="Confirmar cobro"
                 (click)="confirmarVenta()"
                 [disabled]="!validarMontoRecibido()"
                 class="p-button-success"></button>
@@ -654,63 +686,70 @@
   </p-dialog>
 
   <!-- DIÁLOGO DE PAGOS MIXTOS -->
-  <p-dialog header="Pago Mixto" [(visible)]="mostrarDialogoPagosMixtos" [modal]="true" [style]="{width:'500px'}">
-    <div class="flex flex-col gap-4">
-      <div class="p-3 bg-primary-50 rounded border border-primary-200">
-        <div class="flex justify-between text-lg font-bold">
-          <span>Total a pagar:</span>
-          <span class="text-primary-600">{{ formatearMoneda(calcularTotal()) }}</span>
-        </div>
+  <p-dialog header="Pago combinado" [(visible)]="mostrarDialogoPagosMixtos" [modal]="true" [style]="{width:'560px'}" styleClass="pos-dialog pos-dialog--payment">
+    <div class="flex flex-col gap-5">
+      <div class="rounded-[1.75rem] bg-gradient-to-br from-slate-950 via-violet-900 to-sky-700 p-5 text-white shadow-lg">
+        <div class="text-[11px] uppercase tracking-[0.28em] text-white/70">Total a distribuir</div>
+        <div class="mt-2 text-4xl font-black">{{ formatearMoneda(calcularTotal()) }}</div>
+        <div class="mt-2 text-sm text-white/80">Combina efectivo, tarjeta o transferencia hasta completar el total exacto.</div>
       </div>
 
-      <!-- Agregar pago -->
-      <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded">
-        <h6 class="font-bold mb-3">Agregar método de pago</h6>
-        <div class="flex gap-2 mb-2">
+      <div class="rounded-[1.35rem] border border-surface-200 p-4 dark:border-slate-700">
+        <h6 class="mb-3 text-sm font-semibold text-surface-700 dark:text-slate-200">Agregar metodo de pago</h6>
+        <div class="grid gap-3 md:grid-cols-[1.15fr,1fr,auto]">
           <p-select [(ngModel)]="metodoPagoTemporal" [options]="[
             {label: 'Efectivo', value: 'cash'},
             {label: 'Tarjeta', value: 'card'},
             {label: 'Transferencia', value: 'transfer'}
-          ]" optionLabel="label" optionValue="value" placeholder="Método" class="flex-1"></p-select>
+          ]" optionLabel="label" optionValue="value" placeholder="Metodo" class="flex-1"></p-select>
           <p-inputNumber [(ngModel)]="montoTemporal" mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()" placeholder="Monto" class="flex-1"></p-inputNumber>
-          <button pButton icon="pi pi-plus" (click)="agregarPagoMixto(metodoPagoTemporal, montoTemporal)" class="p-button-success"></button>
+          <button pButton icon="pi pi-plus" label="Agregar" (click)="agregarPagoMixto(metodoPagoTemporal, montoTemporal)" class="p-button-success"></button>
         </div>
       </div>
 
-      <!-- Lista de pagos -->
-      <div *ngIf="pagosMixtos.length > 0" class="flex flex-col gap-2">
-        <h6 class="font-bold">Pagos agregados:</h6>
-        <div *ngFor="let pago of pagosMixtos; let i = index" class="flex justify-between items-center p-2 bg-white dark:bg-slate-800 rounded border dark:border-slate-700">
-          <span class="font-medium">{{ getPaymentMethodName(pago.metodo) }}</span>
-          <span class="font-mono">{{ formatearMoneda(pago.monto) }}</span>
-          <button pButton icon="pi pi-trash" size="small" (click)="removerPagoMixto(i)" class="p-button-danger p-button-text"></button>
+      <div class="rounded-[1.35rem] border border-surface-200 p-4 dark:border-slate-700">
+        <div class="mb-3 flex items-center justify-between">
+          <h6 class="text-sm font-semibold text-surface-700 dark:text-slate-200">Metodos cargados</h6>
+          <span class="text-xs text-surface-500 dark:text-slate-400">{{ pagosMixtos.length }} agregados</span>
         </div>
+        <div *ngIf="pagosMixtos.length > 0; else noMixedPayments" class="flex flex-col gap-2">
+          <div *ngFor="let pago of pagosMixtos; let i = index" class="flex justify-between items-center rounded-2xl bg-surface-50 p-3 dark:bg-slate-800/70">
+            <div>
+              <span class="block font-medium text-surface-900 dark:text-white">{{ getPaymentMethodName(pago.metodo) }}</span>
+              <small class="text-surface-500 dark:text-slate-400">Metodo parcial de cobro</small>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-mono font-bold text-surface-900 dark:text-white">{{ formatearMoneda(pago.monto) }}</span>
+              <button pButton icon="pi pi-trash" size="small" (click)="removerPagoMixto(i)" class="p-button-danger p-button-text"></button>
+            </div>
+          </div>
+        </div>
+        <ng-template #noMixedPayments>
+          <div class="rounded-2xl bg-surface-50 p-4 text-sm text-surface-500 dark:bg-slate-800/70 dark:text-slate-400">
+            Aun no has agregado metodos para completar esta venta.
+          </div>
+        </ng-template>
       </div>
 
-      <!-- Resumen -->
-      <div class="p-3 rounded" [class]="validarPagoMixto() ? 'bg-green-50 border border-green-200' : 'bg-orange-50 border border-orange-200'">
-        <div class="flex justify-between mb-2">
-          <span>Total a pagar:</span>
-          <span class="font-mono font-bold">{{ formatearMoneda(calcularTotal()) }}</span>
+      <div class="grid gap-3 md:grid-cols-2">
+        <div class="rounded-2xl border border-surface-200 bg-surface-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+          <span class="text-[11px] uppercase tracking-[0.22em] text-surface-500 dark:text-slate-400">Registrado</span>
+          <div class="mt-1 text-2xl font-black text-surface-900 dark:text-white">{{ formatearMoneda(calcularTotalPagosMixtos()) }}</div>
         </div>
-        <div class="flex justify-between mb-2">
-          <span>Total pagado:</span>
-          <span class="font-mono font-bold" [class]="validarPagoMixto() ? 'text-green-600' : 'text-orange-600'">
-            {{ formatearMoneda(calcularTotalPagosMixtos()) }}
-          </span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="font-semibold">Estado:</span>
-          <span class="text-sm font-bold px-3 py-1 rounded" 
-                [class]="validarPagoMixto() ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'">
+        <div class="rounded-2xl border p-4"
+             [class]="validarPagoMixto() ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10'">
+          <span class="text-[11px] uppercase tracking-[0.22em]"
+                [class]="validarPagoMixto() ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'">Estado</span>
+          <div class="mt-1 text-sm font-bold"
+               [class]="validarPagoMixto() ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'">
             {{ obtenerMensajePagoMixto() }}
-          </span>
+          </div>
         </div>
       </div>
 
       <div class="flex justify-end gap-2">
         <button pButton label="Cancelar" (click)="mostrarDialogoPagosMixtos=false; pagosMixtos=[]" class="p-button-text"></button>
-        <button pButton label="Confirmar Venta"
+        <button pButton label="Confirmar venta"
                 (click)="confirmarVenta()"
                 [disabled]="!validarPagoMixto()"
                 class="p-button-success"></button>
@@ -719,7 +758,7 @@
   </p-dialog>
 
   <!-- DIÁLOGO DE ARQUEO -->
-  <p-dialog header="Arqueo de Caja (Solo Consulta)" [(visible)]="mostrarDialogoArqueo" [modal]="true" [style]="{width:'500px'}" (onShow)="cargarDatosArqueo()">
+  <p-dialog header="Arqueo de Caja (Solo Consulta)" [(visible)]="mostrarDialogoArqueo" [modal]="true" [style]="{width:'500px'}" (onShow)="cargarDatosArqueo()" styleClass="pos-dialog pos-dialog--cash">
     <div class="flex flex-col gap-4">
       <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Este arqueo es solo para consulta. El cuadre oficial se realiza al cerrar caja.</p>
 
@@ -758,7 +797,7 @@
   </p-dialog>
 
   <!-- DIÁLOGO DE HISTORIAL -->
-  <p-dialog header="Historial de Ventas (Últimos 7 días)" [(visible)]="mostrarDialogoHistorial" [modal]="true" [style]="{width:'800px'}">
+  <p-dialog header="Historial de Ventas (Últimos 7 días)" [(visible)]="mostrarDialogoHistorial" [modal]="true" [style]="{width:'800px'}" styleClass="pos-dialog pos-dialog--history">
     <div class="flex flex-col gap-4">
       <div *ngIf="cargandoHistorial" class="text-center p-4">
         <i class="pi pi-spin pi-spinner text-2xl"></i>
@@ -804,7 +843,7 @@
   </p-dialog>
 
   <!-- DIÁLOGO DE PROMOCIONES -->
-  <p-dialog header="Promociones Disponibles" [(visible)]="mostrarDialogoPromociones" [modal]="true" [style]="{width:'600px'}">
+  <p-dialog header="Promociones Disponibles" [(visible)]="mostrarDialogoPromociones" [modal]="true" [style]="{width:'600px'}" styleClass="pos-dialog pos-dialog--history">
     <div class="flex flex-col gap-4">
       <div *ngIf="promociones.length === 0" class="text-center p-4">
         <p>No hay promociones disponibles</p>
@@ -830,7 +869,7 @@
   </p-dialog>
 
   <!-- DIÁLOGO DE FIRMA -->
-  <p-dialog header="Firma del Cliente" [(visible)]="mostrarDialogoFirma" [modal]="true" [style]="{width:'500px'}">
+  <p-dialog header="Firma del Cliente" [(visible)]="mostrarDialogoFirma" [modal]="true" [style]="{width:'500px'}" styleClass="pos-dialog pos-dialog--payment">
     <div class="flex flex-col gap-4">
       <p>Por favor, solicite al cliente que firme en el recuadro:</p>
       <div class="border-2 border-gray-300 dark:border-slate-600 rounded">
@@ -858,14 +897,334 @@
 
 <!-- Estilos profesionales para ticket -->
 <style>
+.pos-checkout-panel {
+  backdrop-filter: blur(12px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 96%, transparent), color-mix(in srgb, var(--surface-card) 92%, transparent));
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+}
+
+.dark .pos-checkout-panel {
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.24);
+}
+
+.pos-cart-dock {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-50) 88%, transparent), color-mix(in srgb, var(--surface-100) 92%, transparent));
+}
+
+.pos-cart-item {
+  border: 1px solid color-mix(in srgb, var(--surface-border) 70%, transparent);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.pos-cart-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  border-color: color-mix(in srgb, var(--primary-color) 26%, var(--surface-border));
+}
+
+.pos-totals-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.pos-totals-card::after {
+  content: '';
+  position: absolute;
+  inset: auto -20% -45% auto;
+  width: 10rem;
+  height: 10rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary-color) 18%, transparent), transparent 65%);
+  pointer-events: none;
+}
+
+.pos-insight-card,
+.pos-info-card {
+  backdrop-filter: blur(10px);
+}
+
+.pos-dialog .p-dialog-header {
+  border-bottom: 1px solid var(--surface-border);
+  padding: 1rem 1.25rem;
+  background: color-mix(in srgb, var(--surface-card) 96%, transparent);
+}
+
+.pos-dialog .p-dialog-content {
+  background: color-mix(in srgb, var(--surface-card) 98%, transparent);
+  padding: 1.25rem;
+}
+
+.pos-dialog .p-dialog-footer {
+  border-top: 1px solid var(--surface-border);
+  background: color-mix(in srgb, var(--surface-card) 96%, transparent);
+}
+
+.pos-dialog.pos-dialog--payment .p-dialog-header {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(14, 165, 233, 0.08));
+}
+
+.pos-dialog.pos-dialog--cash .p-dialog-header {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(14, 165, 233, 0.08));
+}
+
+.pos-dialog.pos-dialog--history .p-dialog-header {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(99, 102, 241, 0.08));
+}
+
+.pos-dialog.pos-dialog--ticket .p-dialog-content {
+  background:
+    radial-gradient(circle at top, rgba(99, 102, 241, 0.08), transparent 35%),
+    color-mix(in srgb, var(--surface-card) 98%, transparent);
+}
+
 .ticket-profesional {
-  font-family: 'Courier New', monospace;
+  font-family: Inter, 'Segoe UI', sans-serif;
   width: 100%;
-  max-width: 380px;
+  max-width: 480px;
   margin: 0 auto;
   background: white;
   color: #000;
   line-height: 1.4;
+}
+
+.ticket-profesional--premium {
+  color: #0f172a;
+}
+
+.ticket-premium-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ticket-premium-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.ticket-premium-brand {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.ticket-premium-mark,
+.ticket-premium-mark-fallback {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #020617, #6d28d9, #38bdf8);
+  color: white;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+}
+
+.ticket-premium-mark .logo-image {
+  max-width: 2rem;
+  max-height: 2rem;
+  margin: 0;
+}
+
+.ticket-premium-eyebrow {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.ticket-premium-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.ticket-premium-total {
+  min-width: 9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: #f8fafc;
+  text-align: right;
+}
+
+.ticket-premium-total span,
+.ticket-premium-total small,
+.ticket-premium-stat span,
+.ticket-premium-person span,
+.ticket-premium-evidence-card span {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: #64748b;
+}
+
+.ticket-premium-total strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #0f172a;
+}
+
+.ticket-premium-total small {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ticket-premium-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.ticket-premium-grid--people {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ticket-premium-stat,
+.ticket-premium-person,
+.ticket-premium-evidence-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #f8fafc;
+  padding: 0.85rem 0.95rem;
+}
+
+.ticket-premium-stat strong,
+.ticket-premium-person strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.ticket-premium-person small,
+.ticket-premium-meta {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.ticket-premium-items {
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.ticket-premium-items-head,
+.ticket-premium-item-row {
+  display: grid;
+  grid-template-columns: 2.2fr 0.6fr 1fr 1fr;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.ticket-premium-items-head {
+  background: #f8fafc;
+  padding: 0.85rem 1rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.ticket-premium-item-row {
+  padding: 0.9rem 1rem;
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.ticket-premium-item-main strong {
+  display: block;
+  color: #0f172a;
+}
+
+.ticket-premium-item-main small {
+  color: #64748b;
+}
+
+.ticket-premium-item-row > span:nth-child(n+2) {
+  text-align: right;
+  color: #0f172a;
+}
+
+.ticket-premium-totals {
+  border-radius: 1.25rem;
+  background: #020617;
+  color: white;
+  padding: 1rem 1.1rem;
+}
+
+.ticket-premium-total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  color: #cbd5e1;
+}
+
+.ticket-premium-total-row strong {
+  color: white;
+}
+
+.ticket-premium-total-row--final {
+  margin-top: 0.4rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 1rem;
+}
+
+.ticket-premium-breakdown {
+  border: 1px solid #ddd6fe;
+  background: #f5f3ff;
+  border-radius: 1.25rem;
+  padding: 0.95rem 1rem;
+}
+
+.ticket-premium-breakdown-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #5b21b6;
+  margin-bottom: 0.55rem;
+}
+
+.ticket-premium-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  font-size: 0.86rem;
+  color: #312e81;
+}
+
+.ticket-premium-evidence {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.ticket-premium-evidence-card img,
+.ticket-premium-evidence-card .qr-container {
+  margin-top: 0.65rem;
+}
+
+.ticket-premium-footer {
+  border-radius: 1rem;
+  background: #f8fafc;
+  padding: 1rem;
+  text-align: center;
 }
 
 /* Responsive para móviles y tablets */
@@ -881,6 +1240,24 @@
   .logo-placeholder { font-size: 28px !important; }
   .business-info { font-size: 10px !important; }
   .transaction-info { font-size: 11px !important; }
+  .ticket-premium-header,
+  .ticket-premium-brand {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ticket-premium-total {
+    width: 100%;
+    text-align: left;
+  }
+  .ticket-premium-grid,
+  .ticket-premium-grid--people,
+  .ticket-premium-evidence {
+    grid-template-columns: 1fr;
+  }
+  .ticket-premium-items-head,
+  .ticket-premium-item-row {
+    grid-template-columns: 1.8fr 0.6fr 0.9fr 0.9fr;
+  }
 }
 
 @media (max-width: 480px) {
@@ -896,6 +1273,10 @@
   .transaction-info { font-size: 10px !important; }
   .qr-container { padding: 4px !important; }
   .qr-code { width: 60px !important; height: 60px !important; }
+  .ticket-premium-items-head,
+  .ticket-premium-item-row {
+    font-size: 0.72rem;
+  }
 }
 
 .ticket-header { text-align: center; margin-bottom: 16px; }

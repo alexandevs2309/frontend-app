@@ -16,30 +16,38 @@ type AppointmentTab = 'calendar' | 'list';
     standalone: true,
     imports: [CommonModule, TabsModule, ButtonModule, AppointmentsCalendar, AppointmentsManagement],
     template: `
-        <div class="p-4 md:p-6">
-            <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-6 rounded-xl mb-6">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-indigo-600 rounded-xl">
-                            <i class="pi pi-calendar text-white text-3xl"></i>
+        <div class="p-4 md:p-6 space-y-6">
+            <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div class="grid gap-6 px-6 py-7 xl:grid-cols-[1.35fr,0.85fr] xl:px-8">
+                    <div class="space-y-5">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                            Agenda operativa
                         </div>
                         <div>
-                            <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Gestión de Citas</h2>
-                            <p class="text-slate-600 dark:text-slate-400 mt-1">Administra las citas de tu barbería</p>
-                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                            <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Gestión de citas</h2>
+                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Administra agenda, estados y carga diaria del negocio desde una vista más clara y accionable.</p>
+                            <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
                                 {{ activeTab === 'calendar' ? 'El calendario te ayuda a visualizar la agenda y detectar huecos u horas cargadas.' : 'La lista te ayuda a filtrar rápido, completar pendientes y revisar estados sin perder detalle.' }}
                             </p>
                         </div>
                     </div>
-                    <button
-                        pButton
-                        [label]="activeTab === 'list' ? 'Nueva Cita en Lista' : 'Nueva Cita en Calendario'"
-                        icon="pi pi-plus"
-                        (click)="crearCita()"
-                        class="!bg-indigo-600 !text-white hover:!bg-indigo-700 !border-0 !shadow-lg"
-                    ></button>
+                    <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Pulso de agenda</div>
+                        <div class="mt-2 text-2xl font-black">{{ stats().todayCount }} citas hoy</div>
+                        <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+                            {{ stats().overdueCount }} requieren revision y {{ stats().statusCounts.scheduled }} siguen programadas.
+                        </div>
+                        <button
+                            pButton
+                            [label]="activeTab === 'list' ? 'Nueva cita en lista' : 'Nueva cita en calendario'"
+                            icon="pi pi-plus"
+                            (click)="crearCita()"
+                            class="mt-4 w-full !bg-white !text-slate-950 hover:!bg-slate-100 !border-0"
+                        ></button>
+                    </div>
                 </div>
-            </div>
+            </section>
 
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4 mb-6">
                 <div class="md:col-span-2 xl:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
@@ -131,7 +139,7 @@ export class AppointmentsMain implements OnInit {
     ] as const;
 
     ngOnInit(): void {
-        this.appointmentsDataService.load();
+        this.appointmentsDataService.load(true);
         this.appointmentsUiService.refresh$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.notificationService.refresh();
         });

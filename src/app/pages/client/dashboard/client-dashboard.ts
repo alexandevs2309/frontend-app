@@ -28,7 +28,7 @@ import { LocaleService } from '../../../core/services/locale/locale.service';
         @if (currentUser(); as user) {
             <section id="onb-dashboard-welcome" class="dashboard-hero mb-8">
                 <div class="dashboard-hero__content">
-                    <div class="dashboard-hero__eyebrow">Workspace overview</div>
+                    <div class="dashboard-hero__eyebrow">{{ t('dashboard.hero_eyebrow') }}</div>
                     <h1 class="dashboard-hero__title">
                         {{ t('dashboard.welcome') }}, {{ user.full_name }}
                     </h1>
@@ -36,8 +36,8 @@ import { LocaleService } from '../../../core/services/locale/locale.service';
                         {{ getHeroSummary() }}
                     </p>
                     <div class="dashboard-hero__actions">
-                        <button pButton type="button" label="Ver agenda" icon="pi pi-calendar" class="p-button-sm" (click)="goTo('/client/appointments')"></button>
-                        <button pButton type="button" label="Abrir POS" icon="pi pi-shopping-cart" class="p-button-sm p-button-outlined" (click)="goTo('/client/pos')"></button>
+                        <button pButton type="button" [label]="t('dashboard.hero_cta_agenda')" icon="pi pi-calendar" class="p-button-sm" (click)="goTo('/client/appointments')"></button>
+                        <button pButton type="button" [label]="t('dashboard.hero_cta_pos')" icon="pi pi-shopping-cart" class="p-button-sm p-button-outlined" (click)="goTo('/client/pos')"></button>
                     </div>
                 </div>
                 <div class="dashboard-hero__aside">
@@ -47,11 +47,11 @@ import { LocaleService } from '../../../core/services/locale/locale.service';
                     </div>
                     <div class="dashboard-hero__stat">
                         <strong>{{ appointmentCount() }}</strong>
-                        <span>Citas visibles hoy</span>
+                        <span>{{ t('dashboard.hero_stat_appointments') }}</span>
                     </div>
                     <div class="dashboard-hero__stat">
                         <strong>{{ overdueCount() }}</strong>
-                        <span>Pendientes urgentes</span>
+                        <span>{{ t('dashboard.hero_stat_overdue') }}</span>
                     </div>
                 </div>
             </section>
@@ -272,7 +272,7 @@ export class ClientDashboard implements OnInit, OnDestroy {
 
         if (upcoming.length > 0) {
             const next = upcoming[0];
-            const time = new Date(next.date_time).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+            const time = this.localeService.formatTime(next.date_time);
             this.messageService.add({
                 severity: 'warn',
                 summary: this.t('dashboard.notifications.upcoming_appointment'),
@@ -298,18 +298,20 @@ export class ClientDashboard implements OnInit, OnDestroy {
     }
 
     private readonly roleNames = {
-        'SuperAdmin': 'Super Administrador',
-        'CLIENT_ADMIN': 'Administrador',
-        'Client-Admin': 'Administrador', 
-        'CLIENT_STAFF': 'Empleado',
-        'Client-Staff': 'Empleado',
-        'Cajera': 'Cajera',
-        'Manager': 'Manager',
-        'Estilista': 'Estilista'
+        'SuperAdmin': 'dashboard.role.super_admin',
+        'SUPER_ADMIN': 'dashboard.role.super_admin',
+        'CLIENT_ADMIN': 'dashboard.role.client_admin',
+        'Client-Admin': 'dashboard.role.client_admin', 
+        'CLIENT_STAFF': 'dashboard.role.client_staff',
+        'Client-Staff': 'dashboard.role.client_staff',
+        'Cajera': 'dashboard.role.cashier',
+        'Manager': 'dashboard.role.manager',
+        'Estilista': 'dashboard.role.stylist'
     } as const;
 
     getRoleDisplayName(role: string): string {
-        return this.roleNames[role as keyof typeof this.roleNames] || role;
+        const key = this.roleNames[role as keyof typeof this.roleNames];
+        return key ? this.t(key) : role;
     }
 
     appointmentCount(): number {
@@ -324,9 +326,11 @@ export class ClientDashboard implements OnInit, OnDestroy {
         const appointmentCount = this.appointmentCount();
         const overdueCount = this.overdueCount();
         if (appointmentCount === 0 && overdueCount === 0) {
-            return 'Tu panel esta listo. Revisa la operacion del negocio, abre el POS o navega directo a la agenda.';
+            return this.t('dashboard.hero_summary_empty');
         }
-        return `Hoy tienes ${appointmentCount} citas visibles y ${overdueCount} alertas que conviene revisar primero. Usa este panel como centro de control rapido del negocio.`;
+        return this.t('dashboard.hero_summary_active')
+            .replace('{appointments}', String(appointmentCount))
+            .replace('{overdue}', String(overdueCount));
     }
 
     goTo(route: string): void {
@@ -373,16 +377,16 @@ export class ClientDashboard implements OnInit, OnDestroy {
     private buildTodayAppointmentsDetail(appointments: any[]): string {
         const maxItems = 3;
         const lines = appointments.slice(0, maxItems).map((apt) => {
-            const time = new Date(apt.date_time).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+            const time = this.localeService.formatTime(apt.date_time);
             const client = apt.client_name || `Cliente #${apt.client}`;
             const service = apt.service_name || 'Servicio no especificado';
             return `• ${time} - ${client} - ${service}`;
         });
 
         if (appointments.length > maxItems) {
-            lines.push(`... y ${appointments.length - maxItems} más en /client/appointments`);
+            lines.push(this.t('dashboard.notifications.more').replace('{count}', String(appointments.length - maxItems)));
         } else {
-            lines.push('Ver agenda completa en /client/appointments');
+            lines.push(this.t('dashboard.notifications.view_full_agenda'));
         }
 
         return lines.join('\n');

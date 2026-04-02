@@ -52,27 +52,61 @@ interface StockMovementRow {
     ],
     providers: [MessageService, ConfirmationService],
     template: `
-        <div class="card">
-            <!-- Hero Header -->
-            <div class="rounded-2xl p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-indigo-600 rounded-xl shadow">
-                            <i class="pi pi-box text-4xl text-white"></i>
+        <div class="space-y-6">
+            <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div class="grid gap-6 px-6 py-7 xl:grid-cols-[1.35fr,0.85fr] xl:px-8">
+                    <div class="space-y-5">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                            Inventario operativo
                         </div>
                         <div>
-                            <h2 class="text-3xl font-bold text-slate-900 dark:text-white">Gestión de Productos</h2>
-                            <p class="text-slate-600 dark:text-slate-400 mt-1">Administra tu inventario de productos de barbería</p>
+                            <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Gestión de productos</h2>
+                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Controla stock, categorías, movimientos y productos con baja disponibilidad desde una vista más clara.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-box text-xs"></i>
+                                {{ productos().length }} productos
+                            </div>
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-check-circle text-xs"></i>
+                                {{ getActiveProductsCount() }} activos
+                            </div>
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-exclamation-triangle text-xs"></i>
+                                {{ productosStockBajo().length }} con stock bajo
+                            </div>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button pButton label="Ajustar Stock" icon="pi pi-refresh" (click)="abrirDialogoStock()" 
-                                class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
-                        <button pButton label="Nuevo Producto" icon="pi pi-plus" (click)="abrirDialogo()" 
-                                class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
+
+                    <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Pulso del inventario</div>
+                                <div class="mt-2 text-2xl font-black">Productos y existencias</div>
+                            </div>
+                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+                                <i class="pi pi-box text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+                            {{ getProductsNarrative() }}
+                        </div>
                     </div>
                 </div>
-            </div>
+                <div class="border-t border-slate-200/80 px-6 py-5 dark:border-slate-800 xl:px-8">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex flex-wrap gap-2">
+                            <button pButton label="Ajustar stock" icon="pi pi-refresh" (click)="abrirDialogoStock()" class="p-button-outlined"></button>
+                            <button pButton label="Nuevo producto" icon="pi pi-plus" (click)="abrirDialogo()"></button>
+                        </div>
+                        <div class="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                            Revisa alertas y movimientos antes de llegar a quiebres de stock.
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- Alertas de Stock Bajo -->
             <div class="mb-4" *ngIf="productosStockBajo().length > 0">
@@ -91,17 +125,19 @@ interface StockMovementRow {
                 </div>
             </div>
 
+            <section class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <p-table [value]="productos()" [loading]="cargando()"
                      [globalFilterFields]="['name', 'sku', 'category']"
                      #dt>
                 <ng-template pTemplate="caption">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">
+                    <div class="flex flex-col gap-3 p-2 lg:flex-row lg:items-center lg:justify-between">
+                        <span class="text-sm text-gray-600 dark:text-slate-300">
                             Total: {{productos().length}} productos
                         </span>
-                        <span class="p-input-icon-left">
+                        <span class="p-input-icon-left w-full lg:w-80">
                             <i class="pi pi-search"></i>
                             <input pInputText type="text" placeholder="Buscar productos..."
+                                   class="w-full"
                                    (input)="dt.filterGlobal($any($event.target).value, 'contains')">
                         </span>
                     </div>
@@ -178,6 +214,7 @@ interface StockMovementRow {
                     <tr><td colspan="7" class="text-center py-4">No hay productos registrados</td></tr>
                 </ng-template>
             </p-table>
+            </section>
 
             <!-- Historial de Movimientos de Stock -->
             <div class="mt-6">
@@ -219,10 +256,17 @@ interface StockMovementRow {
             </div>
 
             <!-- Diálogo de Producto -->
-            <p-dialog [header]="productoSeleccionado ? 'Editar Producto' : 'Nuevo Producto'"
-                      [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '600px'}"
+            <p-dialog [header]="productoSeleccionado ? 'Editar producto' : 'Nuevo producto'"
+                      [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '680px'}"
+                      styleClass="shadow-2xl"
                       [closable]="!guardando()" [closeOnEscape]="!guardando()">
                 <form [formGroup]="formulario" class="grid gap-4">
+                    <div class="rounded-2xl bg-slate-950 p-4 text-white">
+                        <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Catalogo e inventario</div>
+                        <div class="mt-2 text-xl font-black">{{ productoSeleccionado ? 'Actualizar producto' : 'Registrar nuevo producto' }}</div>
+                        <div class="mt-2 text-sm text-slate-300">Mantén precio, stock e imagen listos para venta y control de existencias.</div>
+                    </div>
+
                     <div>
                         <label class="block font-medium mb-1">Nombre del Producto *</label>
                         <input pInputText formControlName="name" class="w-full"
@@ -312,13 +356,20 @@ interface StockMovementRow {
             </p-dialog>
 
             <!-- Diálogo de Ajuste de Stock -->
-            <p-dialog header="Ajustar Stock"
-                      [(visible)]="mostrarDialogoStock" [modal]="true" [style]="{width: '400px'}"
+            <p-dialog header="Ajustar stock"
+                      [(visible)]="mostrarDialogoStock" [modal]="true" [style]="{width: '500px'}"
+                      styleClass="shadow-2xl"
                       [closable]="!guardando()" [closeOnEscape]="!guardando()">
                 <form [formGroup]="formularioStock" class="grid gap-4">
+                    <div class="rounded-2xl bg-slate-950 p-4 text-white">
+                        <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Movimiento de inventario</div>
+                        <div class="mt-2 text-xl font-black">Registrar ajuste</div>
+                        <div class="mt-2 text-sm text-slate-300">Aplica entradas o salidas con motivo claro para mantener el historial consistente.</div>
+                    </div>
+
                     <div *ngIf="productoStock">
                         <label class="block font-medium mb-1">Producto</label>
-                        <div class="p-3 bg-gray-50 rounded">
+                        <div class="p-3 bg-gray-50 dark:bg-slate-800/70 rounded-xl">
                             <div class="font-medium">{{productoStock.name}}</div>
                             <div class="text-sm text-gray-500">Stock actual: {{productoStock.stock}}</div>
                         </div>
@@ -371,6 +422,19 @@ interface StockMovementRow {
 export class ProductsManagement implements OnInit {
     private inventoryService = inject(InventoryService);
     private settingsService = inject(SettingsService);
+
+    getActiveProductsCount(): number {
+        return this.productos().filter((product) => product.is_active).length;
+    }
+
+    getProductsNarrative(): string {
+        const total = this.productos().length;
+        if (!total) {
+            return 'Aun no hay productos cargados. Agrega inventario para empezar a controlar stock, ventas y movimientos.';
+        }
+
+        return `${this.getActiveProductsCount()} de ${total} productos siguen activos y ${this.productosStockBajo().length} ya requieren atencion por stock bajo.`;
+    }
     private messageService = inject(MessageService);
     private confirmationService = inject(ConfirmationService);
     private fb = inject(FormBuilder);

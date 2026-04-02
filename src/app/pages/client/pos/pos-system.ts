@@ -192,6 +192,49 @@ export class PosSystem implements OnInit, OnDestroy {
         };
         return methods[method];
     }
+
+    getSelectedPaymentMethodLabel(): string {
+        const method = this.metodoPagoSeleccionado();
+        return method ? this.getPaymentMethodName(method as PaymentMethod) : 'Sin metodo';
+    }
+
+    getSaleReadinessLabel(): string {
+        if (this.procesandoVenta) {
+            return 'Procesando venta';
+        }
+
+        if (this.puedeVenderComputed()) {
+            return 'Listo para cobrar';
+        }
+
+        if (!this.cajaAbierta()) {
+            return 'Abre caja para comenzar';
+        }
+
+        if (this.carrito().length === 0) {
+            return 'Agrega productos o servicios';
+        }
+
+        if (!this.metodoPagoSeleccionado()) {
+            return 'Selecciona un metodo de pago';
+        }
+
+        if (this.tieneServicios() && !this.empleadoSeleccionado()?.id) {
+            return 'Asigna un empleado';
+        }
+
+        return 'Completa los datos de la venta';
+    }
+
+    getSaleReadinessClass(): string {
+        if (this.procesandoVenta) {
+            return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20';
+        }
+
+        return this.puedeVenderComputed()
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20'
+            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20';
+    }
 getSubtotal(venta: SaleWithDetailsDto): number {
   return venta.details.reduce(
     (acc, item) => acc + item.price * item.quantity,

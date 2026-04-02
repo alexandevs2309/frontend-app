@@ -30,20 +30,45 @@ interface ScheduleFormState {
     imports: [CommonModule, FormsModule, ConfirmDialogModule],
     providers: [ConfirmationService],
     template: `
-        <div class="p-4 md:p-6">
+        <div class="p-4 md:p-6 space-y-6">
             <p-confirmDialog></p-confirmDialog>
 
-            <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-6 rounded-xl mb-6">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-teal-600 rounded-xl">
-                        <i class="pi pi-calendar-plus text-white text-3xl"></i>
+            <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div class="grid gap-6 px-6 py-7 xl:grid-cols-[1.35fr,0.85fr] xl:px-8">
+                    <div class="space-y-5">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                            Operación del equipo
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Turnos y asistencia</h2>
+                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Gestiona horarios del equipo, controla entradas y salidas y mantén visible la cobertura operativa del día.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-calendar-plus text-xs"></i>
+                                {{ schedules.length }} turnos
+                            </div>
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-users text-xs"></i>
+                                {{ employees.length }} empleados
+                            </div>
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-clock text-xs"></i>
+                                {{ attendanceRecords.length }} registros de hoy
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Turnos y Asistencia</h2>
-                        <p class="text-slate-600 dark:text-slate-400 mt-1">Gestiona horarios del equipo y marca entrada/salida.</p>
+
+                    <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Resumen operativo</div>
+                        <div class="mt-2 text-2xl font-black">Cobertura del equipo</div>
+                        <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+                            {{ getSchedulesNarrative() }}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700 lg:col-span-1">
@@ -221,6 +246,14 @@ export class SchedulesManagement implements OnInit {
     ];
 
     form: ScheduleFormState = this.createEmptyForm();
+
+    getSchedulesNarrative(): string {
+        if (!this.employees.length) {
+            return 'Aun no hay empleados cargados para asignar turnos o registrar asistencia.';
+        }
+
+        return `${this.schedules.length} turnos registrados y ${this.attendanceRecords.length} movimientos recientes de asistencia visibles para seguimiento operativo.`;
+    }
 
     ngOnInit(): void {
         this.currentRole = this.authService.getCurrentUserRole();

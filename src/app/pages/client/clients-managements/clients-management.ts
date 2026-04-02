@@ -41,35 +41,72 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
     providers: [MessageService, ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="card">
-            <!-- Hero Header -->
-            <div class="rounded-2xl p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-indigo-600 rounded-xl shadow">
-                            <i class="pi pi-users text-4xl text-white"></i>
+        <div class="space-y-6">
+            <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div class="grid gap-6 px-6 py-7 xl:grid-cols-[1.35fr,0.85fr] xl:px-8">
+                    <div class="space-y-5">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                            Base de clientes
                         </div>
                         <div>
-                            <h2 class="text-3xl font-bold text-slate-900 dark:text-white">Gestión de Clientes</h2>
-                            <p class="text-slate-600 dark:text-slate-400 mt-1">Administra la base de datos de clientes de tu barbería</p>
+                            <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Gestión de clientes</h2>
+                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Mantén visible quién compra, cómo contactarlo y qué clientes siguen activos dentro del negocio.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-users text-xs"></i>
+                                {{ clientes().length }} clientes
+                            </div>
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-check-circle text-xs"></i>
+                                {{ getActiveClientsCount() }} activos
+                            </div>
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-id-card text-xs"></i>
+                                {{ getContactableClientsCount() }} con contacto
+                            </div>
                         </div>
                     </div>
-                    <button pButton label="Nuevo Cliente" icon="pi pi-plus" (click)="abrirDialogo()" 
-                            class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
-                </div>
-            </div>
 
+                    <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Resumen comercial</div>
+                                <div class="mt-2 text-2xl font-black">Relación con clientes</div>
+                            </div>
+                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+                                <i class="pi pi-users text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+                            {{ getClientsNarrative() }}
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-200/80 px-6 py-5 dark:border-slate-800 xl:px-8">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <button pButton label="Nuevo cliente" icon="pi pi-plus" (click)="abrirDialogo()"></button>
+                        <div class="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                            Mantén correos, teléfonos y notas listos para seguimiento.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <p-table [value]="clientes()" [loading]="cargando()"
                      [globalFilterFields]="['full_name', 'email', 'phone']"
                      #dt>
                 <ng-template pTemplate="caption">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">
+                    <div class="flex flex-col gap-3 p-2 lg:flex-row lg:items-center lg:justify-between">
+                        <span class="text-sm text-gray-600 dark:text-slate-300">
                             Total: {{clientes().length}} clientes
                         </span>
-                        <span class="p-input-icon-left">
+                        <span class="p-input-icon-left w-full lg:w-80">
                             <i class="pi pi-search"></i>
                             <input pInputText type="text" placeholder="Buscar clientes..."
+                                   class="w-full"
                                    (input)="dt.filterGlobal($any($event.target).value, 'contains')">
                         </span>
                     </div>
@@ -147,6 +184,7 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
                     <tr><td colspan="6" class="text-center py-4">No hay clientes registrados</td></tr>
                 </ng-template>
             </p-table>
+            </section>
 
             <p-dialog [header]="clienteSeleccionado ? 'Editar Cliente' : 'Nuevo Cliente'"
                       [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '600px'}"
@@ -238,6 +276,23 @@ export class ClientsManagement implements OnInit {
     mostrarDialogo = false;
     clienteSeleccionado: ClientDto | null = null;
     todayDate = new Date();
+
+    getActiveClientsCount(): number {
+        return this.clientes().filter((client) => client.is_active).length;
+    }
+
+    getContactableClientsCount(): number {
+        return this.clientes().filter((client) => !!client.email || !!client.phone).length;
+    }
+
+    getClientsNarrative(): string {
+        const total = this.clientes().length;
+        if (!total) {
+            return 'Aun no hay clientes registrados. Agrega el primero para empezar a construir historial, contacto y seguimiento comercial.';
+        }
+
+        return `${this.getActiveClientsCount()} de ${total} clientes siguen activos y ${this.getContactableClientsCount()} tienen un medio de contacto disponible para recordatorios o promociones.`;
+    }
 
     // Utility function to normalize API responses
     private normalizeArray<T>(response: any): T[] {

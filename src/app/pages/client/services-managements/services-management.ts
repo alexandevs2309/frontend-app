@@ -40,35 +40,72 @@ import { SettingsService } from '../../../core/services/settings/settings.servic
     ],
     providers: [MessageService, ConfirmationService],
     template: `
-        <div class="card">
-            <!-- Hero Header -->
-            <div class="rounded-2xl p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-indigo-600 rounded-xl shadow">
-                            <i class="pi pi-star text-4xl text-white"></i>
+        <div class="space-y-6">
+            <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div class="grid gap-6 px-6 py-7 xl:grid-cols-[1.35fr,0.85fr] xl:px-8">
+                    <div class="space-y-5">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                            Oferta de servicios
                         </div>
                         <div>
-                            <h2 class="text-3xl font-bold text-slate-900 dark:text-white">Gestión de Servicios</h2>
-                            <p class="text-slate-600 dark:text-slate-400 mt-1">Administra los servicios que ofrece tu barbería</p>
+                            <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Gestión de servicios</h2>
+                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Define qué ofreces, cómo se agrupa cada servicio y qué permanece activo para agenda y venta.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-star text-xs"></i>
+                                {{ servicios().length }} servicios
+                            </div>
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-check-circle text-xs"></i>
+                                {{ getActiveServicesCount() }} activos
+                            </div>
+                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                                <i class="pi pi-tags text-xs"></i>
+                                {{ categoriasDisponibles.length }} categorias
+                            </div>
                         </div>
                     </div>
-                    <button pButton label="Nuevo Servicio" icon="pi pi-plus" (click)="abrirDialogo()" 
-                            class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
-                </div>
-            </div>
 
+                    <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Resumen del catalogo</div>
+                                <div class="mt-2 text-2xl font-black">Oferta comercial</div>
+                            </div>
+                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+                                <i class="pi pi-star text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+                            {{ getServicesNarrative() }}
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-200/80 px-6 py-5 dark:border-slate-800 xl:px-8">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <button pButton label="Nuevo servicio" icon="pi pi-plus" (click)="abrirDialogo()"></button>
+                        <div class="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                            Mantén precios, duración y categorías alineados con la agenda y el POS.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <p-table [value]="servicios()" [loading]="cargando()"
                      [globalFilterFields]="['name', 'category', 'description']"
                      #dt>
                 <ng-template pTemplate="caption">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">
+                    <div class="flex flex-col gap-3 p-2 lg:flex-row lg:items-center lg:justify-between">
+                        <span class="text-sm text-gray-600 dark:text-slate-300">
                             Total: {{servicios().length}} servicios
                         </span>
-                        <span class="p-input-icon-left">
+                        <span class="p-input-icon-left w-full lg:w-80">
                             <i class="pi pi-search"></i>
                             <input pInputText type="text" placeholder="Buscar servicios..."
+                                   class="w-full"
                                    (input)="dt.filterGlobal($any($event.target).value, 'contains')">
                         </span>
                     </div>
@@ -130,6 +167,7 @@ import { SettingsService } from '../../../core/services/settings/settings.servic
                     <tr><td colspan="6" class="text-center py-4">No hay servicios registrados</td></tr>
                 </ng-template>
             </p-table>
+            </section>
 
             <p-dialog [header]="servicioSeleccionado ? 'Editar Servicio' : 'Nuevo Servicio'"
                       [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '500px'}"
@@ -213,6 +251,19 @@ export class ServicesManagement implements OnInit {
     mostrarDialogo = false;
     servicioSeleccionado: ServiceDto | null = null;
     categoriasDisponibles: ServiceCategoryDto[] = [];
+
+    getActiveServicesCount(): number {
+        return this.servicios().filter((service) => service.is_active).length;
+    }
+
+    getServicesNarrative(): string {
+        const total = this.servicios().length;
+        if (!total) {
+            return 'Aun no hay servicios cargados. Crea el primero para empezar a vender, agendar y asignar trabajo al equipo.';
+        }
+
+        return `${this.getActiveServicesCount()} de ${total} servicios estan activos y ${this.categoriasDisponibles.length} categorias ayudan a ordenar la oferta del negocio.`;
+    }
 
     // Utility function to normalize API responses
     private normalizeArray<T>(response: any): T[] {

@@ -23,33 +23,63 @@ import { forkJoin } from 'rxjs';
     ],
     template: `
         <div class="grid grid-cols-12 gap-6">
-            <!-- Header -->
             <div class="col-span-12">
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                        📊 Reportes Financieros SaaS
-                    </h1>
-                    <p class="text-gray-600 dark:text-gray-400">
-                        Análisis completo de ingresos, crecimiento y métricas clave del negocio
-                    </p>
-                </div>
+                <section class="overflow-hidden rounded-[2rem] border border-surface-200/70 bg-surface-0 shadow-[0_24px_80px_-42px_rgba(15,23,42,0.45)] dark:border-surface-800 dark:bg-surface-900">
+                    <div class="relative overflow-hidden px-8 py-8 lg:px-10">
+                        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.14),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.15),_transparent_36%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_38%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.14),_transparent_34%),linear-gradient(135deg,_rgba(15,23,42,0.92),_rgba(30,41,59,0.86))]"></div>
+                        <div class="relative grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.9fr)] lg:items-start">
+                            <div>
+                                <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-surface-200 bg-surface-50/90 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-surface-600 dark:border-surface-700 dark:bg-surface-800/80 dark:text-surface-300">
+                                    <i class="pi pi-chart-line text-primary"></i>
+                                    SaaS analytics
+                                </div>
+                                <h1 class="text-3xl font-semibold tracking-tight text-surface-950 dark:text-surface-0 lg:text-4xl">
+                                    Reportes financieros y crecimiento del negocio
+                                </h1>
+                                <p class="mt-3 max-w-2xl text-base leading-7 text-surface-600 dark:text-surface-300">
+                                    MRR, churn, cobranza y distribución por planes en una vista más ejecutiva y menos administrativa.
+                                </p>
+                            </div>
+                            <div class="rounded-3xl border border-surface-200 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-surface-700 dark:bg-surface-800/80">
+                                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Snapshot</div>
+                                <div class="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                                    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/60 dark:bg-emerald-900/10">
+                                        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">MRR</div>
+                                        <div class="mt-2 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{{(metrics()?.mrr || 0) | currency:'USD':'symbol':'1.0-0'}}</div>
+                                    </div>
+                                    <div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900/60 dark:bg-sky-900/10">
+                                        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">Activos</div>
+                                        <div class="mt-2 text-2xl font-semibold text-sky-900 dark:text-sky-100">{{metrics()?.active_tenants || 0}}</div>
+                                    </div>
+                                    <div class="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 dark:border-violet-900/60 dark:bg-violet-900/10">
+                                        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">ARR</div>
+                                        <div class="mt-2 text-2xl font-semibold text-violet-900 dark:text-violet-100">{{getARR() | currency:'USD':'symbol':'1.0-0'}}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
 
-            <!-- Filters -->
             <div class="col-span-12">
-                <p-card header="Filtros de Reporte">
+                <div class="rounded-[1.5rem] border border-surface-200 bg-surface-0 p-6 shadow-sm dark:border-surface-800 dark:bg-surface-900">
+                    <div class="mb-5">
+                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Filtros</div>
+                        <h2 class="mt-2 text-xl font-semibold text-surface-950 dark:text-surface-0">Configura el período del reporte</h2>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-sm font-medium mb-2">Período</label>
+                            <label class="mb-2 block text-sm font-medium text-surface-700 dark:text-surface-300">Período</label>
                             <p-select [(ngModel)]="selectedPeriod" name="selectedPeriod" [options]="periodOptions"
                                      optionLabel="label" optionValue="value" placeholder="Seleccionar período" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-2">Fecha Inicio</label>
+                            <label class="mb-2 block text-sm font-medium text-surface-700 dark:text-surface-300">Fecha Inicio</label>
                             <p-datepicker [(ngModel)]="startDate" name="startDate" dateFormat="dd/mm/yy" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-2">Fecha Fin</label>
+                            <label class="mb-2 block text-sm font-medium text-surface-700 dark:text-surface-300">Fecha Fin</label>
                             <p-datepicker [(ngModel)]="endDate" name="endDate" dateFormat="dd/mm/yy" />
                         </div>
                         <div class="flex items-end">
@@ -57,7 +87,7 @@ import { forkJoin } from 'rxjs';
                                      (onClick)="generateReport()" [loading]="loading()" />
                         </div>
                     </div>
-                </p-card>
+                </div>
             </div>
 
             <!-- KPI Cards -->

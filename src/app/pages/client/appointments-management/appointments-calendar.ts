@@ -195,7 +195,7 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
 
     ngOnInit(): void {
         this.canDeleteAppointments = this.computeCanDeleteAppointments();
-        this.cargarCitas();
+        this.cargarCitas(true);
         this.appointmentsUiService.refresh$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.cargarCitas(true);
         });
@@ -210,15 +210,17 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
         this.cargarCitas();
     }
 
-    abrirFormulario(): void {
+    async abrirFormulario(): Promise<void> {
+        await this.appointmentsDataService.load(true);
         this.citaSeleccionada = null;
         this.mostrarFormulario = true;
     }
 
-    abrirEdicion(): void {
+    async abrirEdicion(): Promise<void> {
         if (!this.citaSeleccionada) {
             return;
         }
+        await this.appointmentsDataService.load(true);
         this.mostrarDetalle = false;
         this.mostrarFormulario = true;
     }

@@ -35,95 +35,188 @@ import { environment } from '../../../../environments/environment';
     providers: [MessageService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
+<div class="w-full p-6 space-y-8 transition-colors">
+  <section class="overflow-hidden rounded-[2rem] border border-white/50 bg-white shadow-sm dark:border-slate-700/80 dark:bg-slate-900">
+    <div class="grid gap-8 px-6 py-8 xl:grid-cols-[1.45fr,0.8fr] xl:px-8">
+      <div class="space-y-5">
+        <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+          Reportes activos
+        </div>
 
-<div class="p-6 space-y-10 transition-colors">
-  <!-- Header + Filtros -->
-  <div class="rounded-2xl p-6 shadow-sm transition-colors bg-white dark:bg-gray-800">
-    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
-      <div>
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Reportes y Análisis</h3>
-        <p class="text-gray-600 dark:text-gray-300 mt-1">Visualiza el rendimiento de tu negocio</p>
+        <div>
+          <h3 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white xl:text-[2.6rem]">Centro de reportes</h3>
+          <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
+            Revisa ingresos, tendencia mensual y el pulso comercial del negocio desde una sola vista.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+          <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+            <i class="pi pi-calendar text-xs"></i>
+            {{ getActiveRangeLabel() }}
+          </div>
+          <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+            <i class="pi pi-chart-line text-xs"></i>
+            {{ filteredRevenue().length }} meses visibles
+          </div>
+        </div>
       </div>
 
-      <div class="flex flex-col sm:flex-row gap-3">
-        <!-- Filtros -->
-        <form [formGroup]="filtrosForm" class="flex gap-3">
-          <p-datePicker formControlName="fechaInicio" placeholder="Fecha inicio" [showIcon]="true" dateFormat="dd/mm/yy" class="w-40"></p-datePicker>
-          <p-datePicker formControlName="fechaFin" placeholder="Fecha fin" [showIcon]="true" dateFormat="dd/mm/yy" class="w-40"></p-datePicker>
-          <button pButton type="button" label="Filtrar" icon="pi pi-filter" (click)="aplicarFiltros()" class="p-button-primary"></button>
-          <button pButton type="button" label="Descargar PDF" icon="pi pi-file-pdf" class="p-button-danger" (click)="descargarReportePDF()"></button>
-        </form>
+      <div class="rounded-[1.6rem] bg-slate-950 p-6 text-white shadow-xl">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Resumen ejecutivo</div>
+            <div class="mt-2 text-2xl font-black">{{ branding().businessName }}</div>
+          </div>
+          <img *ngIf="branding().logoUrl" [src]="branding().logoUrl!" alt="Logo negocio" class="h-11 w-11 rounded-2xl bg-white/10 object-contain p-2" />
+        </div>
+
+        <div class="mt-6 grid gap-3 sm:grid-cols-2">
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Mejor mes</div>
+            <div class="mt-1 text-lg font-bold">{{ getBestMonthLabel() }}</div>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Pico de ingresos</div>
+            <div class="mt-1 text-lg font-bold">{{ formatearMoneda(getMaxRevenue()) }}</div>
+          </div>
+        </div>
+
+        <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+          {{ getReportNarrative() }}
+        </div>
       </div>
     </div>
-  </div>
+
+    <div class="border-t border-slate-200/80 px-6 py-6 dark:border-slate-800 lg:px-8">
+      <form [formGroup]="filtrosForm" class="grid gap-3 xl:grid-cols-[1fr,1fr,auto,auto]">
+        <p-datePicker formControlName="fechaInicio" placeholder="Fecha inicio" [showIcon]="true" dateFormat="dd/mm/yy"></p-datePicker>
+        <p-datePicker formControlName="fechaFin" placeholder="Fecha fin" [showIcon]="true" dateFormat="dd/mm/yy"></p-datePicker>
+        <button pButton type="button" label="Aplicar filtro" icon="pi pi-filter" (click)="aplicarFiltros()"></button>
+        <button pButton type="button" label="Exportar PDF" icon="pi pi-file-pdf" class="p-button-danger" (click)="descargarReportePDF()"></button>
+      </form>
+    </div>
+  </section>
 
   @if (loading()) {
-    <div class="rounded-2xl p-10 shadow-sm bg-white dark:bg-gray-800 text-center text-gray-500 dark:text-gray-300">
+    <div class="rounded-[1.75rem] border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
       Cargando reportes...
     </div>
   } @else if (loadError(); as errorMessage) {
-    <div class="rounded-2xl p-10 shadow-sm bg-white dark:bg-gray-800 text-center">
+    <div class="rounded-[1.75rem] border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div class="text-lg font-semibold text-red-600 mb-2">No se pudieron cargar los reportes</div>
-      <p class="text-gray-600 dark:text-gray-300 mb-4">{{ errorMessage }}</p>
+      <p class="text-slate-600 dark:text-slate-300 mb-4">{{ errorMessage }}</p>
       <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="cargarDatos()"></button>
     </div>
   } @else {
-  <!-- KPIs REALES -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div *ngFor="let card of kpiCards" class="rounded-2xl p-6 shadow-sm transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md bg-white dark:bg-gray-800">
-      <div class="text-gray-700 dark:text-gray-300 font-medium text-lg mb-2">{{ card.label }}</div>
-      <div [ngClass]="card.color" class="font-bold text-3xl mb-2">{{ card.value }}</div>
-      <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-        <span>{{ card.trendText }}</span>
-      </div>
-    </div>
-  </div>
+    <section class="grid grid-cols-1 gap-5 md:grid-cols-2 2xl:grid-cols-4">
+      <article *ngFor="let card of kpiCards" class="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm transition-transform duration-150 hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-900">
+        <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ card.label }}</div>
+        <div [ngClass]="card.color" class="mt-3 text-3xl font-black tracking-tight">{{ card.value }}</div>
+        <div class="mt-4 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+          <span>{{ card.trendText }}</span>
+          <i class="pi pi-arrow-up-right text-xs text-slate-400"></i>
+        </div>
+      </article>
+    </section>
 
-  <!-- Gráfico de Ingresos REALES -->
-  <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800 transition-colors">
-    <h5 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Ingresos por Mes (Últimos 6 meses)</h5>
-    @if (filteredRevenue().length > 0) {
-      <div class="h-72">
-        <p-chart type="line" [data]="chartIngresos" [options]="chartOptions"></p-chart>
-      </div>
-    } @else {
-      <div class="h-72 flex items-center justify-center text-gray-500 dark:text-gray-400">
-        No hay datos en el rango seleccionado.
-      </div>
-    }
-  </div>
+    <section class="grid gap-6 2xl:grid-cols-[1.3fr,0.7fr]">
+      <article class="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div class="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h5 class="text-xl font-bold text-slate-900 dark:text-white">Tendencia de ingresos</h5>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Vista de comportamiento mensual en el rango actual.</p>
+          </div>
+          <div class="rounded-2xl bg-slate-100 px-3 py-2 text-right text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+            <div class="font-semibold uppercase tracking-[0.2em]">Rango</div>
+            <div class="mt-1 text-sm font-bold text-slate-800 dark:text-white">{{ getActiveRangeLabel() }}</div>
+          </div>
+        </div>
 
-  <div class="rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800 transition-colors">
-    <div class="flex items-center justify-between mb-4">
-      <h5 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Detalle mensual</h5>
-      <span class="text-sm text-gray-500 dark:text-gray-400">{{ filteredRevenue().length }} meses</span>
-    </div>
-    @if (filteredRevenue().length > 0) {
-      <p-table [value]="filteredRevenue()" responsiveLayout="scroll">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Mes</th>
-            <th>Ingresos</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-row>
-          <tr>
-            <td>{{ row.month || 'Mes' }}</td>
-            <td>{{ formatearMoneda(toRevenueValue(row.revenue)) }}</td>
-          </tr>
-        </ng-template>
-      </p-table>
-    } @else {
-      <div class="py-10 text-center text-gray-500 dark:text-gray-400">
-        No hay ingresos para mostrar en este periodo.
+        @if (filteredRevenue().length > 0) {
+          <div class="h-[22rem]">
+            <p-chart type="line" [data]="chartIngresos" [options]="chartOptions"></p-chart>
+          </div>
+        } @else {
+          <div class="flex h-[22rem] items-center justify-center rounded-2xl border border-dashed border-slate-300 text-slate-500 dark:border-slate-700 dark:text-slate-400">
+            No hay datos en el rango seleccionado.
+          </div>
+        }
+      </article>
+
+      <article class="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div class="mb-5">
+          <h5 class="text-xl font-bold text-slate-900 dark:text-white">Lectura rápida</h5>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Qué está pasando en el periodo que estás mirando.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div class="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
+            <div class="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Mes líder</div>
+            <div class="mt-2 text-lg font-bold text-slate-900 dark:text-white">{{ getBestMonthLabel() }}</div>
+            <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ formatearMoneda(getMaxRevenue()) }}</div>
+          </div>
+
+          <div class="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
+            <div class="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Promedio visible</div>
+            <div class="mt-2 text-lg font-bold text-slate-900 dark:text-white">{{ formatearMoneda(getAverageRevenue()) }}</div>
+            <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Calculado sobre meses con ingresos.</div>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+            <div class="text-sm leading-6 text-slate-600 dark:text-slate-300">
+              {{ getReportNarrative() }}
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div class="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <h5 class="text-xl font-bold text-slate-900 dark:text-white">Detalle mensual</h5>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Comparativa de ingresos dentro del rango filtrado.</p>
+        </div>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">{{ filteredRevenue().length }} meses</span>
       </div>
-    }
-  </div>
+
+      @if (filteredRevenue().length > 0) {
+        <p-table [value]="filteredRevenue()" responsiveLayout="scroll" styleClass="p-datatable-sm">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Mes</th>
+              <th>Ingresos</th>
+              <th>Participación</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>
+                <div class="font-semibold text-slate-900 dark:text-white">{{ row.month || 'Mes' }}</div>
+              </td>
+              <td>
+                <div class="font-semibold text-slate-900 dark:text-white">{{ formatearMoneda(toRevenueValue(row.revenue)) }}</div>
+              </td>
+              <td class="min-w-[220px]">
+                <div class="flex items-center gap-3">
+                  <p-progressBar [value]="getRevenueShare(row.revenue)" [showValue]="false" styleClass="flex-1 h-2"></p-progressBar>
+                  <span class="text-sm font-medium text-slate-500 dark:text-slate-300">{{ getRevenueShare(row.revenue) }}%</span>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="py-12 text-center text-slate-500 dark:text-slate-400">
+          No hay ingresos para mostrar en este periodo.
+        </div>
+      }
+    </section>
   }
-
 </div>
 <p-toast></p-toast>
-
     `
 })
 export class ClientReports implements OnInit {
@@ -155,7 +248,7 @@ export class ClientReports implements OnInit {
         {
             label: 'Ingresos del Mes',
             value: '$0.00',
-            color: 'text-indigo-600',
+            color: 'text-indigo-600 dark:text-indigo-300',
             trendIcon: '',
             trendColor: '',
             trendText: 'Mes actual'
@@ -163,7 +256,7 @@ export class ClientReports implements OnInit {
         {
             label: 'Ingresos Totales', 
             value: '0',
-            color: 'text-indigo-600',
+            color: 'text-sky-600 dark:text-sky-300',
             trendIcon: '',
             trendColor: '',
             trendText: 'Últimos 6 meses'
@@ -171,7 +264,7 @@ export class ClientReports implements OnInit {
         {
             label: 'Promedio Mensual',
             value: '0',
-            color: 'text-indigo-600',
+            color: 'text-violet-600 dark:text-violet-300',
             trendIcon: '',
             trendColor: '',
             trendText: 'Últimos 6 meses'
@@ -179,7 +272,7 @@ export class ClientReports implements OnInit {
         {
             label: 'Meses Activos',
             value: '0',
-            color: 'text-slate-700 dark:text-slate-300',
+            color: 'text-slate-700 dark:text-slate-200',
             trendIcon: '',
             trendColor: '',
             trendText: 'Con ventas'
@@ -383,6 +476,65 @@ export class ClientReports implements OnInit {
 
     toRevenueValue(valor: unknown): number {
         return Number(valor || 0);
+    }
+
+    getActiveRangeLabel(): string {
+        const { fechaInicio, fechaFin } = this.filtrosForm.value;
+        if (!fechaInicio || !fechaFin) {
+            return 'Periodo actual';
+        }
+
+        const start = new Date(fechaInicio);
+        const end = new Date(fechaFin);
+
+        return `${start.toLocaleDateString('es-DO', { day: '2-digit', month: 'short' })} - ${end.toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+    }
+
+    getMaxRevenue(): number {
+        return this.filteredRevenue().reduce((max, item) => Math.max(max, this.toRevenueValue(item.revenue)), 0);
+    }
+
+    getAverageRevenue(): number {
+        const values = this.filteredRevenue()
+            .map((item) => this.toRevenueValue(item.revenue))
+            .filter((value) => value > 0);
+
+        if (!values.length) return 0;
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    getBestMonthLabel(): string {
+        const rows = this.filteredRevenue();
+        if (!rows.length) {
+            return 'Sin datos';
+        }
+
+        const bestRow = rows.reduce((best, current) =>
+            this.toRevenueValue(current.revenue) > this.toRevenueValue(best.revenue) ? current : best
+        );
+
+        return bestRow.month || 'Mes actual';
+    }
+
+    getRevenueShare(revenue: unknown): number {
+        const maxRevenue = this.getMaxRevenue();
+        if (!maxRevenue) {
+            return 0;
+        }
+
+        return Math.round((this.toRevenueValue(revenue) / maxRevenue) * 100);
+    }
+
+    getReportNarrative(): string {
+        const totalMonths = this.filteredRevenue().length;
+        const bestMonth = this.getBestMonthLabel();
+        const peak = this.getMaxRevenue();
+
+        if (!totalMonths || peak === 0) {
+            return 'Aun no hay suficiente actividad para generar una lectura comercial del periodo seleccionado.';
+        }
+
+        return `${bestMonth} marca el mejor rendimiento visible con ${this.formatearMoneda(peak)}. Usa este corte para comparar crecimiento, detectar caidas y ajustar promociones o capacidad operativa.`;
     }
 
     descargarReportePDF() {

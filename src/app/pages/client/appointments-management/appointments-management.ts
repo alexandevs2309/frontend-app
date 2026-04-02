@@ -210,7 +210,7 @@ export class AppointmentsManagement implements OnInit {
 
     ngOnInit(): void {
         this.canDeleteAppointments = this.computeCanDeleteAppointments();
-        this.cargarDatos();
+        this.cargarDatos(true);
         this.appointmentsUiService.refresh$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.cargarDatos(true);
         });
@@ -235,12 +235,14 @@ export class AppointmentsManagement implements OnInit {
         this.cargarDatos();
     }
 
-    abrirDialogo(): void {
+    async abrirDialogo(): Promise<void> {
+        await this.appointmentsDataService.load(true);
         this.citaSeleccionada = null;
         this.mostrarDialogo = true;
     }
 
-    editarCita(cita: AppointmentWithDetails): void {
+    async editarCita(cita: AppointmentWithDetails): Promise<void> {
+        await this.appointmentsDataService.load(true);
         this.citaSeleccionada = cita;
         this.mostrarDialogo = true;
     }

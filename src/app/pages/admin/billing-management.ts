@@ -65,7 +65,43 @@ interface BillingStats {
     template: `
         <p-toast></p-toast>
 
-        <!-- Stats Cards -->
+        <section class="mb-8 overflow-hidden rounded-[2rem] border border-surface-200/70 bg-surface-0 shadow-[0_24px_80px_-42px_rgba(15,23,42,0.45)] dark:border-surface-800 dark:bg-surface-900">
+            <div class="relative overflow-hidden px-8 py-8 lg:px-10">
+                <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_42%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.14),_transparent_36%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_38%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.14),_transparent_34%),linear-gradient(135deg,_rgba(15,23,42,0.92),_rgba(30,41,59,0.86))]"></div>
+                <div class="relative grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.9fr)] lg:items-start">
+                    <div>
+                        <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-surface-200 bg-surface-50/90 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-surface-600 dark:border-surface-700 dark:bg-surface-800/80 dark:text-surface-300">
+                            <i class="pi pi-wallet text-emerald-500"></i>
+                            Billing control
+                        </div>
+                        <h1 class="max-w-3xl text-3xl font-semibold tracking-tight text-surface-950 dark:text-surface-0 lg:text-4xl">
+                            Facturación, cobros y salud de ingresos del SaaS
+                        </h1>
+                        <p class="mt-3 max-w-2xl text-base leading-7 text-surface-600 dark:text-surface-300">
+                            Gestiona facturas, morosidad y generación manual desde un panel más claro y más ejecutivo.
+                        </p>
+                    </div>
+                    <div class="rounded-3xl border border-surface-200 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-surface-700 dark:bg-surface-800/80">
+                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Lectura rápida</div>
+                        <div class="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/60 dark:bg-emerald-900/10">
+                                <div class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">Ingresos</div>
+                                <div class="mt-2 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{{ stats().total_revenue | currency:'USD' }}</div>
+                            </div>
+                            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-900/10">
+                                <div class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">Pendiente</div>
+                                <div class="mt-2 text-2xl font-semibold text-amber-900 dark:text-amber-100">{{ stats().pending_payments | currency:'USD' }}</div>
+                            </div>
+                            <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 dark:border-rose-900/60 dark:bg-rose-900/10">
+                                <div class="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 dark:text-rose-300">Riesgo</div>
+                                <div class="mt-2 text-2xl font-semibold text-rose-900 dark:text-rose-100">{{ stats().overdue_invoices }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <p-card>
                 <div class="flex items-center justify-between">
@@ -108,9 +144,12 @@ interface BillingStats {
             </p-card>
         </div>
 
-        <p-toolbar styleClass="mb-6">
+        <p-toolbar styleClass="mb-6 rounded-[1.5rem] border border-surface-200 bg-surface-0 px-5 py-4 shadow-sm dark:border-surface-800 dark:bg-surface-900">
             <ng-template #start>
-                <h4 class="m-0">Facturación y facturas</h4>
+                <div>
+                    <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Gestión</div>
+                    <h4 class="m-0 mt-2 text-xl font-semibold text-surface-950 dark:text-surface-0">Facturas del ecosistema</h4>
+                </div>
             </ng-template>
 
             <ng-template #end>
@@ -133,7 +172,11 @@ interface BillingStats {
             class="p-datatable-gridlines">
 
             <ng-template #caption>
-                <div class="flex justify-end">
+                <div class="flex items-center justify-between gap-4 rounded-t-[1.5rem] border-b border-surface-200 bg-surface-0 px-5 py-4 dark:border-surface-800 dark:bg-surface-900">
+                    <div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Cobranza</div>
+                        <div class="mt-2 text-lg font-semibold text-surface-950 dark:text-surface-0">Listado de facturas y estado operativo</div>
+                    </div>
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
                         <input pInputText type="text" placeholder="Buscar facturas..." (input)="onGlobalFilter($event)" />
@@ -204,6 +247,9 @@ interface BillingStats {
         <p-dialog [(visible)]="showGenerateDialog" [style]="{ width: '450px' }" header="Generar factura" [modal]="true">
             <ng-template #content>
                 <div class="flex flex-col gap-4">
+                    <div class="rounded-2xl border border-surface-200 bg-surface-50 p-4 text-sm text-surface-600 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-300">
+                        Crea una factura manual usando el plan activo del tenant y deja el cobro listo desde administración.
+                    </div>
                     <div>
                         <label class="block font-bold mb-2">Tenant</label>
                         <p-select [(ngModel)]="newInvoice.tenant" [options]="tenantOptions()" appendTo="body" optionLabel="name" optionValue="id" placeholder="Selecciona un tenant" fluid />
