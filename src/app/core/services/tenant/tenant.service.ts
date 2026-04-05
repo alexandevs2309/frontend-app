@@ -38,7 +38,7 @@ export class TenantService extends BaseApiService {
   }
 
   updateTenant(id: number, tenant: Partial<Tenant>): Observable<Tenant> {
-    return this.put(`${API_CONFIG.ENDPOINTS.TENANTS}${id}/`, tenant);
+    return this.patch(`${API_CONFIG.ENDPOINTS.TENANTS}${id}/`, tenant);
   }
 
   deleteTenant(id: number): Observable<any> {

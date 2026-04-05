@@ -89,26 +89,6 @@
               </small>
             </div>
 
-            <div *ngIf="requiresMfa" class="space-y-3">
-              <label for="mfaCode" class="block text-sm font-semibold text-surface-700 dark:text-surface-300">Codigo MFA</label>
-              <div class="relative">
-                <i class="pi pi-shield absolute left-3 top-1/2 transform -translate-y-1/2 text-surface-400"></i>
-                <input
-                  pInputText
-                  id="mfaCode"
-                  type="text"
-                  maxlength="6"
-                  formControlName="mfaCode"
-                  placeholder="Ingresa tu codigo de 6 digitos"
-                  class="w-full pl-10 h-12 border-2 border-surface-300 focus:border-blue-500 rounded-lg transition-colors backdrop-blur-sm bg-white/50 dark:bg-slate-800/50"
-                />
-              </div>
-              <small *ngIf="mfaCode.invalid && mfaCode.touched" class="text-red-500 flex items-center gap-1">
-                <i class="pi pi-exclamation-triangle"></i>
-                Ingresa un codigo MFA valido de 6 digitos.
-              </small>
-            </div>
-
             <div class="flex items-center justify-between mt-6">
               <div class="flex items-center gap-2">
                 <p-checkbox formControlName="rememberMe" id="rememberme1" [binary]="true"></p-checkbox>
@@ -120,26 +100,15 @@
             <button
               pButton
               pRipple
-              [label]="requiresMfa ? 'Verificar codigo' : t('auth.login.submit')"
-              [icon]="requiresMfa ? 'pi pi-shield' : 'pi pi-sign-in'"
+              [label]="t('auth.login.submit')"
+              [icon]="'pi pi-sign-in'"
               iconPos="right"
               [loading]="isLoading"
-              type="submit"
-              [disabled]="requiresMfa ? mfaCode.invalid : loginForm.invalid"
+              type="button"
+              (click)="onLogin()"
+              [disabled]="loginForm.invalid"
               class="w-full h-14 text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
               style="background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%); border: none;">
-            </button>
-
-            <button
-              *ngIf="requiresMfa"
-              pButton
-              pRipple
-              label="Volver"
-              icon="pi pi-arrow-left"
-              type="button"
-              (click)="cancelMfa()"
-              class="w-full h-12 text-base font-semibold"
-              [outlined]="true">
             </button>
           </form>
 
@@ -171,5 +140,81 @@
     </div>
   </div>
 </div>
+
+<p-dialog
+  [(visible)]="requiresMfa"
+  [modal]="true"
+  [closable]="false"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(92vw, 34rem)' }"
+  styleClass="overflow-hidden rounded-[2rem] border border-white/70 dark:border-slate-700/70">
+  <ng-template pTemplate="header">
+    <div class="flex items-center gap-3">
+      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-500/12 text-indigo-600 dark:text-sky-300">
+        <i class="pi pi-shield text-lg"></i>
+      </div>
+      <div>
+        <div class="text-lg font-black text-slate-900 dark:text-white">Verificación MFA</div>
+        <div class="text-sm text-slate-500 dark:text-slate-400">Introduce el código de tu app autenticadora.</div>
+      </div>
+    </div>
+  </ng-template>
+
+  <div class="space-y-5 py-2">
+    <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
+      <div class="font-semibold text-slate-900 dark:text-white">Segundo paso de acceso</div>
+      <div class="mt-1">Tu contraseña fue validada. Falta confirmar tu identidad con el código temporal.</div>
+    </div>
+
+    <div class="space-y-3">
+      <label class="block text-sm font-semibold text-surface-700 dark:text-surface-300">Código MFA</label>
+      <p-inputotp [formControl]="mfaCode" [length]="6" [integerOnly]="true" styleClass="w-full justify-center">
+        <ng-template #input let-token let-events="events" let-index="index">
+          <input
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            [maxLength]="1"
+            (input)="events.input($event)"
+            (keydown)="events.keydown($event)"
+            [attr.value]="token"
+            class="h-12 w-11 rounded-2xl border-2 border-surface-300 bg-white/50 text-center text-lg font-bold text-slate-900 transition-all duration-200 outline-none focus:border-blue-500 dark:bg-slate-800/50 dark:text-white"
+          />
+          <div *ngIf="index === 3" class="flex items-center justify-center px-2 text-surface-400">
+            <i class="pi pi-minus"></i>
+          </div>
+        </ng-template>
+      </p-inputotp>
+      <small *ngIf="mfaCode.invalid && mfaCode.touched" class="text-red-500 flex items-center gap-1">
+        <i class="pi pi-exclamation-triangle"></i>
+        Ingresa un codigo MFA valido de 6 digitos.
+      </small>
+    </div>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between">
+      <button
+        pButton
+        type="button"
+        label="Volver"
+        icon="pi pi-arrow-left"
+        class="sm:order-1"
+        [outlined]="true"
+        (click)="cancelMfa()">
+      </button>
+      <button
+        pButton
+        type="button"
+        label="Verificar código"
+        icon="pi pi-check"
+        [loading]="isLoading"
+        [disabled]="!isMfaCodeReady()"
+        (click)="onVerifyMfa()"
+        class="sm:order-2"
+        style="background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%); border: none;">
+      </button>
+    </div>
+  </div>
+</p-dialog>
 
 <p-toast />

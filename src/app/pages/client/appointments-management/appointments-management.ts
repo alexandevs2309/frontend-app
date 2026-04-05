@@ -426,6 +426,6 @@ export class AppointmentsManagement implements OnInit {
 
     private computeCanDeleteAppointments(): boolean {
         const role = this.authService.getCurrentUser()?.role;
-        return role === 'CLIENT_ADMIN' || role === 'Manager' || role === 'SUPER_ADMIN';
+        return role === 'CLIENT_ADMIN' || role === 'Manager';
     }
 }

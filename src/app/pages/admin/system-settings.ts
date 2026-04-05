@@ -326,7 +326,7 @@ function optionalEmailValidator(): ValidatorFn {
                             <p-tabpanel value="3">
                                 <div class="p-12">
                                     <form [formGroup]="securityForm">
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
                                             <div>
                                                 <label for="jwt_expiry" class="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300 mb-4">
                                                     <i class="pi pi-clock text-blue-500"></i> Expiración JWT (min)
@@ -338,6 +338,12 @@ function optionalEmailValidator(): ValidatorFn {
                                                     <i class="pi pi-attempt-lock text-red-500"></i> Máx. Intentos de Login
                                                 </label>
                                                 <p-inputNumber id="max_login_attempts" formControlName="max_login_attempts" [min]="1" placeholder="5" />
+                                            </div>
+                                            <div>
+                                                <label for="login_lockout_minutes" class="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300 mb-4">
+                                                    <i class="pi pi-hourglass text-amber-500"></i> Bloqueo Tras Fallos (min)
+                                                </label>
+                                                <p-inputNumber id="login_lockout_minutes" formControlName="login_lockout_minutes" [min]="1" placeholder="5" />
                                             </div>
                                             <div>
                                                 <label for="password_min_length" class="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300 mb-4">
@@ -464,11 +470,11 @@ function optionalEmailValidator(): ValidatorFn {
                                                     <p class="text-sm text-gray-500">Envía recordatorios de pago y renovación</p>
                                                 </div>
                                             </div>
-                                            <div class="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                                            <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
                                                 <p-toggleSwitch formControlName="auto_upgrade_limits" inputId="auto_upgrade" />
                                                 <div>
                                                     <label for="auto_upgrade" class="text-base font-medium text-gray-700 dark:text-gray-300">Auto-upgrade por Límites</label>
-                                                    <p class="text-sm text-gray-500">Sugiere upgrade cuando exceden límites del plan</p>
+                                                    <p class="text-sm text-gray-500">Cuando un tenant alcance el límite de usuarios o empleados, puede promocionarse automáticamente al siguiente plan disponible.</p>
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
@@ -578,6 +584,7 @@ export class SystemSettings implements OnInit {
         this.securityForm = this.fb.group({
             jwt_expiry_minutes: [60, [Validators.required, Validators.min(5)]],
             max_login_attempts: [5, [Validators.required, Validators.min(1)]],
+            login_lockout_minutes: [5, [Validators.required, Validators.min(1)]],
             password_min_length: [8, [Validators.required, Validators.min(6)]],
             require_email_verification: [true],
             enable_mfa: [false]
@@ -652,6 +659,7 @@ export class SystemSettings implements OnInit {
                 this.securityForm.patchValue({
                     jwt_expiry_minutes: settings.jwt_expiry_minutes || 60,
                     max_login_attempts: settings.max_login_attempts || 5,
+                    login_lockout_minutes: settings.login_lockout_minutes || 5,
                     password_min_length: settings.password_min_length || 8,
                     require_email_verification: settings.require_email_verification !== false,
                     enable_mfa: settings.enable_mfa || false
@@ -1077,7 +1085,4 @@ export class SystemSettings implements OnInit {
         this.errorLogger.log('SystemSettings', context, error);
     }
 }
-
-
-
 

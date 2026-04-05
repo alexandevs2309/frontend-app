@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { TRANSLATIONS, TranslationKey, SupportedLanguage } from './translations';
+import { AppConfigService } from '../app-config.service';
 
 export interface TenantLocaleConfig {
   locale: string;
@@ -45,6 +46,7 @@ export class LocaleService {
   public languageChanged$ = new BehaviorSubject<SupportedLanguage>('es');
 
   private readonly http = inject(HttpClient);
+  private readonly appConfig = inject(AppConfigService);
 
   constructor() {
     const savedLang = localStorage.getItem('language');
@@ -68,6 +70,10 @@ export class LocaleService {
   }
 
   setLanguage(lang: SupportedLanguage) {
+    if (!this.getSupportedLanguageCodes().includes(lang)) {
+      return;
+    }
+
     if (this.currentLanguage() === lang) {
       return;
     }
@@ -78,11 +84,14 @@ export class LocaleService {
   }
 
   getLanguageOptions(): LanguageOption[] {
-    return this.languageOptions;
+    const allowed = this.getSupportedLanguageCodes();
+    const filtered = this.languageOptions.filter((option) => allowed.includes(option.code));
+    return filtered.length > 0 ? filtered : this.languageOptions;
   }
 
   getCurrentLanguageOption(): LanguageOption {
-    return this.languageOptions.find((option) => option.code === this.currentLanguage()) || this.languageOptions[0];
+    const options = this.getLanguageOptions();
+    return options.find((option) => option.code === this.currentLanguage()) || options[0];
   }
 
   getCurrentAppLocale(): string {
@@ -159,5 +168,13 @@ export class LocaleService {
 
   getCurrency(): string {
     return this.currentLocale().currency;
+  }
+
+  private getSupportedLanguageCodes(): SupportedLanguage[] {
+    const configured = this.appConfig.supportedLanguages()
+      .map((lang: string) => String(lang).trim().toLowerCase())
+      .filter((lang: string): lang is SupportedLanguage => ['es', 'en', 'fr', 'pt', 'de'].includes(lang));
+
+    return configured.length > 0 ? configured : this.languageOptions.map((option) => option.code);
   }
 }

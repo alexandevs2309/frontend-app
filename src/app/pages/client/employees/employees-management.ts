@@ -27,6 +27,7 @@ import { EmployeeDto, EmployeeWithUserDto, CreateEmployeeDto, UpdateEmployeeDto 
 import { PayrollConfigDto, PaymentStatsDto, PaymentReceiptDto } from '../../../core/dto/payroll.dto';
 import { LoanDto, LoanSummaryDto, CreateLoanDto } from '../../../core/dto/loan.dto';
 import { SettingsService } from '../../../core/services/settings/settings.service';
+import { PlanAccessService } from '../../../core/services/plan-access.service';
 import { AppCurrencyPipe } from '../../../core/pipes/app-currency.pipe';
 
 // Interface temporal para PaymentDto hasta que se agregue al archivo payroll.dto
@@ -318,6 +319,30 @@ interface PaymentDto {
                     [disabled]="formulario.invalid" (click)="guardarEmpleado()"></button>
           </div>
         </div>
+      </p-dialog>
+
+      <p-dialog
+        header="Límite del plan alcanzado"
+        [(visible)]="mostrarDialogoLimitePlan"
+        [modal]="true"
+        [style]="{width: '32rem'}"
+        [draggable]="false"
+        [resizable]="false">
+        <div class="flex items-start gap-3">
+          <i class="pi pi-lock text-amber-500 text-xl mt-1"></i>
+          <div>
+            <div class="font-semibold text-slate-900 dark:text-white">{{ tituloDialogoLimitePlan }}</div>
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ mensajeDialogoLimitePlan }}</p>
+            <div *ngIf="recomendacionUpgradePlan" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+              <div class="font-semibold">Plan recomendado: {{ recomendacionUpgradePlan.nextPlanName }}</div>
+              <p class="mt-1 mb-0">{{ recomendacionUpgradePlan.reason }}</p>
+              <p class="mt-1 mb-0 opacity-90">{{ recomendacionUpgradePlan.detail }}</p>
+            </div>
+          </div>
+        </div>
+        <ng-template pTemplate="footer">
+          <button pButton label="Entendido" icon="pi pi-check" (click)="mostrarDialogoLimitePlan = false"></button>
+        </ng-template>
       </p-dialog>
 
       <!-- Diálogo de Configuración de Nómina -->
@@ -807,6 +832,7 @@ export class EmployeesManagement implements OnInit {
   private employeeService = inject(EmployeeService);
   private serviceService = inject(ServiceService);
   private authService = inject(AuthService);
+  private planAccessService = inject(PlanAccessService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private fb = inject(FormBuilder);
@@ -815,6 +841,10 @@ export class EmployeesManagement implements OnInit {
   cargando = signal(false);
   guardando = signal(false);
   mostrarDialogo = false;
+  mostrarDialogoLimitePlan = false;
+  tituloDialogoLimitePlan = 'Límite del plan alcanzado';
+  mensajeDialogoLimitePlan = '';
+  recomendacionUpgradePlan: ReturnType<PlanAccessService['getUpgradeRecommendation']> = null;
   empleadoSeleccionado: EmployeeWithUserDto | null = null;
   fechaMaxima = new Date();
 
@@ -1034,17 +1064,37 @@ export class EmployeesManagement implements OnInit {
       if (!environment.production) {
         
       }
+      let detail = 'No se pudieron cargar los empleados';
+      const backendError = (error as any)?.error;
+      if (typeof backendError?.detail === 'string' && backendError.detail.trim()) {
+        detail = backendError.detail;
+      } else if (typeof backendError?.error === 'string' && backendError.error.trim()) {
+        detail = backendError.error;
+      } else if ((error as any)?.status === 403) {
+        detail = 'No tienes permisos para consultar los empleados de este tenant.';
+      }
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'No se pudieron cargar los empleados'
+        detail
       });
     } finally {
       this.cargando.set(false);
     }
   }
 
-  abrirDialogo() {
+  async abrirDialogo() {
+    await this.sincronizarEmpleadosAntesDeCrear();
+
+    const limitStatus = this.planAccessService.getEmployeeLimitStatus(this.getActiveEmployeesCount());
+    if (limitStatus.reached) {
+      this.abrirDialogoLimitePlan(
+        'No se puede crear el empleado',
+        this.planAccessService.getEmployeeLimitMessage(limitStatus)
+      );
+      return;
+    }
+
     this.empleadoSeleccionado = null;
     this.formulario.reset({
       full_name: '',
@@ -1082,6 +1132,20 @@ export class EmployeesManagement implements OnInit {
     if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       return;
+    }
+
+    if (!this.empleadoSeleccionado) {
+      const employeeLimitStatus = this.planAccessService.getEmployeeLimitStatus(this.getActiveEmployeesCount());
+      if (employeeLimitStatus.reached) {
+        const message = this.planAccessService.getEmployeeLimitMessage(employeeLimitStatus);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: message
+        });
+        this.abrirDialogoLimitePlan('No se puede crear el empleado', message);
+        return;
+      }
     }
 
     this.guardando.set(true);
@@ -1162,12 +1226,20 @@ export class EmployeesManagement implements OnInit {
       let errorMessage = isUpdate
         ? 'No se pudo actualizar el empleado'
         : 'No se pudo crear el empleado';
+      const planLimitMessage = this.buildPlanLimitErrorMessage(error);
 
       // Detectar límite de usuarios
-      if (error?.error?.current !== undefined && error?.error?.limit !== undefined) {
+      if (planLimitMessage) {
+        errorMessage = planLimitMessage;
+      } else if (error?.error?.current !== undefined && error?.error?.limit !== undefined) {
         errorMessage = `Límite de usuarios alcanzado (${error.error.current}/${error.error.limit}). Actualiza tu plan para agregar más usuarios.`;
       } else if (error?.error?.error && error.error.error.includes('User limit reached')) {
         errorMessage = `Límite de usuarios alcanzado. Actualiza tu plan para agregar más usuarios.`;
+      } else if (error?.error?.error && String(error.error.error).toLowerCase().includes('employee limit')) {
+        const limitStatus = this.planAccessService.getEmployeeLimitStatus(this.getActiveEmployeesCount());
+        errorMessage = limitStatus.reached
+          ? this.planAccessService.getEmployeeLimitMessage(limitStatus)
+          : 'Has alcanzado un límite operativo de tu plan. Actualiza tu plan para seguir agregando personal.';
       } else if (error?.error?.detail) {
         errorMessage = error.error.detail;
       } else if (error?.error?.error) {
@@ -1185,9 +1257,80 @@ export class EmployeesManagement implements OnInit {
         summary: 'Error',
         detail: errorMessage
       });
+
+      if (!isUpdate && this.isPlanLimitMessage(errorMessage)) {
+        this.abrirDialogoLimitePlan('No se puede crear el empleado', errorMessage);
+      }
     } finally {
       this.guardando.set(false);
     }
+  }
+
+  private abrirDialogoLimitePlan(titulo: string, mensaje: string) {
+    this.tituloDialogoLimitePlan = titulo;
+    this.mensajeDialogoLimitePlan = mensaje;
+    this.recomendacionUpgradePlan = this.planAccessService.getUpgradeRecommendation('employees');
+    this.mostrarDialogoLimitePlan = true;
+  }
+
+  private async sincronizarEmpleadosAntesDeCrear(): Promise<void> {
+    try {
+      const data = await firstValueFrom(this.employeeService.getEmployees());
+      const responseEmployees = (Array.isArray((data as any)?.results) ? (data as any).results : (Array.isArray(data) ? data : [])) as EmployeeWithUserDto[];
+      this.empleados.set(responseEmployees);
+    } catch {
+      // Si falla el refresh, usamos el estado local como fallback.
+    }
+  }
+
+  private buildPlanLimitErrorMessage(error: any): string | null {
+    const payload = error?.error;
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+
+    const rawError = this.normalizeBackendErrorValue(payload.error);
+    const rawMessage = this.normalizeBackendErrorValue(payload.message);
+    const rawCurrent = this.normalizeBackendErrorValue(payload.current);
+    const rawLimit = this.normalizeBackendErrorValue(payload.limit);
+
+    if (rawError.includes('Límite de empleados alcanzado')) {
+      if (rawCurrent && rawLimit) {
+        return `Límite de empleados alcanzado (${rawCurrent}/${rawLimit}). Actualiza tu plan para agregar más personal.`;
+      }
+      return rawMessage || 'Límite de empleados alcanzado. Actualiza tu plan para agregar más personal.';
+    }
+
+    if (rawError.includes('User limit reached')) {
+      if (rawCurrent && rawLimit) {
+        return `Límite de usuarios alcanzado (${rawCurrent}/${rawLimit}). Actualiza tu plan para agregar más usuarios.`;
+      }
+      return rawMessage || 'Límite de usuarios alcanzado. Actualiza tu plan para agregar más usuarios.';
+    }
+
+    return null;
+  }
+
+  private normalizeBackendErrorValue(value: unknown): string {
+    if (Array.isArray(value)) {
+      return value.map((item) => this.normalizeBackendErrorValue(item)).filter(Boolean).join(' ');
+    }
+
+    if (value && typeof value === 'object') {
+      const maybeString = (value as { string?: unknown }).string;
+      if (typeof maybeString === 'string') {
+        return maybeString;
+      }
+    }
+
+    return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+  }
+
+  private isPlanLimitMessage(message: string): boolean {
+    const normalized = String(message || '').toLowerCase();
+    return normalized.includes('límite de usuarios alcanzado')
+      || normalized.includes('límite de empleados alcanzado')
+      || normalized.includes('actualiza tu plan');
   }
 
   confirmarEliminar(emp: EmployeeWithUserDto) {

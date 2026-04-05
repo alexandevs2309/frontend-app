@@ -8,7 +8,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { ToolbarModule } from 'primeng/toolbar';
-import { ActivityLogService, AuditLog } from '../../core/services/activity-log/activity-log.service';
+import { ActivityLogService, AuditLog, AuditSummaryBreakdown } from '../../core/services/activity-log/activity-log.service';
 import { DatePipe } from '@angular/common';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -59,6 +59,39 @@ import { ToastModule } from 'primeng/toast';
             <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                 <div class="text-sm text-gray-500">Ultimas 24h</div>
                 <div class="text-2xl font-bold text-blue-600">{{ summary().last_24h }}</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Acciones más frecuentes</div>
+                @if (actionsBreakdown().length) {
+                    <div class="space-y-2">
+                        @for (item of actionsBreakdown(); track item.action || $index) {
+                            <div class="flex items-center justify-between rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2">
+                                <span class="text-sm">{{ formatActionLabel(item.action || 'N/A') }}</span>
+                                <p-tag [value]="item.count.toString()" severity="info" />
+                            </div>
+                        }
+                    </div>
+                } @else {
+                    <div class="text-sm text-gray-500">Sin desglose disponible.</div>
+                }
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Fuentes con más actividad</div>
+                @if (sourcesBreakdown().length) {
+                    <div class="space-y-2">
+                        @for (item of sourcesBreakdown(); track item.source || $index) {
+                            <div class="flex items-center justify-between rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-2">
+                                <span class="text-sm">{{ formatSourceLabel(item.source || 'N/A') }}</span>
+                                <p-tag [value]="item.count.toString()" severity="secondary" />
+                            </div>
+                        }
+                    </div>
+                } @else {
+                    <div class="text-sm text-gray-500">Sin desglose disponible.</div>
+                }
             </div>
         </div>
 
@@ -149,6 +182,8 @@ export class AuditLogs implements OnInit {
         warnings: 0,
         last_24h: 0
     });
+    actionsBreakdown = signal<AuditSummaryBreakdown[]>([]);
+    sourcesBreakdown = signal<AuditSummaryBreakdown[]>([]);
     loading = signal(false);
     selectedAction: string | null = null;
     selectedSource: string | null = null;
@@ -198,9 +233,13 @@ export class AuditLogs implements OnInit {
                     warnings: Number(data?.warning_logs ?? data?.warnings ?? 0),
                     last_24h: Number(data?.last_24h ?? data?.recent ?? 0)
                 });
+                this.actionsBreakdown.set(Array.isArray(data?.actions_breakdown) ? data.actions_breakdown : []);
+                this.sourcesBreakdown.set(Array.isArray(data?.sources_breakdown) ? data.sources_breakdown : []);
             },
             error: () => {
                 // Keep defaults if summary endpoint is unavailable.
+                this.actionsBreakdown.set([]);
+                this.sourcesBreakdown.set([]);
             }
         });
     }

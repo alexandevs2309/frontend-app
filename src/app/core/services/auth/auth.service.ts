@@ -35,6 +35,15 @@ export interface MFALoginVerifyRequest {
   tenant_subdomain?: string;
 }
 
+export interface MFASetupResponse {
+  qr_code: string;
+  secret: string;
+}
+
+export interface MFAVerifyRequest {
+  code: string;
+}
+
 export interface User {
   id: number;
   email: string;
@@ -85,7 +94,8 @@ export class AuthService extends BaseApiService {
       .pipe(
         tap(response => {
           this.setAuthData(response);
-          if (response.user?.role !== 'SUPER_ADMIN') {
+          const normalizedRole = normalizeRole(response.user?.role);
+          if (normalizedRole !== 'SUPER_ADMIN') {
             this.trialService.loadTrialStatus();
           }
         })
@@ -101,6 +111,18 @@ export class AuthService extends BaseApiService {
       .pipe(
         tap(response => this.setAuthData(response))
       );
+  }
+
+  setupMfa(): Observable<MFASetupResponse> {
+    return this.post<MFASetupResponse>(API_CONFIG.ENDPOINTS.AUTH.MFA_SETUP, {}, { withCredentials: true });
+  }
+
+  verifyMfa(data: MFAVerifyRequest): Observable<{ detail: string }> {
+    return this.post<{ detail: string }>(API_CONFIG.ENDPOINTS.AUTH.MFA_VERIFY, data, { withCredentials: true });
+  }
+
+  disableMfa(data: MFAVerifyRequest): Observable<{ detail: string }> {
+    return this.post<{ detail: string }>(API_CONFIG.ENDPOINTS.AUTH.MFA_DISABLE, data, { withCredentials: true });
   }
 
   logout(): Observable<any> {
@@ -264,6 +286,8 @@ export class AuthService extends BaseApiService {
 
     if (response.tenant) {
       localStorage.setItem('tenant', JSON.stringify(response.tenant));
+    } else {
+      localStorage.removeItem('tenant');
     }
 
     this.currentUserSubject.next(userWithTenant);

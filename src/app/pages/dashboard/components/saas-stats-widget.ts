@@ -21,8 +21,8 @@ import { SaasMetricsService, SaasMetrics } from '../../../core/services/saas-met
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="text-green-500 font-bold text-lg">+{{metrics()?.growth_rate || 0}}%</span>
-                        <i class="pi pi-arrow-up text-green-500"></i>
+                        <span class="font-bold text-lg" [ngClass]="growthValueClass()">{{ growthDisplay() }}</span>
+                        <i class="pi" [ngClass]="growthIconClass()"></i>
                         <span class="text-muted-color text-sm">crecimiento</span>
                     </div>
                 </div>
@@ -108,6 +108,27 @@ export class SaasStatsWidget implements OnInit {
             next: (data) => this.metrics.set(data),
             error: () => this.metrics.set(null)
         });
+    }
+
+    growthDisplay(): string {
+        const value = this.metrics()?.growth_rate || 0;
+        if (value > 0) return `+${value}%`;
+        if (value < 0) return `${value}%`;
+        return '0%';
+    }
+
+    growthValueClass(): string {
+        const value = this.metrics()?.growth_rate || 0;
+        if (value > 0) return 'text-green-500';
+        if (value < 0) return 'text-red-500';
+        return 'text-surface-500 dark:text-surface-300';
+    }
+
+    growthIconClass(): string {
+        const value = this.metrics()?.growth_rate || 0;
+        if (value > 0) return 'pi-arrow-up text-green-500';
+        if (value < 0) return 'pi-arrow-down text-red-500';
+        return 'pi-minus text-surface-500 dark:text-surface-300';
     }
 
 }

@@ -14,6 +14,7 @@ import { ToastModule } from 'primeng/toast';
 import { TenantService } from '../../core/services/tenant/tenant.service';
 import { ActivityLogService } from '../../core/services/activity-log/activity-log.service';
 import { BillingService } from '../../core/services/billing.service';
+import { getSubscriptionPlanLabel } from '../../core/utils/subscription-plan-label';
 
 @Component({
     selector: 'app-admin-support',
@@ -23,10 +24,40 @@ import { BillingService } from '../../core/services/billing.service';
     template: `
         <p-toast></p-toast>
 
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold m-0">Soporte SaaS</h1>
-            <p class="text-gray-500 m-0">Busca tenants, inspecciona actividad y diagnostica incidentes operativos.</p>
-        </div>
+        <section class="mb-8 overflow-hidden rounded-[2rem] border border-surface-200/70 bg-surface-0 shadow-[0_24px_80px_-42px_rgba(15,23,42,0.45)] dark:border-surface-800 dark:bg-surface-900">
+            <div class="relative overflow-hidden px-8 py-8 lg:px-10">
+                <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.14),_transparent_36%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_38%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.14),_transparent_34%),linear-gradient(135deg,_rgba(15,23,42,0.92),_rgba(30,41,59,0.86))]"></div>
+                <div class="relative grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.9fr)]">
+                    <div>
+                        <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-surface-200 bg-surface-50/90 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-surface-600 dark:border-surface-700 dark:bg-surface-800/80 dark:text-surface-300">
+                            <i class="pi pi-life-ring text-primary"></i>
+                            Support desk
+                        </div>
+                        <h1 class="text-3xl font-semibold tracking-tight text-surface-950 dark:text-surface-0 lg:text-4xl">Soporte y diagnóstico operativo</h1>
+                        <p class="mt-3 max-w-2xl text-base leading-7 text-surface-600 dark:text-surface-300">
+                            Busca tenants, revisa actividad reciente y localiza incidencias sin salir del panel global.
+                        </p>
+                    </div>
+                    <div class="rounded-3xl border border-surface-200 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-surface-700 dark:bg-surface-800/80">
+                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Contexto</div>
+                        <div class="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                            <div class="rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 dark:border-surface-700 dark:bg-surface-800">
+                                <div class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500 dark:text-surface-400">Tenants</div>
+                                <div class="mt-2 text-2xl font-semibold text-surface-950 dark:text-surface-0">{{ tenants().length }}</div>
+                            </div>
+                            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/60 dark:bg-emerald-900/10">
+                                <div class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">Activos</div>
+                                <div class="mt-2 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{{ activeCount() }}</div>
+                            </div>
+                            <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 dark:border-rose-900/60 dark:bg-rose-900/10">
+                                <div class="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 dark:text-rose-300">Suspendidos</div>
+                                <div class="mt-2 text-2xl font-semibold text-rose-900 dark:text-rose-100">{{ suspendedCount() }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <p-card>
@@ -77,7 +108,7 @@ import { BillingService } from '../../core/services/billing.service';
                             <div class="font-semibold">{{ tenant.name }}</div>
                             <div class="text-xs text-gray-500">{{ tenant.subdomain || '-' }}</div>
                         </td>
-                        <td>{{ tenant.subscription_plan?.name || tenant.plan_type || '-' }}</td>
+                        <td>{{ getTenantPlanDisplayName(tenant) }}</td>
                         <td>
                             <p-tag [value]="tenant.subscription_status || 'trial'" [severity]="getSubscriptionSeverity(tenant.subscription_status)" />
                         </td>
@@ -201,8 +232,7 @@ export class AdminSupport implements OnInit {
                 tenant?.subdomain,
                 tenant?.contact_email,
                 tenant?.owner_email,
-                tenant?.subscription_plan?.name,
-                tenant?.plan_type
+                this.getTenantPlanDisplayName(tenant)
             ]
                 .filter(Boolean)
                 .join(' ')
@@ -247,6 +277,14 @@ export class AdminSupport implements OnInit {
                 this.showError('No se pudo cargar diagnóstico del tenant', error);
             }
         });
+    }
+
+    getTenantPlanDisplayName(tenant: any): string {
+        return getSubscriptionPlanLabel(
+            tenant?.subscription_plan?.display_name,
+            tenant?.subscription_plan?.name,
+            tenant?.plan_type
+        );
     }
 
     openTenantDetail(tenant: any): void {

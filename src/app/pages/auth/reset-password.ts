@@ -7,7 +7,7 @@ import { PasswordModule } from 'primeng/password';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '../../core/services/auth/auth.service';
-import { environment } from '../../../environments/environment';
+import { AppConfigService } from '../../core/services/app-config.service';
 import { getHttpErrorMessage } from '../../core/utils/http-error-message';
 
 @Component({
@@ -22,11 +22,11 @@ export class ResetPassword implements OnInit {
     isLoading = signal(false);
     token: string = '';
     uid: string = '';
-    platformName = environment.appName;
 
     constructor(
         private fb: FormBuilder,
         private authService: AuthService,
+        public appConfig: AppConfigService,
         private messageService: MessageService,
         private router: Router,
         private route: ActivatedRoute

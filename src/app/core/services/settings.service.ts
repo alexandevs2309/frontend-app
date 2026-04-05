@@ -39,10 +39,20 @@ export interface SystemSettings {
   twilio_phone_number?: string;
   jwt_expiry_minutes?: number;
   max_login_attempts?: number;
+  login_lockout_minutes?: number;
   password_min_length?: number;
   require_email_verification?: boolean;
   enable_mfa?: boolean;
   auto_upgrade_limits?: boolean;
+}
+
+export interface PublicBrandingSettings {
+  platform_name: string;
+  support_email: string;
+  platform_domain: string;
+  public_site_url: string;
+  supported_languages: string[];
+  maintenance_mode: boolean;
 }
 
 @Injectable({
@@ -52,6 +62,10 @@ export class SettingsService extends BaseApiService {
 
   getSettings(): Observable<SystemSettings> {
     return this.get<SystemSettings>('/system-settings/');
+  }
+
+  getPublicBranding(): Observable<PublicBrandingSettings> {
+    return this.get<PublicBrandingSettings>('/settings/public-branding/');
   }
 
   updateSettings(settings: Partial<SystemSettings>): Observable<SystemSettings> {

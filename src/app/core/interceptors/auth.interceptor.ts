@@ -30,6 +30,7 @@ export class AuthInterceptor implements HttpInterceptor {
     '/cookies',
     '/about',
     '/register',
+    '/settings/public-branding/',
     '/auth/login',
     '/auth/register',
     '/auth/reset-password'

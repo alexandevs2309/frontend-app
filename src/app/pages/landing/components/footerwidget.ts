@@ -3,6 +3,7 @@ import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
+import { AppConfigService } from '../../../core/services/app-config.service';
 
 @Component({
     selector: 'footer-widget',
@@ -16,10 +17,10 @@ import { RippleModule } from 'primeng/ripple';
                     <div class="lg:col-span-1">
                         <div class="flex items-center mb-6">
                             <div class="flex items-center justify-center rounded-2xl bg-white px-2.5 py-2 border border-white/60 shadow-sm mr-4">
-                                <img src="assets/logos/iso-auron.jpg" alt="Auron Suite" class="h-9 w-9 object-contain rounded-xl" />
+                                <img src="assets/logos/iso-auron.jpg" [alt]="appConfig.platformName()" class="h-9 w-9 object-contain rounded-xl" />
                             </div>
                             <div>
-                                <h3 class="text-2xl font-bold text-white">Auron Suite</h3>
+                                <h3 class="text-2xl font-bold text-white">{{ appConfig.platformName() }}</h3>
                                 <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Salon Management</div>
                             </div>
                         </div>
@@ -28,7 +29,7 @@ import { RippleModule } from 'primeng/ripple';
                         </p>
 
                         <div class="flex space-x-4">
-                            <a href="mailto:contacto@auron-suite.com" class="inline-flex">
+                            <a [attr.href]="'mailto:' + appConfig.supportEmail()" class="inline-flex">
                                 <button pButton pRipple icon="pi pi-envelope" [rounded]="true" [text]="true" class="text-slate-400! hover:text-sky-400! transition-colors!" aria-label="Correo"></button>
                             </a>
                             <a routerLink="/auth/register" class="inline-flex">
@@ -62,7 +63,8 @@ import { RippleModule } from 'primeng/ripple';
                     <div>
                         <h4 class="text-lg font-semibold text-white mb-6">Contacto</h4>
                         <ul class="space-y-4">
-                            <li><a href="mailto:contacto@auron-suite.com" class="text-slate-300 hover:text-white transition-colors">contacto@auron-suite.com</a></li>
+                            <li><a [attr.href]="'mailto:' + appConfig.supportEmail()" class="text-slate-300 hover:text-white transition-colors">{{ appConfig.supportEmail() }}</a></li>
+                            <li *ngIf="appConfig.platformDomain()"><a [attr.href]="appConfig.publicSiteUrl()" class="text-slate-300 hover:text-white transition-colors">{{ appConfig.platformDomain() }}</a></li>
                             <li><span class="text-slate-300">Santo Domingo, República Dominicana</span></li>
                             <li><span class="text-slate-300">Respuesta comercial por email</span></li>
                             <li><a routerLink="/auth/register" class="text-slate-300 hover:text-white transition-colors">Crear cuenta</a></li>
@@ -73,13 +75,13 @@ import { RippleModule } from 'primeng/ripple';
                 <div class="relative z-10 bg-linear-to-br from-slate-900 via-slate-900 to-indigo-950 rounded-[2rem] p-8 mb-12 border border-slate-800 shadow-[0_28px_90px_-56px_rgba(15,23,42,0.8)]">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                         <div>
-                            <h4 class="text-2xl font-bold text-white mb-4">¿Quieres evaluar Auron-Suite?</h4>
+                            <h4 class="text-2xl font-bold text-white mb-4">¿Quieres evaluar {{ appConfig.platformName() }}?</h4>
                             <p class="text-slate-300">
                                 Si estas revisando opciones para tu negocio, podemos orientarte por email sobre planes, implementacion y alcance actual del sistema.
                             </p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-4">
-                            <a href="mailto:contacto@auron-suite.com?subject=Consulta%20sobre%20Auron-Suite" class="sm:flex-1">
+                            <a [attr.href]="getSalesContactHref()" class="sm:flex-1">
                                 <button pButton pRipple label="Escribir a ventas" class="w-full bg-indigo-600! text-white! font-semibold! px-6! py-3! hover:bg-indigo-700! border-0!"></button>
                             </a>
                             <a routerLink="/auth/register" class="sm:flex-1">
@@ -92,7 +94,7 @@ import { RippleModule } from 'primeng/ripple';
                 <div class="relative z-10 border-t border-slate-800 pt-8">
                     <div class="flex flex-col lg:flex-row justify-between items-center gap-6">
                         <div class="text-slate-400 text-center lg:text-left">
-                            <p>&copy; {{ currentYear }} Auron Suite. Todos los derechos reservados.</p>
+                            <p>&copy; {{ currentYear }} {{ appConfig.platformName() }}. Todos los derechos reservados.</p>
                             <p class="text-sm mt-1">Construido para negocios que necesitan mas orden operativo.</p>
                         </div>
 
@@ -113,6 +115,12 @@ import { RippleModule } from 'primeng/ripple';
 })
 export class FooterWidget {
     currentYear = new Date().getFullYear();
+
+    constructor(public appConfig: AppConfigService) {}
+
+    getSalesContactHref(): string {
+        return `mailto:${this.appConfig.supportEmail()}?subject=${encodeURIComponent(`Consulta sobre ${this.appConfig.platformName()}`)}`;
+    }
 
     scrollToSection(sectionId: string) {
         const element = document.querySelector(`[data-section="${sectionId}"]`) || document.getElementById(sectionId);

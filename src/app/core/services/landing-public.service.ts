@@ -111,7 +111,9 @@ export class LandingPublicService {
           'Inventario',
           'Reportes avanzados',
           'Multiples sucursales',
-          'Branding basico con logo personalizado'
+          'Branding basico con logo personalizado',
+          'Permisos avanzados por rol',
+          'Acceso a API'
         ],
         commercialBenefits: [
           'Atencion prioritaria',

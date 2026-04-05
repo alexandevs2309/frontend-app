@@ -15,9 +15,17 @@ export class BillingService extends BaseApiService {
       shareReplay(1)
     );
   }
+
+  getInvoice(invoiceId: number): Observable<any> {
+    return this.get(`${API_CONFIG.ENDPOINTS.BILLING}invoices/${invoiceId}/`);
+  }
   
   markInvoiceAsPaid(invoiceId: number): Observable<any> {
     return this.post(`${API_CONFIG.ENDPOINTS.BILLING}invoices/${invoiceId}/mark_as_paid/`, {});
+  }
+
+  payInvoice(invoiceId: number): Observable<any> {
+    return this.post(`${API_CONFIG.ENDPOINTS.BILLING}invoices/${invoiceId}/pay/`, {});
   }
 
   generateInvoiceForTenant(payload: { tenant_id: number; due_date: string; description?: string }): Observable<any> {

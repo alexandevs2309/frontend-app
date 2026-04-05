@@ -17,6 +17,7 @@ export const API_CONFIG = {
       VERIFY_EMAIL: '/auth/verify-email/',
       MFA_SETUP: '/auth/mfa/setup/',
       MFA_VERIFY: '/auth/mfa/verify/',
+      MFA_DISABLE: '/auth/mfa/disable/',
       MFA_LOGIN_VERIFY: '/auth/mfa/login-verify/',
       PERMISSIONS: '/auth/permissions/',
       USERS: '/auth/users/'
@@ -108,6 +109,7 @@ export const API_CONFIG = {
       BASE: '/settings/',
       SYSTEM: '/system-settings/',
       SYSTEM_RESET: '/system-settings/reset/',
+      PUBLIC_BRANDING: '/settings/public-branding/',
       TEST_EMAIL: '/settings/test-email/',
       TEST_PAYMENT: '/settings/test-payment/',
       

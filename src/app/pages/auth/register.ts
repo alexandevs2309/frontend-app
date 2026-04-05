@@ -106,11 +106,9 @@ export class Register implements OnInit {
   };
 
   plans = [
-    { name: 'free', price: 0, features: ['1 empleado', 'Funciones básicas', 'Soporte email'] },
-    { name: 'basic', price: 19, features: ['3 empleados', 'Reportes básicos', 'Soporte email'] },
-    { name: 'standard', price: 49, features: ['10 empleados', 'POS completo', 'Reportes avanzados', 'Soporte prioritario'] },
-    { name: 'premium', price: 99, features: ['25 empleados', 'API completa', 'Soporte 24/7', 'Personalización'] },
-    { name: 'enterprise', price: 199, features: ['Empleados ilimitados', 'Multi-sucursales', 'Soporte dedicado', 'Personalización completa'] }
+    { name: 'basic', price: 29.99, features: ['8 empleados', '16 usuarios', 'Caja y ventas', 'Reportes básicos'] },
+    { name: 'standard', price: 69.99, features: ['25 empleados', '50 usuarios', 'Inventario', 'Reportes avanzados'] },
+    { name: 'premium', price: 129.99, features: ['Empleados ilimitados', 'Usuarios ilimitados', 'Acceso a API', 'Marca personalizada'] }
   ];
 
   constructor(
@@ -336,11 +334,9 @@ export class Register implements OnInit {
   // Get plan display name
   getPlanDisplayName(): string {
     const planNames: any = {
-      'free': 'Gratis',
-      'basic': 'Básico',
-      'standard': 'Estándar',
+      'basic': 'Professional',
+      'standard': 'Business',
       'premium': 'Premium',
-      'enterprise': 'Enterprise'
     };
     return planNames[this.planData.selectedPlan] || this.planData.selectedPlan;
   }

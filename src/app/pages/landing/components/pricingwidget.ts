@@ -5,6 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
 import { LandingPublicService, PublicPlan } from '../../../core/services/landing-public.service';
 import { AnimationService } from '../../../shared/services/animation.service';
+import { AppConfigService } from '../../../core/services/app-config.service';
 
 @Component({
     selector: 'pricing-widget',
@@ -19,7 +20,8 @@ export class PricingWidget implements OnInit, OnDestroy {
     constructor(
         private router: Router,
         private animationService: AnimationService,
-        private landingService: LandingPublicService
+        private landingService: LandingPublicService,
+        private appConfig: AppConfigService
     ) {}
 
     ngOnInit() {
@@ -112,6 +114,6 @@ export class PricingWidget implements OnInit, OnDestroy {
             return;
         }
 
-        window.location.href = 'mailto:auronsuite.soporte@gmail.com?subject=Consulta Plan Empresarial';
+        window.location.href = `mailto:${this.appConfig.supportEmail()}?subject=${encodeURIComponent(`Consulta Plan Empresarial - ${this.appConfig.platformName()}`)}`;
     }
 }

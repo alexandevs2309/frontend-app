@@ -4,6 +4,7 @@ import { AuthService } from '../../core/services/auth/auth.service';
 import { SaasStatsWidget } from '../dashboard/components/saas-stats-widget';
 import { NotificationsWidget } from '../dashboard/components/notificationswidget';
 import { Subscription, interval } from 'rxjs';
+import { SaasMetricsService, SaasMetrics } from '../../core/services/saas-metrics.service';
 
 @Component({
     selector: 'app-admin-dashboard',
@@ -51,23 +52,23 @@ import { Subscription, interval } from 'rxjs';
                         <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
                             <article class="rounded-3xl border border-surface-200 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-surface-700 dark:bg-surface-800/80">
                                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Tenants</div>
-                                <div class="mt-3 text-3xl font-semibold text-surface-950 dark:text-surface-0">Visibilidad total</div>
+                                <div class="mt-3 text-3xl font-semibold text-surface-950 dark:text-surface-0">{{ metrics()?.total_tenants ?? 0 }}</div>
                                 <p class="mt-2 text-sm leading-6 text-surface-600 dark:text-surface-300">
-                                    Cambios de plan, suspensiones y soporte sin salir del panel global.
+                                    {{ metrics()?.active_tenants ?? 0 }} activos y {{ inactiveTenants() }} inactivos en el workspace SaaS.
+                                </p>
+                            </article>
+                            <article class="rounded-3xl border border-surface-200 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-surface-700 dark:bg-surface-800/80">
+                                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Trials</div>
+                                <div class="mt-3 text-3xl font-semibold text-surface-950 dark:text-surface-0">{{ metrics()?.expiring_trials_7d ?? 0 }}</div>
+                                <p class="mt-2 text-sm leading-6 text-surface-600 dark:text-surface-300">
+                                    Expiran en 7 días. Conversión histórica: {{ formatPercent(metrics()?.trial_conversion_rate) }}.
                                 </p>
                             </article>
                             <article class="rounded-3xl border border-surface-200 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-surface-700 dark:bg-surface-800/80">
                                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Revenue</div>
-                                <div class="mt-3 text-3xl font-semibold text-surface-950 dark:text-surface-0">Seguimiento vivo</div>
+                                <div class="mt-3 text-3xl font-semibold text-surface-950 dark:text-surface-0">{{ formatMoney(metrics()?.mrr) }}</div>
                                 <p class="mt-2 text-sm leading-6 text-surface-600 dark:text-surface-300">
-                                    Pagos, churn y alertas financieras concentradas en un solo ritmo operativo.
-                                </p>
-                            </article>
-                            <article class="rounded-3xl border border-surface-200 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-surface-700 dark:bg-surface-800/80">
-                                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400">Soporte</div>
-                                <div class="mt-3 text-3xl font-semibold text-surface-950 dark:text-surface-0">Respuesta rápida</div>
-                                <p class="mt-2 text-sm leading-6 text-surface-600 dark:text-surface-300">
-                                    Incidentes, diagnósticos y salud del sistema listos para actuar sin fricción.
+                                    Variación mensual: {{ formatSignedPercent(metrics()?.growth_rate) }} y churn de {{ formatPercent(metrics()?.churn_rate) }}.
                                 </p>
                             </article>
                         </div>
@@ -110,10 +111,14 @@ import { Subscription, interval } from 'rxjs';
 })
 export class AdminDashboard implements OnInit, OnDestroy {
     currentUser = signal<any>(null);
+    metrics = signal<SaasMetrics | null>(null);
     currentTime = signal(new Date());
     private subscription = new Subscription();
 
-    constructor(private authService: AuthService) {}
+    constructor(
+        private authService: AuthService,
+        private saasMetricsService: SaasMetricsService
+    ) {}
 
     ngOnInit() {
         this.subscription.add(
@@ -121,8 +126,12 @@ export class AdminDashboard implements OnInit, OnDestroy {
                 this.currentUser.set(user);
             })
         );
+        this.loadMetrics();
         this.subscription.add(
             interval(60000).subscribe(() => this.currentTime.set(new Date()))
+        );
+        this.subscription.add(
+            interval(300000).subscribe(() => this.loadMetrics())
         );
     }
 
@@ -146,5 +155,37 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
     getCurrentTime(): string {
         return this.currentTime().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    inactiveTenants(): number {
+        const metrics = this.metrics();
+        if (!metrics) return 0;
+        return Math.max((metrics.total_tenants || 0) - (metrics.active_tenants || 0), 0);
+    }
+
+    formatPercent(value?: number): string {
+        return `${(value || 0).toFixed(1)}%`;
+    }
+
+    formatSignedPercent(value?: number): string {
+        const safeValue = value || 0;
+        return `${safeValue > 0 ? '+' : ''}${safeValue.toFixed(1)}%`;
+    }
+
+    formatMoney(value?: number): string {
+        return new Intl.NumberFormat('es-DO', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0
+        }).format(value || 0);
+    }
+
+    private loadMetrics(): void {
+        this.subscription.add(
+            this.saasMetricsService.getSaasMetrics().subscribe({
+                next: (metrics) => this.metrics.set(metrics),
+                error: () => this.metrics.set(null)
+            })
+        );
     }
 }

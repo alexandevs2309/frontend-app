@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { InputOtpModule } from 'primeng/inputotp';
 import { InputTextModule } from 'primeng/inputtext';
 import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
@@ -14,7 +15,7 @@ import { Router } from '@angular/router';
 @Component({
     selector: 'app-user-profile',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, CardModule, ToastModule],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, InputOtpModule, CardModule, ToastModule],
     providers: [MessageService],
     template: `
         <p-toast />
@@ -126,6 +127,171 @@ import { Router } from '@angular/router';
                                 <span>Foto de perfil</span>
                                 <strong>{{ getProfileImageUrl() ? 'Configurada' : 'No configurada' }}</strong>
                             </div>
+                            <div class="summary-row">
+                                <span>MFA</span>
+                                <strong>{{ user.mfa_enabled ? 'Activo' : 'No configurado' }}</strong>
+                            </div>
+                        </div>
+                    </p-card>
+
+                    <p-card>
+                        <div class="space-y-4">
+                            <div>
+                                <h3 class="section-title !mb-0">Autenticación multifactor</h3>
+                                <p class="section-subtitle">Protege tu cuenta con un código adicional desde Google Authenticator, Authy o apps compatibles.</p>
+                            </div>
+
+                            @if (user.mfa_enabled) {
+                                <div class="mfa-status mfa-status--active">
+                                    <i class="pi pi-shield"></i>
+                                    <div>
+                                        <strong>MFA activo</strong>
+                                        <p>Tu cuenta ya requiere un código adicional al iniciar sesión.</p>
+                                    </div>
+                                </div>
+
+                                @if (!showDisableMfa) {
+                                    <button
+                                        pButton
+                                        type="button"
+                                        class="w-full p-button-outlined"
+                                        icon="pi pi-lock-open"
+                                        label="Desactivar MFA"
+                                        (click)="openDisableMfa()"
+                                    ></button>
+                                }
+
+                                @if (showDisableMfa) {
+                                    <div class="mfa-panel">
+                                        <div class="mfa-steps">
+                                            <p><strong>1.</strong> Abre tu app autenticadora actual.</p>
+                                            <p><strong>2.</strong> Ingresa un código válido para confirmar la desactivación.</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="block font-medium mb-2">Código actual</label>
+                                            <p-inputotp [(ngModel)]="disableMfaCode" [length]="6" styleClass="w-full justify-center">
+                                                <ng-template #input let-token let-events="events" let-index="index">
+                                                    <input
+                                                        type="text"
+                                                        inputmode="numeric"
+                                                        autocomplete="one-time-code"
+                                                        [maxLength]="1"
+                                                        (input)="events.input($event)"
+                                                        (keydown)="events.keydown($event)"
+                                                        [attr.value]="token"
+                                                        class="mfa-otp-input"
+                                                    />
+                                                      <div *ngIf="index === 3" class="mfa-otp-separator">
+                                                        <i class="pi pi-minus"></i>
+                                                      </div>
+                                                </ng-template>
+                                            </p-inputotp>
+                                        </div>
+
+                                        <div class="flex gap-3">
+                                            <button
+                                                pButton
+                                                class="flex-1"
+                                                icon="pi pi-lock-open"
+                                                label="Confirmar desactivación"
+                                                (click)="disableMfa()"
+                                                [loading]="disablingMfa()"
+                                                [disabled]="!isValidDisableMfaCode()"
+                                            ></button>
+                                            <button
+                                                pButton
+                                                type="button"
+                                                class="p-button-outlined"
+                                                icon="pi pi-times"
+                                                label="Cancelar"
+                                                (click)="cancelDisableMfa()"
+                                                [disabled]="disablingMfa()"
+                                            ></button>
+                                        </div>
+                                    </div>
+                                }
+                            } @else {
+                                <div class="mfa-status">
+                                    <i class="pi pi-mobile"></i>
+                                    <div>
+                                        <strong>MFA no configurado</strong>
+                                        <p>Puedes activarlo en menos de un minuto desde esta misma pantalla.</p>
+                                    </div>
+                                </div>
+
+                                @if (!mfaQrCode) {
+                                    <button
+                                        pButton
+                                        class="w-full"
+                                        icon="pi pi-qrcode"
+                                        label="Activar MFA"
+                                        (click)="startMfaSetup()"
+                                        [loading]="settingUpMfa()"
+                                    ></button>
+                                }
+
+                                @if (mfaQrCode) {
+                                    <div class="mfa-panel">
+                                        <div class="mfa-steps">
+                                            <p><strong>1.</strong> Escanea este QR con tu app autenticadora.</p>
+                                            <p><strong>2.</strong> Si lo prefieres, usa la clave manual mostrada abajo.</p>
+                                            <p><strong>3.</strong> Ingresa el código de 6 dígitos para confirmar.</p>
+                                        </div>
+
+                                        <div class="mfa-qr-wrap">
+                                            <img class="mfa-qr" [src]="'data:image/png;base64,' + mfaQrCode" alt="QR de configuración MFA" />
+                                        </div>
+
+                                        <div class="mfa-secret-box">
+                                            <span>Clave manual</span>
+                                            <code>{{ mfaSecret }}</code>
+                                        </div>
+
+                                        <div>
+                                            <label class="block font-medium mb-2">Código MFA</label>
+                                            <p-inputotp [(ngModel)]="mfaCode" [length]="6" styleClass="w-full justify-center">
+                                                <ng-template #input let-token let-events="events" let-index="index">
+                                                    <input
+                                                        type="text"
+                                                        inputmode="numeric"
+                                                        autocomplete="one-time-code"
+                                                        [maxLength]="1"
+                                                        (input)="events.input($event)"
+                                                        (keydown)="events.keydown($event)"
+                                                        [attr.value]="token"
+                                                        class="mfa-otp-input"
+                                                    />
+                                                      <div *ngIf="index === 3" class="mfa-otp-separator">
+                                                        <i class="pi pi-minus"></i>
+                                                      </div>
+                                                </ng-template>
+                                            </p-inputotp>
+                                        </div>
+
+                                        <div class="flex gap-3">
+                                            <button
+                                                pButton
+                                                class="flex-1"
+                                                icon="pi pi-check"
+                                                label="Confirmar"
+                                                (click)="confirmMfaSetup()"
+                                                [loading]="verifyingMfa()"
+                                                [disabled]="!isValidMfaCode()"
+                                            ></button>
+                                            <button
+                                                pButton
+                                                type="button"
+                                                class="p-button-outlined"
+                                                icon="pi pi-times"
+                                                label="Cancelar"
+                                                (click)="resetMfaSetup()"
+                                                [disabled]="verifyingMfa()"
+                                            ></button>
+                                        </div>
+                                    </div>
+                                }
+                            }
                         </div>
                     </p-card>
 
@@ -258,6 +424,118 @@ import { Router } from '@angular/router';
             padding-bottom: 0;
         }
 
+        .mfa-status {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            padding: 0.9rem;
+            border-radius: 0.9rem;
+            border: 1px solid var(--surface-border);
+            background: var(--surface-ground);
+        }
+
+        .mfa-status i {
+            margin-top: 0.15rem;
+            color: #0f766e;
+        }
+
+        .mfa-status strong,
+        .mfa-status p {
+            display: block;
+            margin: 0;
+        }
+
+        .mfa-status p {
+            color: var(--text-color-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.2rem;
+        }
+
+        .mfa-status--active {
+            border-color: rgba(22, 163, 74, 0.25);
+            background: rgba(22, 163, 74, 0.08);
+        }
+
+        .mfa-panel {
+            display: grid;
+            gap: 1rem;
+            padding-top: 0.25rem;
+        }
+
+        .mfa-steps {
+            display: grid;
+            gap: 0.35rem;
+            color: var(--text-color-secondary);
+            font-size: 0.92rem;
+        }
+
+        .mfa-steps p {
+            margin: 0;
+        }
+
+        .mfa-qr-wrap {
+            display: flex;
+            justify-content: center;
+            padding: 1rem;
+            border-radius: 1rem;
+            background: #ffffff;
+            border: 1px solid var(--surface-border);
+        }
+
+        .mfa-qr {
+            width: 12rem;
+            height: 12rem;
+            object-fit: contain;
+        }
+
+        .mfa-secret-box {
+            display: grid;
+            gap: 0.35rem;
+            padding: 0.85rem 1rem;
+            border-radius: 0.9rem;
+            border: 1px dashed var(--surface-border);
+            background: var(--surface-ground);
+        }
+
+        .mfa-secret-box span {
+            color: var(--text-color-secondary);
+            font-size: 0.85rem;
+        }
+
+        .mfa-secret-box code {
+            word-break: break-all;
+            font-size: 0.92rem;
+            color: var(--text-color);
+        }
+
+        .mfa-otp-input {
+            width: 2.75rem;
+            height: 3.25rem;
+            text-align: center;
+            font-size: 1.15rem;
+            font-weight: 700;
+            border-radius: 0.9rem;
+            border: 1px solid var(--surface-border);
+            background: var(--surface-card);
+            color: var(--text-color);
+            outline: none;
+            transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+        }
+
+        .mfa-otp-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary-color) 18%, transparent);
+            transform: translateY(-1px);
+        }
+
+        .mfa-otp-separator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.5rem;
+            color: var(--text-color-secondary);
+        }
+
         @media (max-width: 767px) {
             .profile-hero__right {
                 grid-template-columns: 1fr;
@@ -274,12 +552,21 @@ export class UserProfileComponent implements OnInit {
         phone: '',
         role: '',
         is_active: true,
+        mfa_enabled: false,
         roles: [],
         tenant_id: null,
         date_joined: null
     };
     saving = signal(false);
     uploadingAvatar = signal(false);
+    settingUpMfa = signal(false);
+    verifyingMfa = signal(false);
+    disablingMfa = signal(false);
+    mfaQrCode: string | null = null;
+    mfaSecret: string | null = null;
+    mfaCode = '';
+    showDisableMfa = false;
+    disableMfaCode = '';
 
     constructor(
         private authService: AuthService,
@@ -452,5 +739,111 @@ export class UserProfileComponent implements OnInit {
 
     goToHelp(): void {
         this.router.navigate(['/client/help']);
+    }
+
+    startMfaSetup(): void {
+        this.settingUpMfa.set(true);
+        this.authService.setupMfa().subscribe({
+            next: (response) => {
+                this.mfaQrCode = response.qr_code;
+                this.mfaSecret = response.secret;
+                this.mfaCode = '';
+                this.showDisableMfa = false;
+                this.disableMfaCode = '';
+                this.settingUpMfa.set(false);
+                this.messageService.add({
+                    severity: 'info',
+                    summary: 'Escanea el QR',
+                    detail: 'Abre tu app autenticadora y confirma el código de 6 dígitos.'
+                });
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: err?.error?.error || 'No se pudo iniciar la configuración de MFA'
+                });
+                this.settingUpMfa.set(false);
+            }
+        });
+    }
+
+    confirmMfaSetup(): void {
+        if (!this.isValidMfaCode()) return;
+
+        this.verifyingMfa.set(true);
+        this.authService.verifyMfa({ code: this.mfaCode.trim() }).subscribe({
+            next: () => {
+                this.user = { ...this.user, mfa_enabled: true };
+                this.authService.patchCurrentUser({ mfa_enabled: true } as any);
+                this.resetMfaSetup();
+                this.verifyingMfa.set(false);
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'MFA activado',
+                    detail: 'Tu cuenta ahora solicitará un código adicional al iniciar sesión.'
+                });
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Código inválido',
+                    detail: err?.error?.error || 'No se pudo verificar el código MFA'
+                });
+                this.verifyingMfa.set(false);
+            }
+        });
+    }
+
+    resetMfaSetup(): void {
+        this.mfaQrCode = null;
+        this.mfaSecret = null;
+        this.mfaCode = '';
+    }
+
+    isValidMfaCode(): boolean {
+        return /^\d{6}$/.test(this.mfaCode.trim());
+    }
+
+    openDisableMfa(): void {
+        this.showDisableMfa = true;
+        this.disableMfaCode = '';
+    }
+
+    cancelDisableMfa(): void {
+        this.showDisableMfa = false;
+        this.disableMfaCode = '';
+    }
+
+    disableMfa(): void {
+        if (!this.isValidDisableMfaCode()) return;
+
+        this.disablingMfa.set(true);
+        this.authService.disableMfa({ code: this.disableMfaCode.trim() }).subscribe({
+            next: () => {
+                this.user = { ...this.user, mfa_enabled: false };
+                this.authService.patchCurrentUser({ mfa_enabled: false } as any);
+                this.cancelDisableMfa();
+                this.resetMfaSetup();
+                this.disablingMfa.set(false);
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'MFA desactivado',
+                    detail: 'Tu cuenta ya no pedirá el código adicional al iniciar sesión.'
+                });
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'No se pudo desactivar',
+                    detail: err?.error?.error || 'No se pudo desactivar MFA'
+                });
+                this.disablingMfa.set(false);
+            }
+        });
+    }
+
+    isValidDisableMfaCode(): boolean {
+        return /^\d{6}$/.test(this.disableMfaCode.trim());
     }
 }

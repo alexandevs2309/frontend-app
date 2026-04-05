@@ -15,16 +15,23 @@ export interface ReportParams {
 export interface AdminReportResponse {
   period: string;
   total_revenue: number;
+  commission_rate?: number;
+  platform_commission_amount?: number;
+  net_revenue?: number;
   pending_payments: number;
   overdue_invoices: number;
   revenue_trend: Array<{
     label?: string;
     month?: string;
     revenue: number;
+    commission_amount?: number;
+    net_revenue?: number;
   }>;
   top_tenants: Array<{
     tenant_name: string;
     revenue: number;
+    commission_amount?: number;
+    net_revenue?: number;
     plan: string;
   }>;
   summary: {

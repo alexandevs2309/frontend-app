@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { AppConfigService } from '../../core/services/app-config.service';
 
 @Component({
   selector: 'app-registration-success',
@@ -24,11 +25,11 @@ import { CardModule } from 'primeng/card';
           <div class="relative p-8 lg:p-10">
             <a routerLink="/landing" class="inline-flex items-center gap-3 mb-8">
               <div class="flex items-center justify-center rounded-2xl border border-white/70 dark:border-white/10 bg-white/90 dark:bg-white/5 p-2.5 shadow-sm">
-                <img src="assets/logos/iso-auron.jpg" alt="Auron Suite" class="h-9 w-9 rounded-xl object-contain" />
+                <img src="assets/logos/iso-auron.jpg" [alt]="appConfig.platformName()" class="h-9 w-9 rounded-xl object-contain" />
               </div>
               <div>
                 <div class="text-[0.68rem] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 font-bold">Business OS</div>
-                <div class="text-lg font-black tracking-tight text-slate-900 dark:text-white">Auron Suite</div>
+                <div class="text-lg font-black tracking-tight text-slate-900 dark:text-white">{{ appConfig.platformName() }}</div>
               </div>
             </a>
 
@@ -105,7 +106,7 @@ import { CardModule } from 'primeng/card';
                     <div>
                       <div class="font-semibold text-sky-900 dark:text-sky-100 mb-1">Si no ves el correo</div>
                       <div class="text-sm text-sky-800 dark:text-sky-300 leading-6">
-                        Revisa spam o promociones. Si sigue sin aparecer, escribe a <strong>auronsuite.soporte@gmail.com</strong>.
+                        Revisa spam o promociones. Si sigue sin aparecer, escribe a <strong>{{ appConfig.supportEmail() }}</strong>.
                       </div>
                     </div>
                   </div>
@@ -142,7 +143,8 @@ export class RegistrationSuccess implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    public appConfig: AppConfigService
   ) {}
 
   ngOnInit() {

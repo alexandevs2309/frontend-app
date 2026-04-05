@@ -1,13 +1,14 @@
 import { Component, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
+import { InputOtpModule } from 'primeng/inputotp';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
-import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { AuthService, LoginResponse } from '../../core/services/auth/auth.service';
 import { AppConfigService } from '../../core/services/app-config.service';
@@ -15,7 +16,7 @@ import { LocaleService } from '../../core/services/locale/locale.service';
 import { roleKey } from '../../core/utils/role-normalizer';
 import { getHttpErrorMessage } from '../../core/utils/http-error-message';
 import { LayoutService } from '../../layout/service/layout.service';
-
+import { ToastModule } from 'primeng/toast';
 @Component({
     selector: 'app-login',
     standalone: true,
@@ -23,12 +24,15 @@ import { LayoutService } from '../../layout/service/layout.service';
         CommonModule,
         ButtonModule,
         CheckboxModule,
+        DialogModule,
+        InputOtpModule,
         InputTextModule,
         PasswordModule,
         ReactiveFormsModule,
         RouterModule,
         RippleModule,
-        ToastModule
+        ToastModule,
+        DialogModule
     ],
     styleUrls: ['./register.component.scss'],
     providers: [MessageService],
@@ -87,8 +91,13 @@ export class Login implements OnInit {
         return this.loginForm.get('password')!;
     }
 
-    get mfaCode() {
-        return this.loginForm.get('mfaCode')!;
+    get mfaCode(): FormControl {
+        return this.loginForm.get('mfaCode') as FormControl;
+    }
+
+    isMfaCodeReady(): boolean {
+        const value = String(this.mfaCode.value || '').trim();
+        return /^\d{6}$/.test(value);
     }
 
     onLogin(): void {
@@ -196,7 +205,7 @@ export class Login implements OnInit {
         this.isLoading = true;
         this.authService.verifyLoginMfa({
             email: this.pendingMfaEmail,
-            code: this.mfaCode.value,
+            code: String(this.mfaCode.value || '').trim(),
             tenant_subdomain: this.pendingMfaTenantSubdomain || undefined
         }).subscribe({
             next: (response) => {

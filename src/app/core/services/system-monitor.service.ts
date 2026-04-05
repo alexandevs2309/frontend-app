@@ -27,6 +27,7 @@ export interface ServiceStatus {
   status: 'up' | 'down' | 'degraded';
   last_check: string;
   response_time?: number;
+  details?: string;
   error_message?: string;
 }
 

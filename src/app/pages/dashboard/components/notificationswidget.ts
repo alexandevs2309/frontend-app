@@ -3,7 +3,10 @@ import { NgClass } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
 import { NotificationService } from '../../../core/services/notification/notification.service';
+import { AdminPlatformNotificationService } from '../../../core/services/notification/admin-platform-notification.service';
 import { LocaleService } from '../../../core/services/locale/locale.service';
+import { AuthService } from '../../../core/services/auth/auth.service';
+import { roleKey } from '../../../core/utils/role-normalizer';
 
 @Component({
     standalone: true,
@@ -59,11 +62,18 @@ import { LocaleService } from '../../../core/services/locale/locale.service';
     `
 })
 export class NotificationsWidget {
-    notifications = computed(() => this.notificationService.latestNotifications().slice(0, 6));
+    notifications = computed(() => {
+        const isSuperAdmin = roleKey(this.authService.getCurrentUser()?.role) === 'SUPER_ADMIN';
+        return isSuperAdmin
+            ? this.adminPlatformNotificationService.notifications().slice(0, 6)
+            : this.notificationService.latestNotifications().slice(0, 6);
+    });
 
     constructor(
         private notificationService: NotificationService,
-        private localeService: LocaleService
+        private localeService: LocaleService,
+        private authService: AuthService,
+        private adminPlatformNotificationService: AdminPlatformNotificationService
     ) {}
 
     getNotificationStyle(type: string): string {
@@ -91,10 +101,18 @@ export class NotificationsWidget {
     }
 
     markAsRead(notificationId: number) {
+        if (roleKey(this.authService.getCurrentUser()?.role) === 'SUPER_ADMIN') {
+            this.adminPlatformNotificationService.markAsRead(notificationId);
+            return;
+        }
         this.notificationService.markAsRead(notificationId).subscribe();
     }
 
     markAllAsRead() {
+        if (roleKey(this.authService.getCurrentUser()?.role) === 'SUPER_ADMIN') {
+            this.adminPlatformNotificationService.markAllAsRead();
+            return;
+        }
         this.notificationService.markAllAsRead().subscribe();
     }
 

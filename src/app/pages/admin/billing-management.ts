@@ -13,10 +13,12 @@ import { CardModule } from 'primeng/card';
 import { DatePipe, CurrencyPipe } from '@angular/common';
 import { BillingService } from '../../core/services/billing.service';
 import { TenantService } from '../../core/services/tenant/tenant.service';
+import { SettingsService } from '../../core/services/settings.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { AdminErrorLogService } from '../../core/services/admin-error-log.service';
+import { getSubscriptionPlanLabel } from '../../core/utils/subscription-plan-label';
 
 interface Invoice {
     id?: number;
@@ -86,11 +88,11 @@ interface BillingStats {
                         <div class="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                             <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/60 dark:bg-emerald-900/10">
                                 <div class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">Ingresos</div>
-                                <div class="mt-2 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{{ stats().total_revenue | currency:'USD' }}</div>
+                                <div class="mt-2 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{{ stats().total_revenue | currency:currencyCode() }}</div>
                             </div>
                             <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-900/10">
                                 <div class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">Pendiente</div>
-                                <div class="mt-2 text-2xl font-semibold text-amber-900 dark:text-amber-100">{{ stats().pending_payments | currency:'USD' }}</div>
+                                <div class="mt-2 text-2xl font-semibold text-amber-900 dark:text-amber-100">{{ stats().pending_payments | currency:currencyCode() }}</div>
                             </div>
                             <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 dark:border-rose-900/60 dark:bg-rose-900/10">
                                 <div class="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 dark:text-rose-300">Riesgo</div>
@@ -106,7 +108,7 @@ interface BillingStats {
             <p-card>
                 <div class="flex items-center justify-between">
                     <div>
-                        <div class="text-2xl font-bold text-green-600">{{ stats().total_revenue | currency:'USD' }}</div>
+                        <div class="text-2xl font-bold text-green-600">{{ stats().total_revenue | currency:currencyCode() }}</div>
                         <div class="text-sm text-gray-600">Ingresos totales</div>
                     </div>
                     <i class="pi pi-dollar text-3xl text-green-600"></i>
@@ -116,7 +118,7 @@ interface BillingStats {
             <p-card>
                 <div class="flex items-center justify-between">
                     <div>
-                        <div class="text-2xl font-bold text-orange-600">{{ stats().pending_payments | currency:'USD' }}</div>
+                        <div class="text-2xl font-bold text-orange-600">{{ stats().pending_payments | currency:currencyCode() }}</div>
                         <div class="text-sm text-gray-600">Pagos pendientes</div>
                     </div>
                     <i class="pi pi-clock text-3xl text-orange-600"></i>
@@ -204,8 +206,8 @@ interface BillingStats {
                         <div class="font-medium">{{ invoice.tenant_name || invoice.user_name || '—' }}</div>
                         <div class="text-sm text-gray-500">{{ invoice.user_email || invoice.user?.email || '' }}</div>
                     </td>
-                    <td>{{ invoice.plan_name || invoice.subscription?.plan?.name || '—' }}</td>
-                    <td>{{ invoice.amount | currency:'USD' }}</td>
+                    <td>{{ getPlanDisplayName(invoice) }}</td>
+                    <td>{{ invoice.amount | currency:currencyCode() }}</td>
                     <td>
                         <p-tag
                             [value]="getInvoiceDisplayStatus(invoice)"
@@ -215,6 +217,22 @@ interface BillingStats {
                     <td>{{ invoice.due_date | date:'mediumDate' }}</td>
                     <td>
                         <div class="flex gap-2">
+                            <p-button
+                                icon="pi pi-eye"
+                                size="small"
+                                severity="info"
+                                [outlined]="true"
+                                (click)="viewInvoice(invoice)"
+                                pTooltip="Ver detalle" />
+                            @if (!invoice.is_paid) {
+                                <p-button
+                                    icon="pi pi-credit-card"
+                                    size="small"
+                                    severity="help"
+                                    [outlined]="true"
+                                    (click)="payInvoice(invoice)"
+                                    pTooltip="Procesar cobro" />
+                            }
                             @if (!invoice.is_paid) {
                                 <p-button
                                     icon="pi pi-check"
@@ -273,6 +291,66 @@ interface BillingStats {
                 <p-button label="Generar" icon="pi pi-check" (click)="generateInvoice()" />
             </ng-template>
         </p-dialog>
+
+        <p-dialog [(visible)]="showInvoiceDetailDialog" [style]="{ width: '42rem' }" header="Detalle de factura" [modal]="true">
+            <ng-template #content>
+                @if (invoiceDetailLoading()) {
+                    <div class="py-8 text-center text-gray-500">Cargando detalle...</div>
+                } @else if (selectedInvoice(); as invoice) {
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="rounded-2xl border border-surface-200 p-4 dark:border-surface-700">
+                            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Factura</div>
+                            <div class="mt-3 text-2xl font-semibold text-surface-950 dark:text-surface-0">#{{ invoice.id }}</div>
+                            <div class="mt-2">
+                                <p-tag [value]="getInvoiceDisplayStatus(invoice)" [severity]="getStatusSeverity(getInvoiceDisplayStatus(invoice))" />
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-surface-200 p-4 dark:border-surface-700">
+                            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Monto</div>
+                            <div class="mt-3 text-2xl font-semibold text-surface-950 dark:text-surface-0">{{ invoice.amount | currency:currencyCode() }}</div>
+                            <div class="mt-2 text-sm text-surface-500">{{ invoice.payment_method || 'Método no registrado' }}</div>
+                        </div>
+                        <div class="rounded-2xl border border-surface-200 p-4 dark:border-surface-700">
+                            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Tenant / Usuario</div>
+                            <div class="mt-3 font-medium text-surface-900 dark:text-surface-100">{{ invoice.tenant_name || invoice.user_name || '—' }}</div>
+                            <div class="mt-1 text-sm text-surface-500">{{ invoice.user_email || invoice.user?.email || 'Sin correo' }}</div>
+                        </div>
+                        <div class="rounded-2xl border border-surface-200 p-4 dark:border-surface-700">
+                            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Plan</div>
+                            <div class="mt-3 font-medium text-surface-900 dark:text-surface-100">{{ getPlanDisplayName(invoice) }}</div>
+                            <div class="mt-1 text-sm text-surface-500">Suscripción #{{ invoice.subscription?.id || '—' }}</div>
+                        </div>
+                        <div class="rounded-2xl border border-surface-200 p-4 dark:border-surface-700">
+                            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Emisión</div>
+                            <div class="mt-3 font-medium text-surface-900 dark:text-surface-100">{{ invoice.issued_at | date:'medium' }}</div>
+                        </div>
+                        <div class="rounded-2xl border border-surface-200 p-4 dark:border-surface-700">
+                            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Vencimiento</div>
+                            <div class="mt-3 font-medium text-surface-900 dark:text-surface-100">{{ invoice.due_date | date:'mediumDate' }}</div>
+                            <div class="mt-1 text-sm text-surface-500">Pagada: {{ invoice.paid_at ? (invoice.paid_at | date:'medium') : 'No' }}</div>
+                        </div>
+                    </div>
+                    @if (invoice.description) {
+                        <div class="mt-4 rounded-2xl border border-surface-200 p-4 text-sm text-surface-600 dark:border-surface-700 dark:text-surface-300">
+                            {{ invoice.description }}
+                        </div>
+                    }
+                } @else {
+                    <div class="py-8 text-center text-gray-500">No hay factura seleccionada.</div>
+                }
+            </ng-template>
+
+            <ng-template #footer>
+                <p-button label="Cerrar" icon="pi pi-times" text (click)="showInvoiceDetailDialog = false" />
+                @if (selectedInvoice(); as invoice) {
+                    @if (!invoice.is_paid) {
+                        <p-button label="Cobrar" icon="pi pi-credit-card" severity="help" [outlined]="true" (click)="payInvoice(invoice)" />
+                        <p-button label="Marcar pagada" icon="pi pi-check" severity="success" (click)="markAsPaid(invoice)" />
+                    }
+                    <p-button label="Imprimir" icon="pi pi-print" severity="secondary" [outlined]="true" (click)="downloadInvoice(invoice)" />
+                }
+            </ng-template>
+        </p-dialog>
     `
 })
 export class BillingManagement implements OnInit {
@@ -281,8 +359,12 @@ export class BillingManagement implements OnInit {
     filteredInvoices = signal<Invoice[]>([]);
     stats = signal<BillingStats>({ total_revenue: 0, pending_payments: 0, overdue_invoices: 0, active_subscriptions: 0 });
     loading = signal(false);
+    currencyCode = signal('USD');
     selectedStatus: string | null = null;
     showGenerateDialog = false;
+    showInvoiceDetailDialog = false;
+    invoiceDetailLoading = signal(false);
+    selectedInvoice = signal<Invoice | null>(null);
 
     newInvoice = {
         tenant: null,
@@ -304,12 +386,25 @@ export class BillingManagement implements OnInit {
     constructor(
         private billingService: BillingService,
         private tenantService: TenantService,
+        private settingsService: SettingsService,
         private messageService: MessageService
     ) {}
 
     ngOnInit() {
+        this.loadCurrency();
         this.loadInvoices();
         this.loadTenants();
+    }
+
+    loadCurrency() {
+        this.settingsService.getSettings().subscribe({
+            next: (settings) => {
+                if (settings?.default_currency) {
+                    this.currencyCode.set(settings.default_currency);
+                }
+            },
+            error: () => {}
+        });
     }
 
     loadInvoices() {
@@ -413,13 +508,36 @@ export class BillingManagement implements OnInit {
         return invoice.status || 'pending';
     }
 
+    getPlanDisplayName(invoice: Invoice | null | undefined): string {
+        return getSubscriptionPlanLabel(
+            invoice?.plan_name,
+            invoice?.subscription?.plan?.name
+        );
+    }
+
     viewInvoice(invoice: Invoice) {
-        const userInfo = invoice.user_name || invoice.user?.full_name || invoice.user_email || invoice.user?.email || 'Usuario desconocido';
-        this.messageService.add({
-            severity: 'info',
-            summary: 'Detalle de factura',
-            detail: `Invoice #${invoice.id} - ${userInfo} - $${invoice.amount}`,
-            life: 5000
+        if (!invoice.id) {
+            return;
+        }
+
+        this.invoiceDetailLoading.set(true);
+        this.selectedInvoice.set(null);
+        this.showInvoiceDetailDialog = true;
+
+        this.billingService.getInvoice(invoice.id).subscribe({
+            next: (detail: Invoice) => {
+                this.selectedInvoice.set(detail);
+                this.invoiceDetailLoading.set(false);
+            },
+            error: () => {
+                this.selectedInvoice.set(invoice);
+                this.invoiceDetailLoading.set(false);
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Detalle parcial',
+                    detail: 'No se pudo cargar el detalle completo; mostrando la información disponible.'
+                });
+            }
         });
     }
 
@@ -449,15 +567,17 @@ export class BillingManagement implements OnInit {
 
     markAsPaid(invoice: Invoice) {
         if (invoice.id) {
+            const invoiceId = invoice.id;
             this.billingService.markInvoiceAsPaid(invoice.id).subscribe({
                 next: () => {
                     const paidAt = new Date().toISOString();
                     const updatedInvoices = this.invoices().map(current =>
-                        current.id === invoice.id
+                        current.id === invoiceId
                             ? { ...current, status: 'paid', is_paid: true, paid_at: paidAt }
                             : current
                     );
                     this.invoices.set(updatedInvoices);
+                    this.updateSelectedInvoice(invoiceId, { status: 'paid', is_paid: true, paid_at: paidAt });
                     this.loadStats();
                     this.filterInvoices();
                     this.messageService.add({
@@ -467,6 +587,32 @@ export class BillingManagement implements OnInit {
                     });
                 },
                 error: (error) => this.showErrorMessage('Error al marcar la factura como pagada', error)
+            });
+        }
+    }
+
+    payInvoice(invoice: Invoice) {
+        if (invoice.id) {
+            const invoiceId = invoice.id;
+            this.billingService.payInvoice(invoice.id).subscribe({
+                next: () => {
+                    const paidAt = new Date().toISOString();
+                    const updatedInvoices = this.invoices().map(current =>
+                        current.id === invoiceId
+                            ? { ...current, status: 'paid', is_paid: true, paid_at: paidAt }
+                            : current
+                    );
+                    this.invoices.set(updatedInvoices);
+                    this.updateSelectedInvoice(invoiceId, { status: 'paid', is_paid: true, paid_at: paidAt });
+                    this.loadStats();
+                    this.filterInvoices();
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Cobro procesado',
+                        detail: 'La factura fue cobrada correctamente'
+                    });
+                },
+                error: (error) => this.showErrorMessage('Error al procesar el cobro', error)
             });
         }
     }
@@ -530,12 +676,19 @@ export class BillingManagement implements OnInit {
         this.errorLogger.log('BillingManagement', context, error);
     }
 
+    private updateSelectedInvoice(invoiceId: number, patch: Partial<Invoice>): void {
+        const current = this.selectedInvoice();
+        if (current?.id === invoiceId) {
+            this.selectedInvoice.set({ ...current, ...patch });
+        }
+    }
+
     private buildInvoicePrintHtml(invoice: Invoice): string {
         const tenantName = invoice.tenant_name || invoice.user_name || invoice.user_email || 'N/A';
         const issued = invoice.issued_at ? new Date(invoice.issued_at).toLocaleDateString() : '-';
         const due = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : '-';
         const paid = invoice.paid_at ? new Date(invoice.paid_at).toLocaleDateString() : '-';
-        const amount = Number(invoice.amount || 0).toFixed(2);
+        const amount = this.formatMoney(Number(invoice.amount || 0));
 
         return `<!doctype html>
 <html>
@@ -559,7 +712,7 @@ export class BillingManagement implements OnInit {
   </div>
   <div class="grid">
     <div class="box"><strong>Cliente/Tenant</strong><div>${this.escapeHtml(tenantName)}</div></div>
-    <div class="box"><strong>Plan</strong><div>${this.escapeHtml(invoice.plan_name || invoice.subscription?.plan?.name || 'N/A')}</div></div>
+    <div class="box"><strong>Plan</strong><div>${this.escapeHtml(this.getPlanDisplayName(invoice))}</div></div>
     <div class="box"><strong>Emisión</strong><div>${issued}</div></div>
     <div class="box"><strong>Vencimiento</strong><div>${due}</div></div>
     <div class="box"><strong>Estado</strong><div>${this.escapeHtml(invoice.status || 'pending')}</div></div>
@@ -567,10 +720,17 @@ export class BillingManagement implements OnInit {
   </div>
   <div class="box">
     <div class="muted">Monto</div>
-    <div class="amount">$${amount}</div>
+    <div class="amount">${amount}</div>
   </div>
 </body>
 </html>`;
+    }
+
+    private formatMoney(value: number): string {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: this.currencyCode()
+        }).format(Number(value || 0));
     }
 
     private escapeHtml(text: string): string {

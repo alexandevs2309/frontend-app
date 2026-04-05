@@ -1,10 +1,10 @@
 export const POS_ROLE_GROUPS = {
-    usePos: ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN', 'CLIENT_STAFF', 'ESTILISTA', 'UTILITY'],
-    openCash: ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN'],
-    closeCash: ['MANAGER', 'CLIENT_ADMIN', 'SUPER_ADMIN'],
-    highDiscount: ['MANAGER', 'CLIENT_ADMIN', 'SUPER_ADMIN'],
-    history: ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'SUPER_ADMIN'],
-    refund: ['MANAGER', 'CLIENT_ADMIN', 'SUPER_ADMIN']
+    usePos: ['MANAGER', 'CAJERA', 'CLIENT_ADMIN', 'CLIENT_STAFF', 'ESTILISTA', 'UTILITY'],
+    openCash: ['MANAGER', 'CAJERA', 'CLIENT_ADMIN'],
+    closeCash: ['MANAGER', 'CLIENT_ADMIN'],
+    highDiscount: ['MANAGER', 'CLIENT_ADMIN'],
+    history: ['MANAGER', 'CAJERA', 'CLIENT_ADMIN'],
+    refund: ['MANAGER', 'CLIENT_ADMIN']
 } as const;
 
 const roleMap: Record<string, string> = {
@@ -25,6 +25,7 @@ export function normalizePosRole(role: string): string {
 }
 
 export function hasRolePermission(role: string, allowedRoles: readonly string[]): boolean {
+    return allowedRoles.includes(normalizePosRole(role));
     return allowedRoles.includes(normalizePosRole(role));
 }
 

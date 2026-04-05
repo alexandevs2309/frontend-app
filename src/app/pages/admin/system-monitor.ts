@@ -97,7 +97,7 @@ import { DatePipe } from '@angular/common';
                                 <th>Estado</th>
                                 <th>Tiempo de Respuesta</th>
                                 <th>Última Verificación</th>
-                                <th>Error</th>
+                                <th>Detalle</th>
                             </tr>
                         </ng-template>
                         <ng-template #body let-service>
@@ -119,6 +119,8 @@ import { DatePipe } from '@angular/common';
                                 <td>
                                     @if (service.error_message) {
                                         <span class="text-red-500 text-sm">{{ service.error_message }}</span>
+                                    } @else if (service.details) {
+                                        <span class="text-slate-600 dark:text-slate-300 text-sm">{{ service.details }}</span>
                                     } @else {
                                         <span class="text-green-500">OK</span>
                                     }

@@ -2,7 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { ActivityLogService, ActivityLog } from '../../core/services/activity-log/activity-log.service';
+import { ActivityLogService, AuditLog } from '../../core/services/activity-log/activity-log.service';
 import { DatePipe } from '@angular/common';
 import { UIHelpers } from '../utils/ui-helpers';
 
@@ -26,13 +26,13 @@ import { UIHelpers } from '../utils/ui-helpers';
         </ng-template>
         <ng-template #body let-log>
           <tr>
-            <td>{{ log.user_email }}</td>
+            <td>{{ log.user?.email || 'Sistema' }}</td>
             <td>
               <p-tag [value]="log.action" [severity]="UIHelpers.getActionSeverity(log.action)" />
             </td>
-            <td>{{ log.resource_type }}</td>
-            <td>{{ log.details }}</td>
-            <td>{{ log.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ log.content_type_name || log.source }}</td>
+            <td>{{ log.description || log.object_repr || '-' }}</td>
+            <td>{{ log.timestamp | date:'dd/MM/yyyy HH:mm' }}</td>
           </tr>
         </ng-template>
       </p-table>
@@ -40,7 +40,7 @@ import { UIHelpers } from '../utils/ui-helpers';
   `
 })
 export class ActivityLogComponent implements OnInit {
-  logs = signal<ActivityLog[]>([]);
+  logs = signal<AuditLog[]>([]);
   loading = signal(false);
   
   // Computed para estadísticas reactivas
@@ -58,13 +58,20 @@ export class ActivityLogComponent implements OnInit {
 
   ngOnInit() {
     this.loadLogs();
-    this.activityLogService.logs$.subscribe(logs => this.logs.set(logs));
   }
 
   loadLogs() {
     this.loading.set(true);
-    this.activityLogService.loadLogs();
-    this.loading.set(false);
+    this.activityLogService.getAuditLogs({ page_size: 10 }).subscribe({
+      next: (response) => {
+        this.logs.set(response.results || []);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.logs.set([]);
+        this.loading.set(false);
+      }
+    });
   }
 
   UIHelpers = UIHelpers;

@@ -227,6 +227,7 @@ export class PaymentComponent implements OnInit {
       'inventory': 'Gestión de Inventario',
       'advanced_reports': 'Reportes Avanzados',
       'multi_location': 'Múltiples Ubicaciones',
+      'role_permissions': 'Permisos avanzados por rol',
       'api_access': 'Acceso a API',
       'custom_branding': 'Marca Personalizada',
       'priority_support': 'Soporte Prioritario'

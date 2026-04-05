@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
+import { AppConfigService } from '../../core/services/app-config.service';
 
 @Component({
   selector: 'app-maintenance',
@@ -54,7 +55,7 @@ import { interval, Subscription } from 'rxjs';
         </button>
         
         <div class="maintenance-footer">
-          <p>¿Necesitas ayuda? Contacta a <strong>soporte@barbersaas.com</strong></p>
+          <p>¿Necesitas ayuda? Contacta a <strong>{{ appConfig.supportEmail() }}</strong></p>
         </div>
       </div>
     </div>
@@ -212,7 +213,7 @@ export class MaintenanceComponent implements OnInit, OnDestroy {
   checking = false;
   private timerSubscription?: Subscription;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, public appConfig: AppConfigService) {}
 
   ngOnInit() {
     this.startCountdown();

@@ -30,6 +30,22 @@ export interface AuditLogResponse {
   results: AuditLog[];
 }
 
+export interface AuditSummaryBreakdown {
+  action?: string;
+  source?: string;
+  count: number;
+}
+
+export interface AuditSummaryResponse {
+  recent_activity: AuditLog[];
+  total_logs: number;
+  error_logs: number;
+  warning_logs: number;
+  last_24h: number;
+  actions_breakdown: AuditSummaryBreakdown[];
+  sources_breakdown: AuditSummaryBreakdown[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -47,7 +63,7 @@ export class ActivityLogService extends BaseApiService {
     return this.get(`${API_CONFIG.ENDPOINTS.AUDIT}logs/sources/`);
   }
 
-  getSummary(): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.AUDIT}logs/summary/`);
+  getSummary(): Observable<AuditSummaryResponse> {
+    return this.get<AuditSummaryResponse>(`${API_CONFIG.ENDPOINTS.AUDIT}logs/summary/`);
   }
 }

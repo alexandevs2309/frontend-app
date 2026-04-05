@@ -12,6 +12,7 @@ import { ToastModule } from 'primeng/toast';
 import { TagModule } from 'primeng/tag';
 import { SaasMetricsService, SaasMetrics } from '../../core/services/saas-metrics.service';
 import { ReportService, AdminReportResponse } from '../../core/services/report/report.service';
+import { SettingsService } from '../../core/services/settings.service';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -45,7 +46,7 @@ import { forkJoin } from 'rxjs';
                                 <div class="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                                     <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/60 dark:bg-emerald-900/10">
                                         <div class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">MRR</div>
-                                        <div class="mt-2 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{{(metrics()?.mrr || 0) | currency:'USD':'symbol':'1.0-0'}}</div>
+                                        <div class="mt-2 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{{(metrics()?.mrr || 0) | currency:currencyCode():'symbol':'1.0-0'}}</div>
                                     </div>
                                     <div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900/60 dark:bg-sky-900/10">
                                         <div class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">Activos</div>
@@ -53,7 +54,7 @@ import { forkJoin } from 'rxjs';
                                     </div>
                                     <div class="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 dark:border-violet-900/60 dark:bg-violet-900/10">
                                         <div class="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">ARR</div>
-                                        <div class="mt-2 text-2xl font-semibold text-violet-900 dark:text-violet-100">{{getARR() | currency:'USD':'symbol':'1.0-0'}}</div>
+                                        <div class="mt-2 text-2xl font-semibold text-violet-900 dark:text-violet-100">{{getARR() | currency:currencyCode():'symbol':'1.0-0'}}</div>
                                     </div>
                                 </div>
                             </div>
@@ -94,7 +95,7 @@ import { forkJoin } from 'rxjs';
             <div class="col-span-12 md:col-span-3">
                 <p-card>
                     <div class="text-center">
-                        <div class="text-3xl font-bold text-green-600">{{(metrics()?.mrr || 0) | currency:'USD':'symbol':'1.0-0'}}</div>
+                        <div class="text-3xl font-bold text-green-600">{{(metrics()?.mrr || 0) | currency:currencyCode():'symbol':'1.0-0'}}</div>
                         <div class="text-sm text-gray-600">MRR (Monthly Recurring Revenue)</div>
                         <div class="text-xs text-green-500 mt-1">+{{metrics()?.growth_rate || 0}}% vs mes anterior</div>
                     </div>
@@ -126,7 +127,7 @@ import { forkJoin } from 'rxjs';
             <div class="col-span-12 md:col-span-3">
                 <p-card>
                     <div class="text-center">
-                        <div class="text-3xl font-bold text-purple-600">{{getARR() | currency:'USD':'symbol':'1.0-0'}}</div>
+                        <div class="text-3xl font-bold text-purple-600">{{getARR() | currency:currencyCode():'symbol':'1.0-0'}}</div>
                         <div class="text-sm text-gray-600">ARR (Annual Recurring Revenue)</div>
                         <div class="text-xs text-purple-500 mt-1">MRR × 12</div>
                     </div>
@@ -136,7 +137,37 @@ import { forkJoin } from 'rxjs';
             <div class="col-span-12 md:col-span-4">
                 <p-card>
                     <div class="text-center">
-                        <div class="text-3xl font-bold text-orange-600">{{ (adminReport()?.pending_payments || 0) | currency:'USD':'symbol':'1.0-0' }}</div>
+                        <div class="text-3xl font-bold text-emerald-600">{{ (adminReport()?.total_revenue || 0) | currency:currencyCode():'symbol':'1.0-0' }}</div>
+                        <div class="text-sm text-gray-600">Revenue Bruto</div>
+                        <div class="text-xs text-emerald-500 mt-1">Facturas pagadas del período</div>
+                    </div>
+                </p-card>
+            </div>
+
+            <div class="col-span-12 md:col-span-4">
+                <p-card>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-amber-600">{{ (adminReport()?.platform_commission_amount || 0) | currency:currencyCode():'symbol':'1.0-0' }}</div>
+                        <div class="text-sm text-gray-600">Comisión Plataforma</div>
+                        <div class="text-xs text-amber-500 mt-1">{{ (adminReport()?.commission_rate || 0) | number:'1.0-2' }}% aplicado al revenue cobrado</div>
+                    </div>
+                </p-card>
+            </div>
+
+            <div class="col-span-12 md:col-span-4">
+                <p-card>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-teal-600">{{ (adminReport()?.net_revenue || 0) | currency:currencyCode():'symbol':'1.0-0' }}</div>
+                        <div class="text-sm text-gray-600">Revenue Neto Plataforma</div>
+                        <div class="text-xs text-teal-500 mt-1">Revenue bruto menos comisión</div>
+                    </div>
+                </p-card>
+            </div>
+
+            <div class="col-span-12 md:col-span-4">
+                <p-card>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-orange-600">{{ (adminReport()?.pending_payments || 0) | currency:currencyCode():'symbol':'1.0-0' }}</div>
                         <div class="text-sm text-gray-600">Pagos Pendientes</div>
                         <div class="text-xs text-orange-500 mt-1">Riesgo de cobranza</div>
                     </div>
@@ -185,8 +216,9 @@ import { forkJoin } from 'rxjs';
                             <tr>
                                 <th>Plan</th>
                                 <th>Tenants</th>
-                                <th>Revenue</th>
-                                <th>Promedio</th>
+                                <th>Bruto</th>
+                                <th>Comisión</th>
+                                <th>Neto</th>
                             </tr>
                         </ng-template>
                         <ng-template #body let-plan>
@@ -195,8 +227,9 @@ import { forkJoin } from 'rxjs';
                                 <td>
                                     <p-tag [value]="plan.tenant_count.toString()" severity="info" />
                                 </td>
-                                <td>{{plan.revenue | currency:'USD'}}</td>
-                                <td>{{getAverageRevenue(plan) | currency:'USD'}}</td>
+                                <td>{{plan.revenue | currency:currencyCode()}}</td>
+                                <td>{{(plan.commission_amount || 0) | currency:currencyCode()}}</td>
+                                <td>{{getNetRevenue(plan) | currency:currencyCode()}}</td>
                             </tr>
                         </ng-template>
                     </p-table>
@@ -251,6 +284,7 @@ export class AdminReports implements OnInit {
     metrics = signal<SaasMetrics | null>(null);
     adminReport = signal<AdminReportResponse | null>(null);
     loading = signal(false);
+    currencyCode = signal('USD');
 
     selectedPeriod = 'last_30_days';
     startDate: Date | null = null;
@@ -272,13 +306,27 @@ export class AdminReports implements OnInit {
     constructor(
         private saasMetricsService: SaasMetricsService,
         private reportService: ReportService,
+        private settingsService: SettingsService,
         private messageService: MessageService
     ) {
         this.initChartOptions();
     }
 
     ngOnInit() {
+        this.loadCurrency();
         this.generateReport(false);
+    }
+
+    loadCurrency() {
+        this.settingsService.getSettings().subscribe({
+            next: (settings) => {
+                if (settings?.default_currency) {
+                    this.currencyCode.set(settings.default_currency);
+                    this.initChartOptions();
+                }
+            },
+            error: () => {}
+        });
     }
 
     generateReport(showToast = true) {
@@ -310,18 +358,28 @@ export class AdminReports implements OnInit {
     updateCharts(metrics: SaasMetrics, adminReport: AdminReportResponse) {
         const trend = adminReport?.revenue_trend || [];
         const labels = trend.map((item) => item.label || item.month || '');
-        const values = trend.map((item) => item.revenue || 0);
+        const grossValues = trend.map((item) => item.revenue || 0);
+        const netValues = trend.map((item) => item.net_revenue || 0);
 
         // Revenue trend chart from real backend data
         this.mrrChartData = {
             labels,
-            datasets: [{
-                label: 'Revenue',
-                data: values,
-                borderColor: '#10B981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                tension: 0.4
-            }]
+            datasets: [
+                {
+                    label: 'Revenue bruto',
+                    data: grossValues,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Revenue neto plataforma',
+                    data: netValues,
+                    borderColor: '#0F766E',
+                    backgroundColor: 'rgba(15, 118, 110, 0.08)',
+                    tension: 0.35
+                }
+            ]
         };
 
         // Revenue by Plan Chart
@@ -366,7 +424,7 @@ export class AdminReports implements OnInit {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        callback: (value: any) => '$' + value.toLocaleString()
+                        callback: (value: any) => this.formatMoney(Number(value), '1.0-0')
                     }
                 }
             }
@@ -388,6 +446,13 @@ export class AdminReports implements OnInit {
 
     getAverageRevenue(plan: any): number {
         return plan.tenant_count > 0 ? plan.revenue / plan.tenant_count : 0;
+    }
+
+    getNetRevenue(plan: any): number {
+        if (typeof plan?.net_revenue === 'number') {
+            return plan.net_revenue;
+        }
+        return (plan?.revenue || 0) - (plan?.commission_amount || 0);
     }
 
     getCollectionRate(): number {
@@ -423,8 +488,8 @@ export class AdminReports implements OnInit {
         // Métricas principales
         csvContent += 'Métricas Principales\n';
         csvContent += 'Métrica,Valor\n';
-        csvContent += `MRR,"$${metrics.mrr.toLocaleString()}"\n`;
-        csvContent += `ARR,"$${this.getARR().toLocaleString()}"\n`;
+        csvContent += `MRR,"${this.formatMoney(metrics.mrr, '1.0-0')}"\n`;
+        csvContent += `ARR,"${this.formatMoney(this.getARR(), '1.0-0')}"\n`;
         csvContent += `Total Tenants,${metrics.total_tenants}\n`;
         csvContent += `Tenants Activos,${metrics.active_tenants}\n`;
         csvContent += `Trials Activos,${metrics.trial_tenants || 0}\n`;
@@ -434,21 +499,23 @@ export class AdminReports implements OnInit {
 
         const adminReport = this.adminReport();
         if (adminReport) {
-            csvContent += 'Cobranza\n';
-            csvContent += 'Métrica,Valor\n';
-            csvContent += `Pagos Pendientes,"$${Number(adminReport.pending_payments || 0).toLocaleString()}"\n`;
-            csvContent += `Facturas Vencidas,${adminReport.overdue_invoices || 0}\n`;
-            csvContent += `Facturas Pagadas,${adminReport.summary?.paid_invoices || 0}\n`;
-            csvContent += `Facturas Totales,${adminReport.summary?.total_invoices || 0}\n`;
-            csvContent += `Tasa de Cobro,${this.getCollectionRate().toFixed(1)}%\n\n`;
+        csvContent += 'Cobranza\n';
+        csvContent += 'Métrica,Valor\n';
+        csvContent += `Revenue Bruto,"${this.formatMoney(Number(adminReport.total_revenue || 0), '1.0-0')}"\n`;
+        csvContent += `Comisión Plataforma,"${this.formatMoney(Number(adminReport.platform_commission_amount || 0), '1.0-0')}"\n`;
+        csvContent += `Revenue Neto,"${this.formatMoney(Number(adminReport.net_revenue || 0), '1.0-0')}"\n`;
+        csvContent += `Pagos Pendientes,"${this.formatMoney(Number(adminReport.pending_payments || 0), '1.0-0')}"\n`;
+        csvContent += `Facturas Vencidas,${adminReport.overdue_invoices || 0}\n`;
+        csvContent += `Facturas Pagadas,${adminReport.summary?.paid_invoices || 0}\n`;
+        csvContent += `Facturas Totales,${adminReport.summary?.total_invoices || 0}\n`;
+        csvContent += `Tasa de Cobro,${this.getCollectionRate().toFixed(1)}%\n\n`;
         }
         
         // Revenue por plan
         csvContent += 'Revenue por Plan\n';
-        csvContent += 'Plan,Revenue,Tenants,Promedio por Tenant\n';
-        metrics.revenue_by_plan.forEach(plan => {
-            const avg = this.getAverageRevenue(plan);
-            csvContent += `${plan.plan_name},"$${plan.revenue.toLocaleString()}",${plan.tenant_count},"$${avg.toLocaleString()}"\n`;
+        csvContent += 'Plan,Revenue Bruto,Comisión,Revenue Neto,Tenants\n';
+        metrics.revenue_by_plan.forEach((plan: any) => {
+            csvContent += `${plan.plan_name},"${this.formatMoney(plan.revenue, '1.0-0')}","${this.formatMoney(Number(plan.commission_amount || 0), '1.0-0')}","${this.formatMoney(this.getNetRevenue(plan), '1.0-0')}",${plan.tenant_count}\n`;
         });
         
         csvContent += '\n';
@@ -532,12 +599,20 @@ export class AdminReports implements OnInit {
     private generateMetricsSection(metrics: any, arr: number): string {
         return `<div class="metrics">
         <div class="metric-card">
-            <div class="metric-value">$${metrics.mrr.toLocaleString()}</div>
-            <div class="metric-label">MRR</div>
+            <div class="metric-value">${this.formatMoney(metrics.mrr, '1.0-0')}</div>
+            <div class="metric-label">MRR Bruto</div>
         </div>
         <div class="metric-card">
-            <div class="metric-value">$${arr.toLocaleString()}</div>
+            <div class="metric-value">${this.formatMoney(arr, '1.0-0')}</div>
             <div class="metric-label">ARR</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">${this.formatMoney(Number(metrics.platform_commission_mrr || 0), '1.0-0')}</div>
+            <div class="metric-label">Comisión MRR</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">${this.formatMoney(Number(metrics.net_mrr || 0), '1.0-0')}</div>
+            <div class="metric-label">MRR Neto</div>
         </div>
         <div class="metric-card">
             <div class="metric-value">${metrics.active_tenants}</div>
@@ -558,16 +633,17 @@ export class AdminReports implements OnInit {
         const rows = metrics.revenue_by_plan.map((plan: any) => 
             `<tr>
                 <td>${this.escapeHtml(plan.plan_name)}</td>
-                <td>$${plan.revenue.toLocaleString()}</td>
+                <td>${this.formatMoney(plan.revenue, '1.0-0')}</td>
+                <td>${this.formatMoney(Number(plan.commission_amount || 0), '1.0-0')}</td>
+                <td>${this.formatMoney(this.getNetRevenue(plan), '1.0-0')}</td>
                 <td>${plan.tenant_count}</td>
-                <td>$${this.getAverageRevenue(plan).toLocaleString()}</td>
             </tr>`
         ).join('');
         
         return `<div class="section-title">Revenue por Plan</div>
         <table>
             <thead>
-                <tr><th>Plan</th><th>Revenue</th><th>Tenants</th><th>Promedio</th></tr>
+                <tr><th>Plan</th><th>Revenue Bruto</th><th>Comisión</th><th>Revenue Neto</th><th>Tenants</th></tr>
             </thead>
             <tbody>${rows}</tbody>
         </table>`;
@@ -595,6 +671,15 @@ export class AdminReports implements OnInit {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    private formatMoney(value: number, digitsInfo = '1.2-2'): string {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: this.currencyCode(),
+            minimumFractionDigits: digitsInfo === '1.0-0' ? 0 : 2,
+            maximumFractionDigits: digitsInfo === '1.0-0' ? 0 : 2
+        }).format(Number(value || 0));
     }
 
     private openPrintWindow(htmlContent: string): void {

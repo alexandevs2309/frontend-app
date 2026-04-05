@@ -17,6 +17,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AuthService } from '../../core/services/auth/auth.service';
 import { TenantService } from '../../core/services/tenant/tenant.service';
 import { RoleService } from '../../core/services/role/role.service';
+import { PlanAccessService } from '../../core/services/plan-access.service';
 import { UIHelpers } from '../../shared/utils/ui-helpers';
 import { DatePipe } from '@angular/common';
 import { roleKey } from '../../core/utils/role-normalizer';
@@ -263,6 +264,33 @@ interface User {
             </ng-template>
         </p-dialog>
 
+        <p-dialog
+            [(visible)]="limitDialog"
+            [modal]="true"
+            [style]="{ width: '32rem' }"
+            header="Límite del plan alcanzado"
+            [draggable]="false"
+            [resizable]="false"
+        >
+            <div class="space-y-3">
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-lock text-amber-500 text-xl mt-1"></i>
+                    <div>
+                        <div class="font-semibold text-surface-900 dark:text-surface-0">{{ limitDialogTitle }}</div>
+                        <p class="mt-2 text-sm text-muted-color m-0">{{ limitDialogMessage }}</p>
+                        <div *ngIf="limitDialogRecommendation" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+                            <div class="font-semibold">Plan recomendado: {{ limitDialogRecommendation.nextPlanName }}</div>
+                            <p class="mt-1 mb-0">{{ limitDialogRecommendation.reason }}</p>
+                            <p class="mt-1 mb-0 opacity-90">{{ limitDialogRecommendation.detail }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <ng-template #footer>
+                <p-button label="Entendido" icon="pi pi-check" (click)="limitDialog = false" />
+            </ng-template>
+        </p-dialog>
+
         <p-confirmdialog [style]="{ width: '450px' }" />
         <p-toast />
     `,
@@ -278,6 +306,10 @@ export class UsersManagement implements OnInit {
     user!: User;
     selectedUsers!: User[] | null;
     selectedTenantFilter: number | null = null;
+    limitDialog = false;
+    limitDialogTitle = 'Límite del plan alcanzado';
+    limitDialogMessage = '';
+    limitDialogRecommendation: ReturnType<PlanAccessService['getUpgradeRecommendation']> = null;
     submitted: boolean = false;
     loading = signal(false);
     saving = signal(false);
@@ -287,6 +319,7 @@ export class UsersManagement implements OnInit {
         private authService: AuthService,
         private tenantService: TenantService,
         private roleService: RoleService,
+        private planAccessService: PlanAccessService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService
     ) {}
@@ -385,6 +418,14 @@ export class UsersManagement implements OnInit {
     }
 
     openNew() {
+        if (!this.isSuperAdminView()) {
+            const status = this.planAccessService.getUserLimitStatus(this.getCurrentUserCountForCurrentTenant());
+            if (status.reached) {
+                this.showUserLimitDialog(this.planAccessService.getUserLimitMessage(status));
+                return;
+            }
+        }
+
         this.user = {
             is_active: true,
             role: 'Client-Staff',
@@ -510,6 +551,20 @@ export class UsersManagement implements OnInit {
         return this.users().filter((u) => u.tenant === this.user.tenant && u.is_active).length;
     }
 
+    private getCurrentUserCountForCurrentTenant(): number {
+        const tenantData = localStorage.getItem('tenant');
+        if (!tenantData) {
+            return 0;
+        }
+
+        try {
+            const tenant = JSON.parse(tenantData);
+            return this.users().filter((u) => u.tenant === tenant.id && u.is_active).length;
+        } catch {
+            return 0;
+        }
+    }
+
     createUser() {
         const userData = {
             email: this.user.email!,
@@ -539,12 +594,14 @@ export class UsersManagement implements OnInit {
 
     private showUserLimitError(maxUsers: number): void {
         const sanitizedMaxUsers = Math.max(0, Math.floor(maxUsers));
-        this.messageService.add({
-            severity: 'error',
-            summary: 'Límite Alcanzado',
-            detail: `El tenant ha alcanzado el límite de ${sanitizedMaxUsers} usuarios activos`,
-            life: 5000
-        });
+        this.showUserLimitDialog(`El tenant ha alcanzado el límite de ${sanitizedMaxUsers} usuarios activos.`);
+    }
+
+    private showUserLimitDialog(message: string): void {
+        this.limitDialogTitle = 'No se puede crear el usuario';
+        this.limitDialogMessage = message;
+        this.limitDialogRecommendation = this.planAccessService.getUpgradeRecommendation('users');
+        this.limitDialog = true;
     }
 
     private isUserFormValid(): boolean {

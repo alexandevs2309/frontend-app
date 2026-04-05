@@ -21,6 +21,8 @@ export interface SaasMetrics {
     tenant_name: string;
     plan: string;
     created_at: string;
+    subscription_status?: string;
+    trial_days_remaining?: number;
   }[];
 }
 
