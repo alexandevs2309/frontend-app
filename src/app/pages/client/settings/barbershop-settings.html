@@ -1,13 +1,37 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 transition-colors">
+<div class="min-h-screen bg-slate-50 p-4 transition-colors dark:bg-slate-950">
   <!-- HEADER -->
-  <div class="rounded-2xl p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-    <div class="flex items-center gap-3">
-      <div class="p-3 bg-indigo-600 rounded-xl shadow">
-        <i class="pi pi-cog text-3xl text-white"></i>
+  <div class="rounded-3xl p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+    <div class="grid gap-6 xl:grid-cols-[1.15fr,0.85fr] xl:items-center">
+      <div class="flex items-start gap-4">
+        <div class="p-3 bg-slate-950 rounded-2xl shadow">
+          <i class="pi pi-cog text-3xl text-white"></i>
+        </div>
+        <div>
+          <div class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">Operación del negocio</div>
+          <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white mt-3">Configuración de peluquería</h1>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mt-2 max-w-2xl">Pon primero los datos que afectan tickets, fiscalidad, contacto y jornada diaria. Lo demás puede esperar.</p>
+        </div>
       </div>
-      <div>
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Configuración de Peluquería</h1>
-        <p class="text-sm text-slate-600 dark:text-slate-400">Personaliza tu negocio con gobierno defensivo</p>
+      <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
+        <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Listo para operar</div>
+        <div class="mt-2 text-2xl font-black">{{ hasFiscalIdentity() ? 'Ticket fiscal listo' : 'Falta identidad fiscal' }}</div>
+        <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+          {{ getOperationalReadinessMessage() }}
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Contacto</div>
+            <div class="mt-2 text-2xl font-black">{{ getConfiguredContactCount() }}/3</div>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Fiscal</div>
+            <div class="mt-2 text-2xl font-black">{{ hasFiscalIdentity() ? 'OK' : 'Falta' }}</div>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Moneda</div>
+            <div class="mt-2 text-2xl font-black">{{ settings().currency_symbol }}</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -29,16 +53,16 @@
 
   <div class="grid gap-6 lg:grid-cols-2">
     <!-- INFORMACIÓN GENERAL -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
-      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+    <div class="rounded-xl bg-white p-6 shadow-sm transition-colors dark:bg-slate-900">
+      <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
         <i class="pi pi-building text-blue-600 dark:text-blue-400"></i>
         Información General
       </h3>
 
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Nombre de la Peluquería</label>
-          <input type="text" pInputText [(ngModel)]="settings().name"
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Nombre de la Peluquería</label>
+          <input type="text" pInputText [ngModel]="settings().name" (ngModelChange)="updateName($event)"
                  class="w-full" placeholder="Mi Peluquería"
                  [class.ng-invalid]="isBusinessNameInvalid()">
           <small *ngIf="isBusinessNameInvalid()" class="text-red-600 dark:text-red-400">
@@ -47,18 +71,37 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Logo</label>
-          <p-fileUpload mode="basic" name="logo" accept="image/*"
-                        [maxFileSize]="1000000" (onSelect)="onLogoUpload($event)"
-                        chooseLabel="Seleccionar Logo" class="w-full">
-          </p-fileUpload>
-          <div *ngIf="settings().logo" class="mt-2">
-            <img [src]="settings().logo" alt="Logo" class="h-16 w-auto rounded">
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Logo</label>
+          <ng-container *ngIf="customBrandingEnabled(); else premiumBrandingBlock">
+            <p-fileUpload mode="basic" name="logo" accept="image/*"
+                          [maxFileSize]="1000000" (onSelect)="onLogoUpload($event)"
+                          chooseLabel="Seleccionar Logo" class="w-full">
+            </p-fileUpload>
+            <div *ngIf="settings().logo" class="mt-2">
+              <img [src]="settings().logo" alt="Logo" class="h-16 w-auto rounded">
+            </div>
+          </ng-container>
+          <ng-template #premiumBrandingBlock>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/10">
+              <div class="flex items-start gap-3">
+                <i class="pi pi-star text-amber-500 text-lg mt-1"></i>
+                <div class="flex-1">
+                  <div class="font-semibold text-amber-900 dark:text-amber-100">Branding personalizado disponible en Premium</div>
+                  <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                    Tu plan actual no incluye carga de logo personalizado. Actualiza a Premium para mostrar tu marca en esta pantalla y en la experiencia del negocio.
+                  </p>
+                  <button pButton type="button" label="Ver planes" class="p-button-sm p-button-warning mt-3" (click)="goToPlans()"></button>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+          <div *ngIf="!customBrandingEnabled() && settings().logo" class="mt-2">
+            <img [src]="settings().logo" alt="Logo" class="h-16 w-auto rounded opacity-70">
           </div>
         </div>
 
         <div>
-          <label class="text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          <label class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
             <i class="pi pi-exclamation-triangle text-red-600"></i>
             Moneda
           </label>
@@ -78,8 +121,8 @@
     </div>
 
     <!-- HORARIOS DE ATENCIÓN -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
-      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+    <div class="rounded-xl bg-white p-6 shadow-sm transition-colors dark:bg-slate-900">
+      <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
         <i class="pi pi-clock text-purple-600 dark:text-purple-400"></i>
         Horarios de Atención
       </h3>
@@ -93,14 +136,14 @@
 
       <div class="space-y-3">
         <div *ngFor="let day of days" class="flex items-center gap-3">
-          <div class="w-20 text-sm font-medium text-gray-700 dark:text-gray-300">{{ day.label }}</div>
+          <div class="w-20 text-sm font-medium text-slate-700 dark:text-slate-300">{{ day.label }}</div>
 
           <div class="flex items-center gap-2">
             <input type="checkbox"
                    [checked]="!getBusinessHour(day.key, 'closed')"
                    (change)="updateBusinessHour(day.key, 'closed', !$any($event.target).checked)"
                    class="rounded">
-            <span class="text-sm text-gray-700 dark:text-gray-300">Abierto</span>
+            <span class="text-sm text-slate-700 dark:text-slate-300">Abierto</span>
           </div>
 
           <div *ngIf="!getBusinessHour(day.key, 'closed')"
@@ -109,7 +152,7 @@
                    [ngModel]="getBusinessHour(day.key, 'open')"
                    (ngModelChange)="updateBusinessHour(day.key, 'open', $event)"
                    class="px-2 py-1 border rounded text-sm">
-            <span class="text-sm text-gray-700 dark:text-gray-300">a</span>
+            <span class="text-sm text-slate-700 dark:text-slate-300">a</span>
             <input type="time"
                    [ngModel]="getBusinessHour(day.key, 'close')"
                    (ngModelChange)="updateBusinessHour(day.key, 'close', $event)"
@@ -122,7 +165,7 @@
           </div>
 
           <div *ngIf="getBusinessHour(day.key, 'closed')"
-               class="text-sm text-gray-500 dark:text-gray-400">
+               class="text-sm text-slate-500 dark:text-slate-400">
             Cerrado
           </div>
         </div>
@@ -130,22 +173,22 @@
     </div>
 
     <!-- INFORMACIÓN DE CONTACTO -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
-      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+    <div class="rounded-xl bg-white p-6 shadow-sm transition-colors dark:bg-slate-900">
+      <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
         <i class="pi pi-phone text-orange-600 dark:text-orange-400"></i>
         Información de Contacto
       </h3>
 
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Teléfono</label>
-          <input type="tel" pInputText [(ngModel)]="settings().contact.phone"
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Teléfono</label>
+          <input type="tel" pInputText [ngModel]="settings().contact.phone" (ngModelChange)="updateContact('phone', $event)"
                  class="w-full" placeholder="+57 300 123 4567">
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Email</label>
-          <input type="email" pInputText [(ngModel)]="settings().contact.email"
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+          <input type="email" pInputText [ngModel]="settings().contact.email" (ngModelChange)="updateContact('email', $event)"
                  class="w-full" placeholder="contacto@mipeluqueria.com"
                  [class.ng-invalid]="isContactEmailInvalid()">
           <small *ngIf="isContactEmailInvalid()" class="text-red-600 dark:text-red-400">
@@ -154,8 +197,8 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Dirección</label>
-          <textarea pInputText [(ngModel)]="settings().contact.address"
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Dirección</label>
+          <textarea pInputText [ngModel]="settings().contact.address" (ngModelChange)="updateContact('address', $event)"
                     class="w-full h-20 resize-none"
                     placeholder="Calle 123 #45-67, Barrio Centro, Ciudad"></textarea>
         </div>
@@ -163,35 +206,41 @@
     </div>
 
     <!-- CONFIGURACIÓN POS -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors border-l-4 border-emerald-500">
-      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+    <div class="rounded-xl border-l-4 border-emerald-500 bg-white p-6 shadow-sm transition-colors dark:bg-slate-900">
+      <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
         <i class="pi pi-shopping-cart text-emerald-600 dark:text-emerald-400"></i>
         Configuración POS (Tickets)
       </h3>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Esta información aparecerá en los tickets de venta</p>
+      <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">Pon aquí los datos que caja y recibos necesitan sin depender de edición manual luego.</p>
 
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Nombre del Negocio</label>
-          <input type="text" pInputText [(ngModel)]="settings().pos_config!.business_name"
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Nombre del Negocio</label>
+          <input type="text" pInputText [ngModel]="settings().pos_config!.business_name" (ngModelChange)="updatePosConfig('business_name', $event)"
                  class="w-full" placeholder="Mi Barbería Premium">
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Dirección</label>
-          <input type="text" pInputText [(ngModel)]="settings().pos_config!.address"
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">RNC</label>
+          <input type="text" pInputText [ngModel]="settings().pos_config!.rnc" (ngModelChange)="updatePosConfig('rnc', $event)"
+                 class="w-full" placeholder="132-45678-9">
+        </div>
+
+        <div>
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Dirección</label>
+          <input type="text" pInputText [ngModel]="settings().pos_config!.address" (ngModelChange)="updatePosConfig('address', $event)"
                  class="w-full" placeholder="Calle Principal #123">
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Teléfono</label>
-          <input type="tel" pInputText [(ngModel)]="settings().pos_config!.phone"
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Teléfono</label>
+          <input type="tel" pInputText [ngModel]="settings().pos_config!.phone" (ngModelChange)="updatePosConfig('phone', $event)"
                  class="w-full" placeholder="809-555-1234">
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Email</label>
-          <input type="email" pInputText [(ngModel)]="settings().pos_config!.email"
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+          <input type="email" pInputText [ngModel]="settings().pos_config!.email" (ngModelChange)="updatePosConfig('email', $event)"
                  class="w-full" placeholder="contacto@mibarberia.com"
                  [class.ng-invalid]="isPosEmailInvalid()">
           <small *ngIf="isPosEmailInvalid()" class="text-red-600 dark:text-red-400">
@@ -200,8 +249,8 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Sitio Web</label>
-          <input type="url" pInputText [(ngModel)]="settings().pos_config!.website"
+          <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Sitio Web</label>
+          <input type="url" pInputText [ngModel]="settings().pos_config!.website" (ngModelChange)="updatePosConfig('website', $event)"
                  class="w-full" placeholder="www.mibarberia.com"
                  [class.ng-invalid]="isPosWebsiteInvalid()">
           <small *ngIf="isPosWebsiteInvalid()" class="text-red-600 dark:text-red-400">
@@ -212,32 +261,33 @@
     </div>
   </div>
 
-  <div class="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors border-l-4 border-indigo-500">
+  <div class="mt-6 rounded-xl border-l-4 border-indigo-500 bg-white p-6 shadow-sm transition-colors dark:bg-slate-900">
     <div class="mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+      <h3 class="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
         <i class="pi pi-ticket text-indigo-600 dark:text-indigo-400"></i>
         Vista Previa del Ticket
       </h3>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Asi se veran los datos principales del recibo en POS</p>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Asi se veran los datos principales del recibo en POS</p>
     </div>
 
-    <div class="max-w-sm mx-auto border border-dashed border-gray-300 dark:border-gray-700 rounded-lg bg-white text-black p-4 font-mono text-xs">
+    <div class="mx-auto max-w-sm rounded-lg border border-dashed border-slate-300 bg-white p-4 font-mono text-xs text-black dark:border-slate-700">
       <div class="text-center mb-3">
         <div *ngIf="settings().logo" class="mb-2">
           <img [src]="settings().logo" alt="Logo" class="h-12 w-auto mx-auto rounded">
         </div>
         <div class="font-bold text-sm uppercase tracking-wide">{{ getTicketPreviewBusinessName() }}</div>
-        <div class="text-[11px] mt-1">Estilo y Tradicion</div>
+        <div class="text-[11px] mt-1">Comprobante de venta</div>
       </div>
 
       <div class="space-y-1 mb-3">
+        <div>RNC {{ getTicketPreviewRnc() }}</div>
         <div>📍 {{ getTicketPreviewAddress() }}</div>
         <div>📞 {{ getTicketPreviewPhone() }}</div>
         <div>🌐 {{ getTicketPreviewWebsite() }}</div>
         <div>📧 {{ getTicketPreviewEmail() }}</div>
       </div>
 
-      <div class="border-t border-b border-dashed border-gray-400 py-2 my-2">
+      <div class="my-2 border-y border-dashed border-slate-400 py-2">
         <div class="flex justify-between"><span>TICKET #</span><span>000001</span></div>
         <div class="flex justify-between"><span>CLIENTE</span><span>Cliente Demo</span></div>
       </div>
@@ -250,7 +300,7 @@
         <div class="text-[11px]">Servicio</div>
       </div>
 
-      <div class="border-t border-dashed border-gray-400 pt-2 space-y-1">
+      <div class="space-y-1 border-t border-dashed border-slate-400 pt-2">
         <div class="flex justify-between"><span>SUBTOTAL</span><span>{{ getTicketPreviewCurrency() }}1300.00</span></div>
         <div class="flex justify-between font-bold"><span>TOTAL PAGADO</span><span>{{ getTicketPreviewCurrency() }}1300.00</span></div>
       </div>
@@ -264,13 +314,15 @@
   </div>
 
   <!-- BOTONES DE ACCIÓN -->
-  <div class="flex justify-end gap-3 mt-6">
+  <div class="sticky bottom-4 z-10 mt-6">
+    <div class="ml-auto flex w-full max-w-xl justify-end gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
     <button pButton label="Cargar Configuración" icon="pi pi-refresh"
             class="p-button-outlined" (click)="loadSettings()" [loading]="loading()">
     </button>
     <button pButton label="Guardar Cambios" icon="pi pi-save"
             class="p-button-success" (click)="saveSettings()" [loading]="loading()">
     </button>
+    </div>
   </div>
 
   <p-toast></p-toast>
@@ -298,12 +350,12 @@
 
       <div class="space-y-3">
         <div *ngFor="let change of criticalChanges()" 
-             class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+             class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
           <div class="flex items-start justify-between">
             <div class="flex-1">
-              <div class="font-medium text-gray-900 dark:text-gray-100">{{ change.setting }}</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ change.impact }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-500 mt-2">
+              <div class="font-medium text-slate-900 dark:text-slate-100">{{ change.setting }}</div>
+              <div class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ change.impact }}</div>
+              <div class="mt-2 text-xs text-slate-500 dark:text-slate-500">
                 <span class="font-medium">Anterior:</span> {{ change.old_value || 'No definido' }} → 
                 <span class="font-medium">Nuevo:</span> {{ change.new_value }}
               </div>

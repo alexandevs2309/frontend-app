@@ -9,6 +9,7 @@ import { OnboardingTooltipPlacement } from './onboarding.config';
     selector: 'app-onboarding-tour-overlay',
     standalone: true,
     imports: [DecimalPipe, I18nPipe, NgStyle],
+    styleUrl: './onboarding.styles.scss',
     host: {
         style: 'position: fixed; inset: 0; z-index: 2147483000;'
     },

@@ -24,6 +24,10 @@ export interface BuildTicketSaleInput {
     clientName?: string;
     employeeName?: string;
     cashierName?: string;
+    fiscalRequested?: boolean;
+    fiscalVoucherType?: string;
+    fiscalName?: string;
+    fiscalDocument?: string;
 }
 
 export function buildTicketPayments(
@@ -57,7 +61,11 @@ export function buildTicketSaleData(input: BuildTicketSaleInput): any {
         client_name: input.clientName,
         employee_name: input.employeeName,
         cashier_name: input.cashierName,
-        user_name: input.cashierName
+        user_name: input.cashierName,
+        fiscal_requested: input.fiscalRequested,
+        fiscal_voucher_type: input.fiscalVoucherType,
+        fiscal_name: input.fiscalName,
+        fiscal_document: input.fiscalDocument
     };
 }
 

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, DestroyRef, ElementRef, OnInit, ViewChild, effect, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, OnInit, ViewChild, ViewEncapsulation, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Calendar } from '@fullcalendar/core';
@@ -27,11 +27,11 @@ import { AppointmentsUiService } from './appointments-ui.service';
     providers: [MessageService, ConfirmationService],
     template: `
         <div class="mb-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-4">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <div class="text-sm font-semibold text-slate-900 dark:text-white">Vista de agenda visual</div>
+                    <div class="text-sm font-semibold text-slate-900 dark:text-white">Agenda visual</div>
                     <div class="text-sm text-slate-600 dark:text-slate-400">
-                        Aquí ves la carga horaria del día o la semana. Haz clic sobre una cita para revisar el detalle, editarla o eliminarla.
+                        Haz clic en una cita para verla, editarla o eliminarla.
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2 text-xs">
@@ -55,48 +55,48 @@ import { AppointmentsUiService } from './appointments-ui.service';
             <div #calendarEl></div>
         </div>
 
-        <p-dialog [(visible)]="mostrarDetalle" [modal]="true" [style]="{ width: '450px' }" header="Detalle de Cita">
+        <p-dialog [(visible)]="mostrarDetalle" [modal]="true" [style]="{ width: '450px' }" header="Detalle de cita">
             <div *ngIf="citaSeleccionada" class="space-y-4">
-                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
+                <div class="flex items-center gap-3 rounded bg-slate-50 p-3 dark:bg-slate-800/70">
                     <i class="pi pi-user text-2xl text-blue-600"></i>
                     <div>
-                        <label class="text-xs text-surface-500 dark:text-surface-400">Cliente</label>
+                        <label class="text-xs text-slate-500 dark:text-slate-400">Cliente</label>
                         <p class="font-semibold">{{ citaSeleccionada.client_name }}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
+                <div class="flex items-center gap-3 rounded bg-slate-50 p-3 dark:bg-slate-800/70">
                     <i class="pi pi-briefcase text-2xl text-purple-600"></i>
                     <div>
-                        <label class="text-xs text-surface-500 dark:text-surface-400">Empleado</label>
+                        <label class="text-xs text-slate-500 dark:text-slate-400">Empleado</label>
                         <p class="font-semibold">{{ citaSeleccionada.stylist_name }}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
+                <div class="flex items-center gap-3 rounded bg-slate-50 p-3 dark:bg-slate-800/70">
                     <i class="pi pi-star text-2xl text-yellow-600"></i>
                     <div>
-                        <label class="text-xs text-surface-500 dark:text-surface-400">Servicio</label>
+                        <label class="text-xs text-slate-500 dark:text-slate-400">Servicio</label>
                         <p class="font-semibold">{{ citaSeleccionada.service_name }}</p>
-                        <p class="text-sm text-surface-600 dark:text-surface-400">{{ citaSeleccionada.service_duration || 30 }} min</p>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">{{ citaSeleccionada.service_duration || 30 }} min</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
+                <div class="flex items-center gap-3 rounded bg-slate-50 p-3 dark:bg-slate-800/70">
                     <i class="pi pi-clock text-2xl text-green-600"></i>
                     <div>
-                        <label class="text-xs text-surface-500 dark:text-surface-400">Fecha y Hora</label>
+                        <label class="text-xs text-slate-500 dark:text-slate-400">Fecha y Hora</label>
                         <p class="font-semibold">{{ citaSeleccionada.date_time | date: 'dd/MM/yyyy HH:mm' }}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded">
-                    <i class="pi pi-info-circle text-2xl text-gray-600"></i>
+                <div class="flex items-center gap-3 rounded bg-slate-50 p-3 dark:bg-slate-800/70">
+                    <i class="pi pi-info-circle text-2xl text-slate-600 dark:text-slate-300"></i>
                     <div class="flex-1">
-                        <label class="text-xs text-surface-500 dark:text-surface-400">Estado</label>
+                        <label class="text-xs text-slate-500 dark:text-slate-400">Estado</label>
                         <div class="mt-1">
                             <p-tag [value]="getStatusLabel(citaSeleccionada.status)" [severity]="getStatusSeverity(citaSeleccionada.status)"></p-tag>
                         </div>
                     </div>
                 </div>
                 <div *ngIf="citaSeleccionada.description" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                    <label class="text-xs text-surface-500 dark:text-surface-400">Notas</label>
+                    <label class="text-xs text-slate-500 dark:text-slate-400">Notas</label>
                     <p class="text-sm mt-1">{{ citaSeleccionada.description }}</p>
                 </div>
             </div>
@@ -123,43 +123,8 @@ import { AppointmentsUiService } from './appointments-ui.service';
         <p-toast></p-toast>
         <p-confirmDialog></p-confirmDialog>
     `,
-    styles: [`
-        .calendar-wrapper {
-            background: var(--surface-card);
-            color: var(--text-color);
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border: 1px solid var(--surface-border);
-        }
-        :host ::ng-deep .fc {
-            font-family: inherit;
-            color: var(--text-color);
-        }
-        :host ::ng-deep .fc .fc-scrollgrid,
-        :host ::ng-deep .fc .fc-theme-standard td,
-        :host ::ng-deep .fc .fc-theme-standard th {
-            border-color: var(--surface-border);
-        }
-        :host ::ng-deep .fc .fc-col-header-cell-cushion,
-        :host ::ng-deep .fc .fc-daygrid-day-number,
-        :host ::ng-deep .fc .fc-timegrid-axis-cushion,
-        :host ::ng-deep .fc .fc-timegrid-slot-label-cushion {
-            color: var(--text-color);
-        }
-        :host ::ng-deep .fc .fc-button {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        :host ::ng-deep .fc-event {
-            cursor: pointer;
-            border-radius: 4px;
-            padding: 2px 4px;
-        }
-        :host ::ng-deep .fc-event:hover {
-            opacity: 0.8;
-        }
-    `]
+    styleUrl: './appointments-calendar.scss',
+    encapsulation: ViewEncapsulation.None
 })
 export class AppointmentsCalendar implements OnInit, AfterViewInit {
     @ViewChild('calendarEl', { static: false }) calendarEl!: ElementRef;
@@ -198,6 +163,11 @@ export class AppointmentsCalendar implements OnInit, AfterViewInit {
         this.cargarCitas(true);
         this.appointmentsUiService.refresh$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.cargarCitas(true);
+        });
+        this.appointmentsUiService.create$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((target) => {
+            if (target === 'calendar') {
+                this.abrirFormulario();
+            }
         });
     }
 

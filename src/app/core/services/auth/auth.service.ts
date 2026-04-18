@@ -4,6 +4,7 @@ import { BaseApiService } from '../base-api.service';
 import { API_CONFIG } from '../../config/api.config';
 import { TrialService } from '../trial.service';
 import { LocaleService } from '../locale/locale.service';
+import { TenantService } from '../tenant/tenant.service';
 import { throwError } from 'rxjs';
 import { normalizeRole } from '../../utils/role-normalizer';
 
@@ -83,7 +84,11 @@ export class AuthService extends BaseApiService {
   public currentUser$ = this.currentUserSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  constructor(private trialService: TrialService, private localeService: LocaleService) {
+  constructor(
+    private trialService: TrialService,
+    private localeService: LocaleService,
+    private tenantService: TenantService
+  ) {
     super();
     this.loadStoredAuth();
   }
@@ -300,6 +305,18 @@ export class AuthService extends BaseApiService {
         next: (config) => this.localeService['currentLocale'].set(config),
         error: () => {} // Fallback to default config
       });
+
+      // Refrescar tenant completo (incluye plan/features) para el menú
+      if (response.tenant) {
+        this.tenantService.getCurrentTenant().subscribe({
+          next: (tenant) => {
+            localStorage.setItem('tenant', JSON.stringify(tenant));
+            // Re-emitir usuario para forzar rebuild del menú
+            this.currentUserSubject.next({ ...userWithTenant });
+          },
+          error: () => {}
+        });
+      }
     }
   }
 

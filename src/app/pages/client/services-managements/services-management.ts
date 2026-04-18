@@ -46,24 +46,24 @@ import { SettingsService } from '../../../core/services/settings/settings.servic
                     <div class="space-y-5">
                         <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                             <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                            Oferta de servicios
+                            Servicios
                         </div>
                         <div>
-                            <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Gestión de servicios</h2>
-                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Define qué ofreces, cómo se agrupa cada servicio y qué permanece activo para agenda y venta.</p>
+                            <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Servicios</h2>
+                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Nombre, precio, duración y categoría en una sola vista.</p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                                <i class="pi pi-star text-xs"></i>
-                                {{ servicios().length }} servicios
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
+                                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Total</div>
+                                <div class="mt-2 text-3xl font-black text-slate-950 dark:text-white">{{ servicios().length }}</div>
                             </div>
-                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                                <i class="pi pi-check-circle text-xs"></i>
-                                {{ getActiveServicesCount() }} activos
+                            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-200">Activos</div>
+                                <div class="mt-2 text-3xl font-black text-emerald-700 dark:text-emerald-200">{{ getActiveServicesCount() }}</div>
                             </div>
-                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                                <i class="pi pi-tags text-xs"></i>
-                                {{ categoriasDisponibles.length }} categorias
+                            <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-500/30 dark:bg-blue-500/10">
+                                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-blue-700 dark:text-blue-200">Categorías</div>
+                                <div class="mt-2 text-3xl font-black text-blue-700 dark:text-blue-200">{{ categoriasDisponibles.length }}</div>
                             </div>
                         </div>
                     </div>
@@ -71,23 +71,26 @@ import { SettingsService } from '../../../core/services/settings/settings.servic
                     <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Resumen del catalogo</div>
-                                <div class="mt-2 text-2xl font-black">Oferta comercial</div>
+                                <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Acción principal</div>
+                                <div class="mt-2 text-2xl font-black">Mover catálogo rápido</div>
                             </div>
                             <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
                                 <i class="pi pi-star text-lg"></i>
                             </div>
                         </div>
                         <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
-                            {{ getServicesNarrative() }}
+                            {{ getActiveServicesCount() }} activos y {{ categoriasDisponibles.length }} categorías. Entra aquí cuando necesites crear, ajustar precio o desactivar un servicio.
+                        </div>
+                        <div class="mt-4 grid gap-3">
+                            <button pButton label="Nuevo servicio" icon="pi pi-plus" (click)="abrirDialogo()" class="w-full !border-0 !bg-white !text-slate-950 hover:!bg-slate-100"></button>
+                            <button pButton label="Recargar" icon="pi pi-refresh" (click)="cargarServicios()" [loading]="cargando()" class="w-full p-button-text !text-slate-300 hover:!bg-white/10"></button>
                         </div>
                     </div>
                 </div>
                 <div class="border-t border-slate-200/80 px-6 py-5 dark:border-slate-800 xl:px-8">
                     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                        <button pButton label="Nuevo servicio" icon="pi pi-plus" (click)="abrirDialogo()"></button>
                         <div class="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                            Mantén precios, duración y categorías alineados con la agenda y el POS.
+                            Busca por nombre, categoría o descripción y entra directo a editar.
                         </div>
                     </div>
                 </div>
@@ -99,12 +102,12 @@ import { SettingsService } from '../../../core/services/settings/settings.servic
                      #dt>
                 <ng-template pTemplate="caption">
                     <div class="flex flex-col gap-3 p-2 lg:flex-row lg:items-center lg:justify-between">
-                        <span class="text-sm text-gray-600 dark:text-slate-300">
-                            Total: {{servicios().length}} servicios
+                        <span class="text-sm text-slate-600 dark:text-slate-300">
+                            {{servicios().length}} servicios
                         </span>
                         <span class="p-input-icon-left w-full lg:w-80">
                             <i class="pi pi-search"></i>
-                            <input pInputText type="text" placeholder="Buscar servicios..."
+                            <input pInputText type="text" placeholder="Nombre, categoría o descripción"
                                    class="w-full"
                                    (input)="dt.filterGlobal($any($event.target).value, 'contains')">
                         </span>
@@ -127,7 +130,7 @@ import { SettingsService } from '../../../core/services/settings/settings.servic
                         <td>
                             <div>
                                 <div class="font-medium">{{servicio.name}}</div>
-                                <div class="text-sm text-gray-500" *ngIf="servicio.description">
+                                <div class="text-sm text-slate-500 dark:text-slate-400" *ngIf="servicio.description">
                                     {{servicio.description}}
                                 </div>
                             </div>
@@ -142,7 +145,7 @@ import { SettingsService } from '../../../core/services/settings/settings.servic
                                 <p-tag [value]="servicio.category || 'Sin categoría'"
                                        severity="info" *ngIf="servicio.category">
                                 </p-tag>
-                                <span class="text-gray-400" *ngIf="!servicio.category">Sin categoría</span>
+                                <span class="text-slate-400 dark:text-slate-500" *ngIf="!servicio.category">Sin categoría</span>
                             </ng-template>
                         </td>
                         <td class="font-medium">{{ formatearMoneda(servicio.price) }}</td>
@@ -173,6 +176,11 @@ import { SettingsService } from '../../../core/services/settings/settings.servic
                       [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '500px'}"
                       [closable]="!guardando()" [closeOnEscape]="!guardando()">
                 <form [formGroup]="formulario" class="grid gap-4">
+                    <div class="rounded-2xl bg-slate-950 p-4 text-white">
+                        <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Servicio</div>
+                        <div class="mt-2 text-xl font-black">{{ servicioSeleccionado ? 'Editar servicio' : 'Nuevo servicio' }}</div>
+                        <div class="mt-2 text-sm text-slate-300">Completa lo necesario y guarda.</div>
+                    </div>
                     <div>
                         <label class="block font-medium mb-1">Nombre del Servicio *</label>
                         <input pInputText formControlName="name" class="w-full"
@@ -196,7 +204,7 @@ import { SettingsService } from '../../../core/services/settings/settings.servic
                                           [showClear]="true"
                                           display="chip">
                             </p-multiSelect>
-                            <small class="text-gray-500" *ngIf="categoriasDisponibles.length === 0">
+                            <small class="text-slate-500 dark:text-slate-400" *ngIf="categoriasDisponibles.length === 0">
                                 No hay categorías disponibles
                             </small>
                         </div>

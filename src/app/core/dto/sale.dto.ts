@@ -16,6 +16,10 @@ export interface SaleWithDetailsDto extends SaleDto {
   employee_name?: string;
   user_name?: string;
   cashier_name?: string;
+  fiscal_requested?: boolean;
+  fiscal_voucher_type?: string;
+  fiscal_name?: string;
+  fiscal_document?: string;
 }
 
 export interface CreateSaleDto {

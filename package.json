@@ -10,6 +10,7 @@
         "build": "ng build",
         "build:dev": "ng build --configuration development",
         "build:prod": "ng build --configuration production",
+        "build:profile": "ng build --configuration profile",
         "watch": "ng build --watch --configuration development",
         "format": "prettier --write \"**/*.{js,mjs,ts,mts,d.ts,html}\" --cache",
         "test": "ng test"

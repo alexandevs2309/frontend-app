@@ -26,139 +26,82 @@ import { AppointmentsUiService } from './appointments-ui.service';
     imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, SelectModule, DatePickerModule, TagModule, ToastModule, ConfirmDialogModule, TooltipModule, CardModule, AppointmentDialogComponent],
     providers: [MessageService, ConfirmationService],
     template: `
-        <div class="p-4 md:p-6">
-            <div class="relative overflow-hidden bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-6 rounded-2xl mb-6 shadow-2xl">
-                <div class="absolute inset-0 bg-black/10"></div>
-                <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-24 -mt-24"></div>
-
-                <div class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl animate-pulse">
-                            <i class="pi pi-list text-4xl"></i>
+        <div class="appts-list">
+            <section class="appts-list__hero">
+                <div class="appts-list__hero-copy">
+                    <span class="appts-list__eyebrow">Lista operativa</span>
+                    <h3>Resuelve la agenda sin salir del flujo</h3>
+                    <p>Busca, completa, cancela o edita la siguiente cita desde una sola cola de trabajo.</p>
+                    <div class="appts-list__metrics">
+                        <div class="appts-metric">
+                            <span>Visibles</span>
+                            <strong>{{ citasFiltradas().length }}</strong>
                         </div>
-                        <div>
-                            <h2 class="text-3xl font-bold drop-shadow-lg">Lista de Citas</h2>
-                            <p class="text-purple-100 mt-1">Vista detallada de todas las citas</p>
+                        <div class="appts-metric appts-metric--warn">
+                            <span>Pendientes</span>
+                            <strong>{{ getVisibleCountByStatus('scheduled') }}</strong>
+                        </div>
+                        <div class="appts-metric appts-metric--ok">
+                            <span>Completadas</span>
+                            <strong>{{ getVisibleCountByStatus('completed') }}</strong>
                         </div>
                     </div>
                 </div>
+                <div class="appts-list__hero-actions">
+                    <div class="appts-list__hero-note">{{ getOperationHint() }}</div>
+                    <button pButton label="Nueva cita" icon="pi pi-plus" (click)="abrirDialogo()" class="appts-list__primary-btn"></button>
+                    <div class="appts-list__quick-actions">
+                        <button pButton label="Hoy" class="p-button-sm p-button-text" (click)="aplicarFiltroHoy()"></button>
+                        <button pButton label="Pendientes" class="p-button-sm p-button-text" (click)="aplicarFiltroRapido('scheduled')"></button>
+                        <button pButton label="Limpiar" class="p-button-sm p-button-text" (click)="limpiarFiltros()"></button>
+                    </div>
+                </div>
+            </section>
+
+            <div class="appts-list__toolbar">
+                <div class="appts-list__filters appts-list__filters--wide">
+                    <span class="p-input-icon-left appts-list__search">
+                        <i class="pi pi-search"></i>
+                        <input pInputText [(ngModel)]="textoBusqueda" (ngModelChange)="aplicarFiltros()" placeholder="Cliente, empleado o servicio" />
+                    </span>
+                    <p-datepicker [(ngModel)]="fechaFiltro" dateFormat="dd/mm/yy" (onSelect)="filtrarPorFecha()" [showClear]="true" placeholder="Fecha"></p-datepicker>
+                    <p-select [(ngModel)]="estadoFiltro" [options]="estadosOptions" optionLabel="label" optionValue="value" (onChange)="filtrarPorEstado()" [showClear]="true" placeholder="Estado"></p-select>
+                    <p-select [(ngModel)]="empleadoFiltro" [options]="empleadosOptions()" optionLabel="label" optionValue="value" (onChange)="filtrarPorEmpleado()" [showClear]="true" placeholder="Empleado"></p-select>
+                    <button pButton icon="pi pi-filter-slash" (click)="limpiarFiltros()" class="p-button-text p-button-sm" pTooltip="Limpiar filtros"></button>
+                </div>
+                <span class="appts-list__count">{{ citasFiltradas().length }} resultado{{ citasFiltradas().length === 1 ? '' : 's' }}</span>
             </div>
 
-            <div class="mb-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-4">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                    <div>
-                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Vista de control detallado</div>
-                        <div class="text-sm text-slate-600 dark:text-slate-400">
-                            Usa esta vista cuando necesites filtrar por fecha, empleado o estado, y resolver pendientes uno por uno.
-                        </div>
+            <div *ngIf="cargando()" class="appts-list__loading">
+                <i class="pi pi-spin pi-spinner"></i> Cargando citas...
+            </div>
+
+            <div *ngIf="!cargando() && citasFiltradas().length === 0" class="appts-list__empty">
+                <i class="pi pi-calendar"></i>
+                <span>Sin citas con los filtros actuales</span>
+                <button pButton label="Limpiar filtros" class="p-button-text p-button-sm" (click)="limpiarFiltros()"></button>
+            </div>
+
+            <div *ngIf="!cargando() && citasFiltradas().length > 0" class="appts-list__rows">
+                <div *ngFor="let cita of citasFiltradas()" class="appt-row" [class.appt-row--overdue]="cita.status === 'scheduled' && isOverdue(cita)">
+                    <div class="appt-row__time">
+                        <strong>{{ cita.date_time | date: 'dd/MM' }}</strong>
+                        <span>{{ cita.date_time | date: 'HH:mm' }}</span>
                     </div>
-                    <div class="text-sm text-slate-500 dark:text-slate-400">
-                        {{ citasFiltradas().length }} resultado{{ citasFiltradas().length === 1 ? '' : 's' }} visibles
+                    <div class="appt-row__info">
+                        <strong>{{ cita.client_name || ('Cliente #' + cita.client) }}</strong>
+                        <span>{{ cita.stylist_name || ('Empleado #' + cita.stylist) }}</span>
+                        <span *ngIf="cita.service_name" class="appt-row__service">{{ cita.service_name }}</span>
+                    </div>
+                    <p-tag [value]="getEstadoLabel(cita.status)" [severity]="getEstadoSeverity(cita.status)" class="appt-row__tag"></p-tag>
+                    <div class="appt-row__actions">
+                        <button *ngIf="cita.status === 'scheduled'" pButton icon="pi pi-check" class="p-button-success p-button-sm" (click)="completarCita(cita)" pTooltip="Completar"></button>
+                        <button *ngIf="cita.status === 'scheduled'" pButton icon="pi pi-times" class="p-button-warning p-button-sm p-button-outlined" (click)="cancelarCita(cita)" pTooltip="Cancelar"></button>
+                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editarCita(cita)" [disabled]="cita.status === 'completed'" pTooltip="Editar"></button>
+                        <button *ngIf="canDeleteAppointments" pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmarEliminar(cita)" pTooltip="Eliminar"></button>
                     </div>
                 </div>
             </div>
-
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 w-full">
-                <div class="flex flex-wrap gap-3 flex-1">
-                    <div class="w-full sm:w-1/2 md:w-auto">
-                        <label class="block font-medium mb-1">Fecha</label>
-                        <p-datepicker [(ngModel)]="fechaFiltro" dateFormat="dd/mm/yy" (onSelect)="filtrarPorFecha()" class="w-full" [showClear]="true"></p-datepicker>
-                    </div>
-                    <div class="w-full sm:w-1/2 md:w-auto">
-                        <label class="block font-medium mb-1">Estado</label>
-                        <p-select
-                            [(ngModel)]="estadoFiltro"
-                            [options]="estadosOptions"
-                            optionLabel="label"
-                            optionValue="value"
-                            (onChange)="filtrarPorEstado()"
-                            class="w-full"
-                            [showClear]="true"
-                        ></p-select>
-                    </div>
-                    <div class="w-full sm:w-1/2 md:w-auto">
-                        <label class="block font-medium mb-1">Empleado</label>
-                        <p-select
-                            [(ngModel)]="empleadoFiltro"
-                            [options]="empleadosOptions()"
-                            optionLabel="label"
-                            optionValue="value"
-                            (onChange)="filtrarPorEmpleado()"
-                            class="w-full"
-                            [showClear]="true"
-                        ></p-select>
-                    </div>
-                </div>
-
-                <button pButton label="Limpiar Filtros" icon="pi pi-filter-slash" (click)="limpiarFiltros()" class="p-button-outlined w-full md:w-auto"></button>
-            </div>
-
-            <div class="block md:hidden space-y-4">
-                <ng-container *ngFor="let cita of citasFiltradas()">
-                    <div class="surface-card border-round shadow-md p-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <div>
-                                <div class="text-sm text-surface-500 dark:text-surface-400">{{ cita.date_time | date: 'dd/MM/yyyy HH:mm' }}</div>
-                                <div class="font-medium">{{ cita.client_name || 'Cliente #' + cita.client }}</div>
-                                <div class="text-surface-600 dark:text-surface-400 text-sm">{{ cita.stylist_name || 'Empleado #' + cita.stylist }}</div>
-                            </div>
-                            <p-tag [value]="getEstadoLabel(cita.status)" [severity]="getEstadoSeverity(cita.status)"></p-tag>
-                        </div>
-                        <div class="text-surface-700 dark:text-surface-300 mb-2">{{ cita.service_name || 'Sin servicio' }}</div>
-                        <div class="flex gap-2 flex-wrap">
-                            <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editarCita(cita)" pTooltip="Editar" [disabled]="cita.status === 'completed'"></button>
-                            <button pButton icon="pi pi-check" class="p-button-text p-button-sm p-button-success" (click)="completarCita(cita)" pTooltip="Completar" *ngIf="cita.status === 'scheduled'"></button>
-                            <button pButton icon="pi pi-times" class="p-button-text p-button-sm p-button-warning" (click)="cancelarCita(cita)" pTooltip="Cancelar" *ngIf="cita.status === 'scheduled'"></button>
-                            <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmarEliminar(cita)" pTooltip="Eliminar" *ngIf="canDeleteAppointments"></button>
-                        </div>
-                    </div>
-                </ng-container>
-            </div>
-
-            <p-table class="w-full hidden md:block" [value]="citasFiltradas()" [responsiveLayout]="'scroll'" [loading]="cargando()" [globalFilterFields]="['client_name', 'stylist_name', 'service_name']" #dt>
-                <ng-template pTemplate="caption">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-surface-600 dark:text-surface-400">Total: {{ citasFiltradas().length }} citas</span>
-                        <span class="p-input-icon-left">
-                            <i class="pi pi-search"></i>
-                            <input pInputText type="text" placeholder="Buscar citas..." (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
-                        </span>
-                    </div>
-                </ng-template>
-
-                <ng-template pTemplate="header">
-                    <tr>
-                        <th>Fecha y Hora</th>
-                        <th>Cliente</th>
-                        <th>Empleado</th>
-                        <th>Servicio</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </ng-template>
-
-                <ng-template pTemplate="body" let-cita>
-                    <tr>
-                        <td>{{ cita.date_time | date: 'dd/MM/yyyy HH:mm' }}</td>
-                        <td>{{ cita.client_name || 'Cliente #' + cita.client }}</td>
-                        <td>{{ cita.stylist_name || 'Empleado #' + cita.stylist }}</td>
-                        <td>{{ cita.service_name || 'Sin servicio' }}</td>
-                        <td><p-tag [value]="getEstadoLabel(cita.status)" [severity]="getEstadoSeverity(cita.status)"></p-tag></td>
-                        <td class="flex gap-1">
-                            <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editarCita(cita)" pTooltip="Editar" [disabled]="cita.status === 'completed'"></button>
-                            <button pButton icon="pi pi-check" class="p-button-text p-button-sm p-button-success" (click)="completarCita(cita)" pTooltip="Completar" *ngIf="cita.status === 'scheduled'"></button>
-                            <button pButton icon="pi pi-times" class="p-button-text p-button-sm p-button-warning" (click)="cancelarCita(cita)" pTooltip="Cancelar" *ngIf="cita.status === 'scheduled'"></button>
-                            <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmarEliminar(cita)" pTooltip="Eliminar" *ngIf="canDeleteAppointments"></button>
-                        </td>
-                    </tr>
-                </ng-template>
-
-                <ng-template pTemplate="emptymessage">
-                    <tr>
-                        <td colspan="6" class="text-center py-4">No hay citas registradas</td>
-                    </tr>
-                </ng-template>
-            </p-table>
 
             <app-appointment-dialog
                 [(visible)]="mostrarDialogo"
@@ -174,6 +117,178 @@ import { AppointmentsUiService } from './appointments-ui.service';
             <p-confirmDialog></p-confirmDialog>
             <p-toast></p-toast>
         </div>
+
+        <style>
+        .appts-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+        .appts-list__hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.9fr);
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--surface-border);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--surface-card) 78%, #ffffff 22%) 0%, color-mix(in srgb, var(--surface-card) 88%, #cbd5e1 12%) 100%);
+            border-radius: 1rem;
+        }
+
+        .appts-list__hero-copy h3 {
+            margin: 0.25rem 0 0;
+            font-size: 1.55rem;
+            line-height: 1.1;
+            color: var(--text-color);
+        }
+
+        .appts-list__hero-copy p {
+            margin: 0.65rem 0 0;
+            max-width: 42rem;
+            color: var(--text-color-secondary);
+        }
+
+        .appts-list__eyebrow {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #334155;
+            background: #e2e8f0;
+        }
+
+        .appts-list__metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .appts-metric {
+            padding: 0.85rem 1rem;
+            border-radius: 0.9rem;
+            background: color-mix(in srgb, var(--surface-card) 75%, #f8fafc 25%);
+            border: 1px solid var(--surface-border);
+        }
+
+        .appts-metric span {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--text-color-secondary);
+        }
+
+        .appts-metric strong {
+            display: block;
+            margin-top: 0.35rem;
+            font-size: 2rem;
+            line-height: 1;
+            color: var(--text-color);
+        }
+
+        .appts-metric--warn { border-color: rgba(217, 119, 6, 0.25); background: rgba(245, 158, 11, 0.08); }
+        .appts-metric--ok { border-color: rgba(5, 150, 105, 0.22); background: rgba(16, 185, 129, 0.08); }
+
+        .appts-list__hero-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 1rem;
+            border-radius: 1rem;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .appts-list__hero-note {
+            padding: 0.9rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.9rem;
+            background: rgba(255, 255, 255, 0.04);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .appts-list__primary-btn {
+            width: 100%;
+            border: 0;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+        .appts-list__quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .appts-list__toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 0.5rem;
+            padding: 0.75rem;
+            border: 1px solid var(--surface-border);
+            background: var(--surface-card);
+            border-radius: 0.75rem;
+        }
+
+        .appts-list__filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .appts-list__filters--wide { width: min(100%, 64rem); }
+        .appts-list__search { flex: 1 1 14rem; }
+        .appts-list__search input { width: 100%; }
+        .appts-list__filters .p-datepicker-input, .appts-list__filters .p-select { min-width: 9rem; }
+
+        .appts-list__count { font-size: 0.82rem; color: var(--text-color-secondary); white-space: nowrap; }
+
+        .appts-list__loading, .appts-list__empty {
+            display: flex; align-items: center; justify-content: center; gap: 0.65rem;
+            padding: 2rem; color: var(--text-color-secondary); font-size: 0.9rem;
+            border: 1px dashed var(--surface-border); border-radius: 0.75rem;
+        }
+
+        .appts-list__rows { display: flex; flex-direction: column; gap: 0.35rem; }
+
+        .appt-row {
+            display: grid;
+            grid-template-columns: 4rem 1fr auto auto;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.65rem 0.85rem;
+            border: 1px solid var(--surface-border);
+            background: var(--surface-card);
+            border-radius: 0.65rem;
+            transition: border-color 120ms;
+        }
+
+        .appt-row:hover { border-color: #6366f1; }
+        .appt-row--overdue { border-left: 3px solid #d97706; }
+
+        .appt-row__time {
+            display: flex; flex-direction: column; align-items: center;
+            font-size: 0.82rem; line-height: 1.3;
+        }
+
+        .appt-row__time strong { font-size: 0.9rem; color: var(--text-color); }
+        .appt-row__time span { color: var(--text-color-secondary); }
+
+        .appt-row__info {
+            display: flex; flex-direction: column; gap: 0.1rem; min-width: 0;
+        }
+
+        .appt-row__info strong { font-size: 0.92rem; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .appt-row__info span { font-size: 0.8rem; color: var(--text-color-secondary); }
+        .appt-row__service { font-style: italic; }
+
+        .appt-row__actions { display: flex; gap: 0.25rem; }
+
+        @media (max-width: 640px) {
+            .appts-list__hero { grid-template-columns: 1fr; }
+            .appts-list__metrics { grid-template-columns: 1fr; }
+            .appt-row { grid-template-columns: 3.5rem 1fr; grid-template-rows: auto auto; }
+            .appt-row__tag { grid-column: 2; }
+            .appt-row__actions { grid-column: 1 / -1; justify-content: flex-end; }
+        }
+        </style>
     `
 })
 export class AppointmentsManagement implements OnInit {
@@ -200,6 +315,7 @@ export class AppointmentsManagement implements OnInit {
     fechaFiltro: Date | null = null;
     estadoFiltro: string | null = null;
     empleadoFiltro: number | null = null;
+    textoBusqueda = '';
 
     estadosOptions = [
         { label: 'Programada', value: 'scheduled' },
@@ -213,6 +329,11 @@ export class AppointmentsManagement implements OnInit {
         this.cargarDatos(true);
         this.appointmentsUiService.refresh$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.cargarDatos(true);
+        });
+        this.appointmentsUiService.create$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((target) => {
+            if (target === 'list') {
+                this.abrirDialogo();
+            }
         });
     }
 
@@ -361,6 +482,10 @@ export class AppointmentsManagement implements OnInit {
         }
     }
 
+    isOverdue(cita: AppointmentWithDetails): boolean {
+        return new Date(cita.date_time) < new Date();
+    }
+
     filtrarPorFecha(): void {
         this.aplicarFiltros();
     }
@@ -377,7 +502,18 @@ export class AppointmentsManagement implements OnInit {
         this.fechaFiltro = null;
         this.estadoFiltro = null;
         this.empleadoFiltro = null;
+        this.textoBusqueda = '';
         this.citasFiltradas.set(this.citas());
+    }
+
+    aplicarFiltroRapido(status: string): void {
+        this.estadoFiltro = status;
+        this.aplicarFiltros();
+    }
+
+    aplicarFiltroHoy(): void {
+        this.fechaFiltro = new Date();
+        this.aplicarFiltros();
     }
 
     getEstadoLabel(status: string): string {
@@ -405,7 +541,7 @@ export class AppointmentsManagement implements OnInit {
         this.citaSeleccionada = null;
     }
 
-    private aplicarFiltros(): void {
+    aplicarFiltros(): void {
         let citasFiltradas = [...this.citas()];
 
         if (this.fechaFiltro) {
@@ -421,7 +557,33 @@ export class AppointmentsManagement implements OnInit {
             citasFiltradas = citasFiltradas.filter((cita) => cita.stylist === this.empleadoFiltro);
         }
 
+        const termino = this.textoBusqueda.trim().toLowerCase();
+        if (termino) {
+            citasFiltradas = citasFiltradas.filter((cita) =>
+                [cita.client_name, cita.stylist_name, cita.service_name]
+                    .filter(Boolean)
+                    .some((value) => String(value).toLowerCase().includes(termino))
+            );
+        }
+
         this.citasFiltradas.set(citasFiltradas);
+    }
+
+    getVisibleCountByStatus(status: AppointmentWithDetails['status']): number {
+        return this.citasFiltradas().filter((cita) => cita.status === status).length;
+    }
+
+    getOperationHint(): string {
+        const pendientes = this.getVisibleCountByStatus('scheduled');
+        if (pendientes > 0) {
+            return `${pendientes} cita${pendientes === 1 ? '' : 's'} pendiente${pendientes === 1 ? '' : 's'} en esta vista. Completa o cancela desde la fila y sigue con la siguiente.`;
+        }
+
+        if (this.citasFiltradas().length === 0) {
+            return 'No hay citas visibles con los filtros actuales. Limpia filtros o crea una nueva cita para seguir operando.';
+        }
+
+        return 'La agenda visible está controlada. Mantén esta cola limpia para que recepción y caja trabajen sin fricción.';
     }
 
     private computeCanDeleteAppointments(): boolean {

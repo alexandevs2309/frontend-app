@@ -257,8 +257,22 @@ export class Login implements OnInit {
     }
 
     private redirectUser(role: string): void {
-        if (roleKey(role) === 'SUPER_ADMIN') {
+        const normalizedRole = roleKey(role);
+
+        if (normalizedRole === 'SUPER_ADMIN') {
             this.router.navigate(['/admin/dashboard']);
+        } else if (normalizedRole === 'UTILITY') {
+            this.router.navigate(['/client/profile']).then(
+                () => {},
+                () => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: this.t('auth.login.auth_error'),
+                        detail: 'No se pudo completar la navegacion al perfil.',
+                        life: 4000
+                    });
+                }
+            );
         } else {
             this.router.navigate(['/client/dashboard']).then(
                 () => {},

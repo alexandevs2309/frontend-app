@@ -24,7 +24,6 @@ interface SubscriptionPlan {
     display_name?: string;
     description?: string;
     price?: number;
-    max_employees?: number;
     max_users?: number;
     duration_month?: number;
     stripe_price_id?: string | null;
@@ -123,8 +122,7 @@ interface SubscriptionPlan {
                         <p-sortIcon field="price" />
                     </th>
                     <th style="min-width:8rem">Duración</th>
-                    <th style="min-width:8rem">Máx. empleados</th>
-                    <th style="min-width:10rem">Máx. usuarios</th>
+                    <th style="min-width:10rem">Usuarios activos</th>
                     <th style="min-width:8rem">Multi-Sucursal</th>
                     <th style="min-width:15rem">Funciones</th>
                     <th style="min-width:15rem">Beneficios</th>
@@ -144,7 +142,6 @@ interface SubscriptionPlan {
                     <td>{{ plan.description }}</td>
                     <td>{{ plan.price | currency:'USD' }}</td>
                     <td>{{ formatDuration(plan.duration_month) }}</td>
-                    <td>{{ plan.max_employees || 'Ilimitado' }}</td>
                     <td>{{ plan.max_users || 'Ilimitado' }}</td>
                     <td>
                         <p-tag [value]="getMultiBranchText(plan)" [severity]="getMultiBranchSeverity(plan)" />
@@ -221,18 +218,10 @@ interface SubscriptionPlan {
                         <textarea id="description" pTextarea [(ngModel)]="plan.description" rows="3" fluid></textarea>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="max_employees" class="block font-bold mb-3">Máximo de empleados</label>
-                            <p-inputnumber id="max_employees" [(ngModel)]="plan.max_employees" [min]="1" fluid />
-                            <small class="text-muted">Déjalo vacío para ilimitado</small>
-                        </div>
-
-                        <div>
-                            <label for="max_users" class="block font-bold mb-3">Máximo de usuarios</label>
-                            <p-inputnumber id="max_users" [(ngModel)]="plan.max_users" [min]="1" fluid />
-                            <small class="text-muted">Déjalo vacío para ilimitado</small>
-                        </div>
+                    <div>
+                        <label for="max_users" class="block font-bold mb-3">Máximo de usuarios activos</label>
+                        <p-inputnumber id="max_users" [(ngModel)]="plan.max_users" [min]="1" fluid />
+                        <small class="text-muted">Es el límite comercial efectivo del plan. Déjalo vacío para ilimitado.</small>
                     </div>
 
                     <div>
@@ -404,7 +393,6 @@ export class SubscriptionPlans implements OnInit {
                     description: this.plan.description,
                     price: this.plan.price,
                     duration_month: this.plan.duration_month,
-                    max_employees: this.plan.max_employees,
                     max_users: this.plan.max_users,
                     allows_multiple_branches: this.plan.allows_multiple_branches,
                     is_active: this.plan.is_active

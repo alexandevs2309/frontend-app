@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -13,168 +13,118 @@ import { MessageService } from 'primeng/api';
   standalone: true,
   imports: [CommonModule, ButtonModule, CardModule, DividerModule],
   template: `
-    <div class="payment-container">
-      <div class="payment-header">
-        <h1>Actualizar Suscripción</h1>
-        <p>Tu prueba gratuita ha terminado. Elige un plan para continuar.</p>
-      </div>
-
-      <div class="plans-grid" *ngIf="!loading">
-        <p-card *ngFor="let plan of plans"
-                [ngClass]="{'recommended': plan.recommended}"
-                class="plan-card">
-          <ng-template pTemplate="header">
-            <div class="plan-header">
-              <h3>{{ plan.get_name_display || plan.name }}</h3>
-              <div class="plan-price">
-                <span class="currency">$</span>
-                <span class="amount">{{ plan.price }}</span>
-                <span class="period">/mes</span>
-              </div>
-            </div>
-          </ng-template>
-
-          <div class="plan-features">
-            <ul>
-              <li *ngFor="let feature of plan.features">
-                <i class="pi pi-check text-green-500"></i>
-                {{ feature }}
-              </li>
-            </ul>
+    <div class="plans-shell">
+      <div class="plans-header">
+        <div>
+          <div class="plans-header__eyebrow">Suscripción</div>
+          <h1 class="plans-header__title">Elige tu plan y sigue operando</h1>
+          <p class="plans-header__copy">Mantén el flujo simple: selecciona un plan, entra al checkout y activa el cobro seguro.</p>
+        </div>
+        <div class="plans-header__trust" *ngIf="getRecommendedPlan() as recommended">
+          <div class="plans-header__trust-card">
+            <span class="plans-header__trust-label">Recomendado</span>
+            <strong>{{ recommended.get_name_display || recommended.name }}</strong>
+            <span>{{ recommended.price }}/mes</span>
+            <button pButton label="Elegir recomendado" icon="pi pi-arrow-right" class="p-button-success w-full" (click)="selectPlan(recommended)"></button>
           </div>
+        </div>
+      </div>
 
-          <ng-template pTemplate="footer">
+      <div *ngIf="loading" class="plans-loading">
+        <i class="pi pi-spin pi-spinner"></i> Cargando planes...
+      </div>
+
+      <div *ngIf="!loading" class="plans-list">
+        <div *ngFor="let plan of plans" class="plan-row" [class.plan-row--recommended]="plan.recommended" (click)="selectPlan(plan)">
+          <div class="plan-row__left">
+            <div class="plan-row__name">{{ plan.get_name_display || plan.name }}</div>
+            <div class="plan-row__helper">{{ plan.recommended ? 'Opción más directa para la mayoría de negocios.' : 'Alternativa disponible si este nivel encaja mejor con tu operación.' }}</div>
+            <div class="plan-row__features">
+              <span *ngFor="let f of plan.features" class="plan-row__feature">
+                <i class="pi pi-check"></i> {{ f }}
+              </span>
+            </div>
+          </div>
+          <div class="plan-row__right">
+            <div class="plan-row__price">
+              <strong>{{ plan.price }}</strong><span>/mes</span>
+            </div>
             <button pButton
-                    [label]="plan.recommended ? 'Elegir Plan Recomendado' : 'Elegir Plan'"
-                    [class]="plan.recommended ? 'p-button-success w-full' : 'p-button-outlined w-full'"
-                    (click)="selectPlan(plan)">
+              [label]="plan.recommended ? 'Elegir — Recomendado' : 'Elegir plan'"
+              [class]="plan.recommended ? 'p-button-success' : 'p-button-outlined'"
+              (click)="selectPlan(plan); $event.stopPropagation()">
             </button>
-          </ng-template>
-        </p-card>
-      </div>
-
-      <div *ngIf="loading" class="text-center p-4">
-        <i class="pi pi-spinner pi-spin" style="font-size: 2rem"></i>
-        <p>Cargando planes...</p>
-      </div>
-
-      <div class="payment-info">
-        <p><i class="pi pi-shield text-green-500"></i> Pago seguro con Stripe</p>
-        <p><i class="pi pi-refresh text-blue-500"></i> Cancela en cualquier momento</p>
+          </div>
+        </div>
       </div>
     </div>
-  `,
-  styles: [`
-    .payment-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
 
-    .payment-header {
-      text-align: center;
-      margin-bottom: 3rem;
-    }
+    <style>
+    .plans-shell { max-width: 720px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
 
-    .payment-header h1 {
-      color: var(--primary-color);
-      margin-bottom: 1rem;
-    }
-
-    .plans-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-      margin-bottom: 2rem;
-    }
-
-    .plan-card {
-      position: relative;
-    }
-
-    .plan-card.recommended {
-      border: 2px solid var(--primary-color);
-      transform: scale(1.05);
-    }
-
-    .plan-card.recommended::before {
-      content: 'Recomendado';
-      position: absolute;
-      top: -10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--primary-color);
-      color: white;
-      padding: 0.25rem 1rem;
+    .plans-header { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 0.85fr); align-items: stretch; gap: 1rem; }
+    .plans-header__eyebrow { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-color-secondary); }
+    .plans-header__title { font-size: clamp(2rem, 5vw, 3.1rem); line-height: 0.98; font-weight: 900; color: var(--text-color); margin: 0.3rem 0 0.75rem; }
+    .plans-header__copy { margin: 0; max-width: 34rem; color: var(--text-color-secondary); line-height: 1.55; }
+    .plans-header__trust { display: flex; }
+    .plans-header__trust-card {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding: 1.15rem;
       border-radius: 1rem;
-      font-size: 0.8rem;
-      font-weight: bold;
+      background: #0f172a;
+      color: #e2e8f0;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+    }
+    .plans-header__trust-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #94a3b8; }
+    .plans-header__trust-card strong { font-size: 1.45rem; line-height: 1.05; }
+
+    .plans-loading { display: flex; align-items: center; gap: 0.5rem; color: var(--text-color-secondary); padding: 2rem; justify-content: center; }
+
+    .plans-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .plan-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      padding: 1rem 1.25rem;
+      border: 1px solid var(--surface-border);
+      background: var(--surface-card);
+      border-radius: 0.85rem;
+      cursor: pointer;
+      transition: border-color 120ms, box-shadow 120ms;
     }
 
-    .plan-header {
-      text-align: center;
-      padding: 1rem;
+    .plan-row:hover { border-color: #6366f1; box-shadow: 0 0 0 1px #6366f1; }
+
+    .plan-row--recommended {
+      border-color: #10b981;
+      box-shadow: 0 0 0 1px #10b981;
     }
 
-    .plan-header h3 {
-      margin: 0 0 1rem 0;
-      color: var(--text-color);
-    }
+    .plan-row__left { flex: 1; min-width: 0; }
+    .plan-row__name { font-size: 1rem; font-weight: 700; color: var(--text-color); margin-bottom: 0.4rem; }
+    .plan-row__helper { font-size: 0.82rem; color: var(--text-color-secondary); margin-bottom: 0.55rem; }
+    .plan-row__features { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; }
+    .plan-row__feature { font-size: 0.78rem; color: var(--text-color-secondary); display: flex; align-items: center; gap: 0.25rem; }
+    .plan-row__feature .pi-check { color: #10b981; font-size: 0.7rem; }
 
-    .plan-price {
-      display: flex;
-      align-items: baseline;
-      justify-content: center;
-      gap: 0.25rem;
-    }
+    .plan-row__right { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+    .plan-row__price { text-align: right; }
+    .plan-row__price strong { font-size: 1.4rem; font-weight: 800; color: var(--text-color); }
+    .plan-row__price span { font-size: 0.82rem; color: var(--text-color-secondary); }
 
-    .currency {
-      font-size: 1.2rem;
-      color: var(--text-color-secondary);
+    @media (max-width: 860px) {
+      .plans-header { grid-template-columns: 1fr; }
     }
-
-    .amount {
-      font-size: 2.5rem;
-      font-weight: bold;
-      color: var(--primary-color);
-    }
-
-    .period {
-      color: var(--text-color-secondary);
-    }
-
-    .plan-features ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .plan-features li {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .payment-info {
-      text-align: center;
-      margin-top: 2rem;
-      color: var(--text-color-secondary);
-    }
-
-    .payment-info p {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-  `]
+    </style>
+  `
 })
 export class PaymentComponent implements OnInit {
   trialStatus: TrialStatus | null = null;
   plans: any[] = [];
   loading = false;
+  recommendedPlanNameFromState: string | null = null;
 
   constructor(
     private trialService: TrialService,
@@ -185,6 +135,7 @@ export class PaymentComponent implements OnInit {
 
   ngOnInit() {
     this.trialStatus = this.trialService.getCurrentTrialStatus();
+    this.recommendedPlanNameFromState = history.state?.recommendedPlanName || null;
     this.loadPlans();
   }
 
@@ -200,7 +151,7 @@ export class PaymentComponent implements OnInit {
           .filter((plan: any) => plan.name !== 'free')
           .map((plan: any, index: number) => ({
             ...plan,
-            recommended: plan.name === 'standard',
+            recommended: this.isRecommendedPlan(plan),
             features: this.getFeaturesList(plan.features)
           }));
         
@@ -244,5 +195,36 @@ export class PaymentComponent implements OnInit {
     this.router.navigate(['/client/checkout'], {
       state: { plan: plan }
     });
+  }
+
+  getRecommendedPlan(): any | null {
+    return this.plans.find((plan) => plan.recommended) || this.plans[0] || null;
+  }
+
+  @HostListener('document:keydown.enter', ['$event'])
+  handleEnterShortcut(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || this.loading) {
+      return;
+    }
+
+    const recommended = this.getRecommendedPlan();
+    if (recommended) {
+      event.preventDefault();
+      this.selectPlan(recommended);
+    }
+  }
+
+  private isRecommendedPlan(plan: any): boolean {
+    const normalizedRecommended = String(this.recommendedPlanNameFromState || '').trim().toLowerCase();
+    const normalizedPlanName = String(plan?.name || '').trim().toLowerCase();
+    const normalizedDisplayName = String(plan?.get_name_display || '').trim().toLowerCase();
+
+    if (normalizedRecommended) {
+      return normalizedPlanName === normalizedRecommended || normalizedDisplayName === normalizedRecommended;
+    }
+
+    return normalizedPlanName === 'standard';
   }
 }

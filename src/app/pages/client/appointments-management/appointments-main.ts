@@ -1,12 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
-import { TabsModule } from 'primeng/tabs';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { NotificationBadgeService } from '../../../core/services/notification/notification-badge.service';
-import { AppointmentsCalendar } from './appointments-calendar';
 import { AppointmentsDataService } from './appointments-data.service';
-import { AppointmentsManagement } from './appointments-management';
 import { AppointmentsUiService } from './appointments-ui.service';
 
 type AppointmentTab = 'calendar' | 'list';
@@ -14,119 +13,147 @@ type AppointmentTab = 'calendar' | 'list';
 @Component({
     selector: 'app-appointments-main',
     standalone: true,
-    imports: [CommonModule, TabsModule, ButtonModule, AppointmentsCalendar, AppointmentsManagement],
+    imports: [CommonModule, ButtonModule, RouterLink, RouterLinkActive, RouterOutlet],
     template: `
-        <div class="p-4 md:p-6 space-y-6">
-            <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div class="grid gap-6 px-6 py-7 xl:grid-cols-[1.35fr,0.85fr] xl:px-8">
-                    <div class="space-y-5">
-                        <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                            Agenda operativa
-                        </div>
-                        <div>
-                            <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Gestión de citas</h2>
-                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Administra agenda, estados y carga diaria del negocio desde una vista más clara y accionable.</p>
-                            <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                                {{ activeTab === 'calendar' ? 'El calendario te ayuda a visualizar la agenda y detectar huecos u horas cargadas.' : 'La lista te ayuda a filtrar rápido, completar pendientes y revisar estados sin perder detalle.' }}
-                            </p>
-                        </div>
+        <div class="appts-shell">
+            <header class="appts-header">
+                <div class="appts-header__left">
+                    <div class="appts-status">
+                        <span class="appts-status__dot"></span>
+                        Agenda activa
                     </div>
-                    <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Pulso de agenda</div>
-                        <div class="mt-2 text-2xl font-black">{{ stats().todayCount }} citas hoy</div>
-                        <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
-                            {{ stats().overdueCount }} requieren revision y {{ stats().statusCounts.scheduled }} siguen programadas.
-                        </div>
-                        <button
-                            pButton
-                            [label]="activeTab === 'list' ? 'Nueva cita en lista' : 'Nueva cita en calendario'"
-                            icon="pi pi-plus"
-                            (click)="crearCita()"
-                            class="mt-4 w-full !bg-white !text-slate-950 hover:!bg-slate-100 !border-0"
-                        ></button>
+                    <div class="appts-header__title">
+                        <strong>Gestiona la jornada sin fricción</strong>
+                        <span>{{ getHeaderNarrative() }}</span>
+                    </div>
+                    <div class="appts-header__counts">
+                        <span><strong>{{ stats().todayCount }}</strong> hoy</span>
+                        <span class="appts-header__sep">·</span>
+                        <span [class.appts-header__overdue]="stats().overdueCount > 0"><strong>{{ stats().overdueCount }}</strong> vencidas</span>
+                        <span class="appts-header__sep">·</span>
+                        <span><strong>{{ stats().statusCounts.scheduled }}</strong> programadas</span>
                     </div>
                 </div>
-            </section>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4 mb-6">
-                <div class="md:col-span-2 xl:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                    <div class="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400">Próxima cita</div>
-                    <div class="mt-2" *ngIf="stats().nextAppointment as next; else noNextAppointment">
-                        <div class="text-lg font-semibold text-slate-900 dark:text-white">{{ next.client_name || ('Cliente #' + next.client) }}</div>
-                        <div class="text-sm text-slate-600 dark:text-slate-400">{{ next.stylist_name || ('Empleado #' + next.stylist) }}</div>
-                        <div class="mt-2 text-sm font-medium text-indigo-700 dark:text-indigo-300">{{ next.date_time | date: 'dd/MM/yyyy HH:mm' }}</div>
-                    </div>
-                    <ng-template #noNextAppointment>
-                        <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">No hay citas futuras programadas ahora mismo.</div>
-                    </ng-template>
+                <div class="appts-header__right">
+                    <a routerLink="calendar" routerLinkActive="is-active" class="appts-tab">
+                        <i class="pi pi-calendar"></i> Calendario
+                    </a>
+                    <a routerLink="list" routerLinkActive="is-active" class="appts-tab">
+                        <i class="pi pi-list"></i> Lista
+                    </a>
+                    <button pButton icon="pi pi-plus" label="Nueva cita" (click)="crearCita()" class="appts-cta"></button>
                 </div>
+            </header>
 
-                <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                    <div class="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400">Hoy</div>
-                    <div class="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{{ stats().todayCount }}</div>
-                    <div class="text-sm text-slate-500 dark:text-slate-400">citas del día</div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                    <div class="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400">Pendientes</div>
-                    <div class="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{{ stats().statusCounts.scheduled }}</div>
-                    <div class="text-sm text-slate-500 dark:text-slate-400">programadas</div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                    <div class="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400">Vencidas</div>
-                    <div class="mt-2 text-3xl font-bold" [ngClass]="stats().overdueCount > 0 ? 'text-amber-600 dark:text-amber-300' : 'text-slate-900 dark:text-white'">{{ stats().overdueCount }}</div>
-                    <div class="text-sm text-slate-500 dark:text-slate-400">requieren revisión</div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                    <div class="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400">Total</div>
-                    <div class="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{{ stats().total }}</div>
-                    <div class="text-sm text-slate-500 dark:text-slate-400">citas registradas</div>
-                </div>
+            <div class="appts-next" *ngIf="stats().nextAppointment as next; else noNextAppointment">
+                <span class="appts-next__label">Próxima</span>
+                <strong>{{ next.client_name || ('Cliente #' + next.client) }}</strong>
+                <span>{{ next.stylist_name || ('Empleado #' + next.stylist) }}</span>
+                <span class="appts-next__time">{{ next.date_time | date: 'dd/MM HH:mm' }}</span>
             </div>
-
-            <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
-                <div *ngFor="let card of summaryCards" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm border-l-4" [ngClass]="card.accent">
-                    <div class="text-sm font-medium">{{ card.label }}</div>
-                    <div class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{{ stats().statusCounts[card.key] }}</div>
+            <ng-template #noNextAppointment>
+                <div class="appts-next">
+                    <span class="appts-next__label">Estado</span>
+                    <strong>Sin próxima cita</strong>
+                    <span>{{ stats().statusCounts.scheduled > 0 ? 'Todavía hay citas pendientes por resolver en la lista.' : 'La agenda está limpia por ahora.' }}</span>
                 </div>
-            </div>
+            </ng-template>
 
-            <p-tabs [(value)]="activeTab">
-                <p-tablist>
-                    <p-tab value="calendar">
-                        <i class="pi pi-calendar mr-2"></i>
-                        <span>Calendario</span>
-                    </p-tab>
-                    <p-tab value="list">
-                        <i class="pi pi-list mr-2"></i>
-                        <span>Lista</span>
-                    </p-tab>
-                </p-tablist>
-
-                <p-tabpanels>
-                    <p-tabpanel value="calendar">
-                        <app-appointments-calendar #calendar></app-appointments-calendar>
-                    </p-tabpanel>
-
-                    <p-tabpanel value="list">
-                        <app-appointments-management #lista></app-appointments-management>
-                    </p-tabpanel>
-                </p-tabpanels>
-            </p-tabs>
+            <router-outlet></router-outlet>
         </div>
+
+        <style>
+        .appts-shell { display: flex; flex-direction: column; gap: 0; }
+
+        .appts-header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--surface-border);
+            background: var(--surface-card);
+            border-radius: 0.85rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .appts-header__left, .appts-header__right { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
+
+        .appts-header__title {
+            display: flex;
+            flex-direction: column;
+            gap: 0.12rem;
+            margin-left: 0.25rem;
+        }
+
+        .appts-header__title strong {
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
+        .appts-header__title span {
+            font-size: 0.82rem;
+            color: var(--text-color-secondary);
+        }
+
+        .appts-status {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--text-color-secondary);
+        }
+
+        .appts-status__dot {
+            width: 0.5rem; height: 0.5rem; border-radius: 999px; background: #10b981;
+        }
+
+        .appts-header__counts { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-color); }
+        .appts-header__sep { color: var(--text-color-secondary); }
+        .appts-header__overdue strong { color: #d97706; }
+
+        .appts-tab {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.45rem 0.9rem; border-radius: 6px;
+            font-size: 0.88rem; font-weight: 600;
+            border: 1px solid var(--surface-border);
+            color: var(--text-color-secondary);
+            text-decoration: none; transition: all 120ms;
+        }
+
+        .appts-tab.is-active {
+            background: #111827; color: #fff; border-color: #111827;
+        }
+
+        .appts-cta { height: 2.25rem; font-size: 0.88rem; }
+
+        .appts-next {
+            display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+            padding: 0.65rem 1rem;
+            border: 1px solid var(--surface-border);
+            background: var(--surface-ground);
+            border-radius: 0.65rem;
+            font-size: 0.88rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .appts-next__label {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--text-color-secondary);
+        }
+
+        .appts-next strong { color: var(--text-color); font-weight: 700; }
+        .appts-next span { color: var(--text-color-secondary); }
+
+        .appts-next__time {
+            margin-left: auto; font-weight: 700;
+            color: #4f46e5;
+        }
+        </style>
     `
 })
 export class AppointmentsMain implements OnInit {
-    @ViewChild('lista') listaComponent!: AppointmentsManagement;
-    @ViewChild('calendar') calendarComponent!: AppointmentsCalendar;
-
     private readonly notificationService = inject(NotificationBadgeService);
     private readonly appointmentsUiService = inject(AppointmentsUiService);
     private readonly appointmentsDataService = inject(AppointmentsDataService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly router = inject(Router);
 
     activeTab: AppointmentTab = 'calendar';
     stats = this.appointmentsDataService.stats;
@@ -143,14 +170,28 @@ export class AppointmentsMain implements OnInit {
         this.appointmentsUiService.refresh$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.notificationService.refresh();
         });
+        this.setActiveTabFromUrl(this.router.url);
+        this.router.events.pipe(
+            filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe((event) => {
+            this.setActiveTabFromUrl(event.urlAfterRedirects);
+        });
     }
 
     crearCita(): void {
+        this.appointmentsUiService.requestCreate(this.activeTab);
+    }
+
+    getHeaderNarrative(): string {
         if (this.activeTab === 'list') {
-            this.listaComponent?.abrirDialogo();
-            return;
+            return 'Modo de resolución rápida para completar, cancelar y seguir.';
         }
 
-        this.calendarComponent?.abrirFormulario();
+        return 'Modo visual para repartir mejor la carga y detectar huecos.';
+    }
+
+    private setActiveTabFromUrl(url: string): void {
+        this.activeTab = url.includes('/appointments/list') ? 'list' : 'calendar';
     }
 }

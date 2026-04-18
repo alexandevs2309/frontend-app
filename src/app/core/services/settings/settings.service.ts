@@ -12,7 +12,14 @@ export interface AppSettings {
 
 export interface BarbershopSettingsResponse extends AppSettings {
   logo?: string | null;
-  pos_config?: Record<string, unknown> | null;
+  pos_config?: {
+    business_name?: string;
+    rnc?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+  } | null;
   service_discount_limit?: number | null;
   business_hours?: Record<string, { open: string; close: string; closed: boolean }>;
   contact?: {

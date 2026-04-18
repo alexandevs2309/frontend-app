@@ -24,8 +24,8 @@ body {
 .p-card,
 .p-panel,
 .p-dialog {
-  background-color: var(--surface-card) !important;
-  border-color: var(--surface-border) !important;
+  background-color: var(--surface-card);
+  border-color: var(--surface-border);
 }
 
 /* Botones primarios - USANDO VARIABLES SAKAI */
@@ -65,18 +65,18 @@ body {
 }
 
 /* Inputs y formularios - USANDO VARIABLES SAKAI */
-.p-inputtext,
-.p-select,
-.p-textarea {
-  border-color: var(--surface-border) !important;
-}
+// .p-inputtext,
+// .p-select,
+// .p-textarea {
+//   border-color: var(--surface-border) !important;
+// }
 
-.p-inputtext:focus,
-.p-select:focus,
-.p-textarea:focus {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 1px var(--primary-color) !important;
-}
+// .p-inputtext:focus,
+// .p-select:focus,
+// .p-textarea:focus {
+//   border-color: var(--primary-color) !important;
+//   box-shadow: 0 0 0 1px var(--primary-color) !important;
+// }
 
 /* Glass effect actualizado */
 .glass-effect {
@@ -367,7 +367,3 @@ html.app-dark .p-dialog .hover\:bg-gray-50:hover {
 
 /* PLATFORM STYLES - CAPA GLOBAL */
 @import './assets/layout/platform';
-@import '@fullcalendar/core/main.css';
-@import '@fullcalendar/daygrid/main.css';
-@import '@fullcalendar/timegrid/main.css';
-@import './app/shared/onboarding/onboarding.styles';

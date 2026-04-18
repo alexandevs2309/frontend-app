@@ -106,9 +106,9 @@ export class Register implements OnInit {
   };
 
   plans = [
-    { name: 'basic', price: 29.99, features: ['8 empleados', '16 usuarios', 'Caja y ventas', 'Reportes básicos'] },
-    { name: 'standard', price: 69.99, features: ['25 empleados', '50 usuarios', 'Inventario', 'Reportes avanzados'] },
-    { name: 'premium', price: 129.99, features: ['Empleados ilimitados', 'Usuarios ilimitados', 'Acceso a API', 'Marca personalizada'] }
+    { name: 'basic', price: 29.99, features: ['8 usuarios activos', '1 sucursal', 'Caja y ventas', 'Reportes básicos'] },
+    { name: 'standard', price: 69.99, features: ['25 usuarios activos', 'Multi-sucursal', 'Inventario', 'Reportes avanzados'] },
+    { name: 'premium', price: 129.99, features: ['Usuarios ilimitados', 'Sucursales ilimitadas', 'Reportes avanzados', 'Marca personalizada'] }
   ];
 
   constructor(

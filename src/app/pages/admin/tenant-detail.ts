@@ -26,6 +26,11 @@ interface DiagnosticFinding {
     action: string;
 }
 
+interface PlanChangeBlockInfo {
+    title: string;
+    message: string;
+}
+
 @Component({
     selector: 'app-tenant-detail',
     standalone: true,
@@ -92,7 +97,7 @@ interface DiagnosticFinding {
                     <div><strong>Subdominio:</strong> {{ tenant()?.subdomain || '-' }}</div>
                     <div><strong>Contacto:</strong> {{ tenant()?.contact_email || '-' }}</div>
                     <div><strong>Plan actual:</strong> {{ getTenantPlanDisplayName() }}</div>
-                    <div><strong>Límites:</strong> Users {{ tenant()?.max_users || 0 }} / Employees {{ tenant()?.max_employees || 0 }}</div>
+                    <div><strong>Límite comercial:</strong> Usuarios activos {{ formatLimit(tenant()?.max_users) }}</div>
                     <div><strong>Creado:</strong> {{ tenant()?.created_at ? (tenant()?.created_at | date:'dd/MM/yyyy HH:mm') : '-' }}</div>
                 </div>
             </p-card>
@@ -133,17 +138,14 @@ interface DiagnosticFinding {
                     <div class="text-sm space-y-2">
                         <div><strong>Nuevo plan:</strong> {{ preview.display_name || preview.name || '-' }}</div>
                         <div><strong>Precio:</strong> {{ preview.price | currency:'USD' }}</div>
-                        <div><strong>Nuevos límites:</strong> Usuarios {{ formatLimit(preview.max_users) }} / Empleados {{ formatLimit(preview.max_employees) }}</div>
-                        <div><strong>Uso actual:</strong> Usuarios {{ currentUsersCount() }} / Empleados {{ currentEmployeesCountLabel() }}</div>
+                        <div><strong>Nuevo límite comercial:</strong> Usuarios activos {{ formatLimit(preview.max_users) }}</div>
+                        <div><strong>Uso actual:</strong> Usuarios activos {{ currentUsersCount() }}</div>
                         <div><strong>Sucursales múltiples:</strong> {{ preview.allows_multiple_branches ? 'Sí' : 'No' }}</div>
                         @if (isSelectedPlanCurrent()) {
                             <div class="text-amber-700 dark:text-amber-300">Este tenant ya tiene asignado ese plan.</div>
                         }
                         @if (selectedPlanCreatesUserOverage()) {
                             <div class="text-red-700 dark:text-red-300">Advertencia: el tenant ya supera el límite de usuarios del plan seleccionado.</div>
-                        }
-                        @if (selectedPlanCreatesEmployeeRisk()) {
-                            <div class="text-slate-500 dark:text-slate-400">Nota: no hay conteo de empleados en este panel, así que conviene validar ese límite manualmente antes de aplicar el cambio.</div>
                         }
                         <div class="text-slate-500 dark:text-slate-400">El cambio actualiza el plan del tenant y sus límites operativos inmediatamente.</div>
                     </div>
@@ -342,6 +344,36 @@ interface DiagnosticFinding {
                 />
             </ng-template>
         </p-dialog>
+
+        <p-dialog
+            [(visible)]="planChangeBlockedVisible"
+            header="Cambio de plan bloqueado"
+            [modal]="true"
+            [style]="{ width: '34rem' }"
+            [draggable]="false"
+            [resizable]="false"
+        >
+            <div class="space-y-4">
+                <div class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                    <i class="pi pi-exclamation-triangle text-amber-600 dark:text-amber-300 text-lg mt-1"></i>
+                    <div>
+                        <div class="font-semibold text-amber-900 dark:text-amber-100">{{ planChangeBlockInfo.title }}</div>
+                        <p class="m-0 text-sm text-amber-800 dark:text-amber-200">{{ planChangeBlockInfo.message }}</p>
+                    </div>
+                </div>
+
+                @if (selectedPlanPreview(); as preview) {
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40 text-sm space-y-2">
+                        <div><strong>Plan seleccionado:</strong> {{ preview.display_name || preview.name || '-' }}</div>
+                        <div><strong>Límite de usuarios:</strong> {{ formatLimit(preview.max_users) }}</div>
+                        <div><strong>Sucursales múltiples:</strong> {{ preview.allows_multiple_branches ? 'Sí' : 'No' }}</div>
+                    </div>
+                }
+            </div>
+            <ng-template #footer>
+                <p-button label="Entendido" icon="pi pi-check" (onClick)="closePlanChangeBlockedDialog()" />
+            </ng-template>
+        </p-dialog>
     `
 })
 export class TenantDetail implements OnInit {
@@ -362,6 +394,11 @@ export class TenantDetail implements OnInit {
     diagnostics = signal<DiagnosticFinding[]>([]);
     suspensionDialogVisible = false;
     suspensionReason = '';
+    planChangeBlockedVisible = false;
+    planChangeBlockInfo: PlanChangeBlockInfo = {
+        title: 'No se puede aplicar este cambio',
+        message: 'Revisa las restricciones actuales del tenant antes de volver a intentarlo.'
+    };
 
     planOptions = signal<any[]>([]);
 
@@ -459,6 +496,7 @@ export class TenantDetail implements OnInit {
             },
             error: (error) => {
                 this.saving.set(false);
+                this.openPlanChangeBlockedDialog(error);
                 this.showError('No se pudo actualizar plan del tenant', error);
             }
         });
@@ -848,26 +886,10 @@ export class TenantDetail implements OnInit {
         return Number(this.tenantStats()?.current_users ?? this.users().length ?? 0);
     }
 
-    currentEmployeesCountLabel(): string {
-        const currentEmployees = this.tenantStats()?.current_employees;
-        if (typeof currentEmployees === 'number') {
-            return String(currentEmployees);
-        }
-        return 'No disponible';
-    }
-
     selectedPlanCreatesUserOverage(): boolean {
         const selectedPlan = this.selectedPlanPreview();
         if (!selectedPlan || !selectedPlan.max_users) return false;
         return this.currentUsersCount() > selectedPlan.max_users;
-    }
-
-    selectedPlanCreatesEmployeeRisk(): boolean {
-        const selectedPlan = this.selectedPlanPreview();
-        const currentEmployees = this.tenantStats()?.current_employees;
-        if (!selectedPlan || !selectedPlan.max_employees) return false;
-        if (typeof currentEmployees !== 'number') return true;
-        return currentEmployees > selectedPlan.max_employees;
     }
 
     private toDate(value: any): Date | null {
@@ -899,7 +921,48 @@ export class TenantDetail implements OnInit {
 
     private showError(detail: string, error?: any): void {
         this.errorLogger.log('TenantDetail', detail, error);
-        const errorMessage = error?.error?.message || error?.message || detail;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: String(errorMessage).substring(0, 200), life: 4000 });
+        const errorMessage = this.extractErrorMessage(error, detail);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: errorMessage.substring(0, 240), life: 5000 });
+    }
+
+    private openPlanChangeBlockedDialog(error?: any): void {
+        const message = this.extractErrorMessage(error, 'Revisa las restricciones del tenant e inténtalo de nuevo.');
+        this.planChangeBlockInfo = {
+            title: 'El tenant no puede cambiar a ese plan todavía',
+            message
+        };
+        this.planChangeBlockedVisible = true;
+    }
+
+    closePlanChangeBlockedDialog(): void {
+        this.planChangeBlockedVisible = false;
+    }
+
+    private extractErrorMessage(error: any, fallback: string): string {
+        const payload = error?.error;
+
+        if (typeof payload === 'string' && payload.trim()) {
+            return payload.trim();
+        }
+
+        if (payload?.message && typeof payload.message === 'string') {
+            return payload.message;
+        }
+
+        if (payload && typeof payload === 'object') {
+            const firstFieldError = Object.values(payload)
+                .flatMap((value: any) => Array.isArray(value) ? value : [value])
+                .find((value: any) => typeof value === 'string' && value.trim());
+
+            if (typeof firstFieldError === 'string') {
+                return firstFieldError;
+            }
+        }
+
+        if (typeof error?.message === 'string' && error.message.trim()) {
+            return error.message;
+        }
+
+        return fallback;
     }
 }

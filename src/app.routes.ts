@@ -1,9 +1,6 @@
 import { Routes } from '@angular/router';
 import { Notfound } from './app/pages/notfound/notfound';
-import { NoAuthGuard } from './app/core/guards';
 import { publicRoutes } from './app/routes/public.routes';
-import { adminRoutes } from './app/routes/admin.routes';
-import { clientRoutes } from './app/routes/client.routes';
 
 export const appRoutes: Routes = [
     // Default redirect to landing
@@ -19,11 +16,23 @@ export const appRoutes: Routes = [
         loadChildren: () => import('./app/pages/auth/auth.routes')
     },
 
-    // Admin routes (SuperAdmin)
-    ...adminRoutes,
+    // Admin shell (fully lazy bundle)
+    {
+        path: 'admin',
+        data: { preload: true, preloadAfterAuth: true, preloadFor: ['SUPER_ADMIN'] },
+        loadChildren: () => import('./app/routes/admin.routes').then(m => m.adminRoutes)
+    },
 
-    // Client routes (Barbershop owners)
-    ...clientRoutes,
+    // Client shell (fully lazy bundle)
+    {
+        path: 'client',
+        data: {
+            preload: true,
+            preloadAfterAuth: true,
+            preloadFor: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager']
+        },
+        loadChildren: () => import('./app/routes/client.routes').then(m => m.clientRoutes)
+    },
 
     // Public routes (landing, legal, register)
     ...publicRoutes,

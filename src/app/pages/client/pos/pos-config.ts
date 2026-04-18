@@ -4,6 +4,7 @@ const DEFAULT_PHONE = 'Teléfono no configurado';
 
 export interface PosConfigModel {
     business_name: string;
+    rnc: string;
     address: string;
     phone: string;
     email: string;
@@ -51,6 +52,7 @@ export function toAbsoluteMediaUrl(apiUrl: string, url: string): string {
 export function buildDefaultPosConfig(businessName: string): PosConfigModel {
     return {
         business_name: businessName || DEFAULT_BUSINESS_NAME,
+        rnc: '',
         address: DEFAULT_ADDRESS,
         phone: DEFAULT_PHONE,
         email: '',
@@ -62,6 +64,7 @@ export function buildDefaultPosConfig(businessName: string): PosConfigModel {
 export function buildPosConfigFromSettings(settings: any, fallbackBusinessName: string, apiUrl: string): PosConfigModel {
     return {
         business_name: settings?.pos_config?.business_name || fallbackBusinessName,
+        rnc: settings?.pos_config?.rnc || '',
         address: settings?.pos_config?.address || DEFAULT_ADDRESS,
         phone: settings?.pos_config?.phone || DEFAULT_PHONE,
         email: settings?.pos_config?.email || '',

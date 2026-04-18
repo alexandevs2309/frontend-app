@@ -61,6 +61,9 @@ export class RoleGuard implements CanActivate {
       case 'ESTILISTA':
         this.router.navigate(['/client/dashboard']);
         break;
+      case 'UTILITY':
+        this.router.navigate(['/client/profile']);
+        break;
       default:
         this.router.navigate(['/auth/login']);
     }

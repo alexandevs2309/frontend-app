@@ -11,6 +11,9 @@ import { AuthService } from '../../../core/services/auth/auth.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Router } from '@angular/router';
+import { SubscriptionService } from '../../../core/services/subscription/subscription.service';
+import { TenantService } from '../../../core/services/tenant/tenant.service';
+import { getSubscriptionPlanLabel } from '../../../core/utils/subscription-plan-label';
 
 @Component({
     selector: 'app-user-profile',
@@ -131,6 +134,22 @@ import { Router } from '@angular/router';
                                 <span>MFA</span>
                                 <strong>{{ user.mfa_enabled ? 'Activo' : 'No configurado' }}</strong>
                             </div>
+                        </div>
+                    </p-card>
+
+                    <p-card>
+                        <div class="space-y-3">
+                            <h3 class="section-title !mb-0">Plan actual</h3>
+                            <div class="summary-row">
+                                <span>Plan</span>
+                                <strong>{{ getCurrentPlanName() }}</strong>
+                            </div>
+                            <div class="summary-row">
+                                <span>Estado</span>
+                                <strong>{{ getCurrentPlanStatusText() }}</strong>
+                            </div>
+                            <p class="section-subtitle">{{ getCurrentPlanCopy() }}</p>
+                            <button pButton class="w-full p-button-outlined" icon="pi pi-credit-card" label="Ver planes y actualizar" (click)="goToPayment()"></button>
                         </div>
                     </p-card>
 
@@ -567,12 +586,16 @@ export class UserProfileComponent implements OnInit {
     mfaCode = '';
     showDisableMfa = false;
     disableMfaCode = '';
+    subscriptionStatus: any = null;
+    currentTenant: any = null;
 
     constructor(
         private authService: AuthService,
         private messageService: MessageService,
         private http: HttpClient,
-        private router: Router
+        private router: Router,
+        private subscriptionService: SubscriptionService,
+        private tenantService: TenantService
     ) {}
 
     ngOnInit() {
@@ -581,6 +604,8 @@ export class UserProfileComponent implements OnInit {
             this.user = { ...currentUser };
             this.loadFullProfile();
         }
+        this.loadSubscriptionStatus();
+        this.loadCurrentTenant();
     }
 
     loadFullProfile(): void {
@@ -741,6 +766,66 @@ export class UserProfileComponent implements OnInit {
         this.router.navigate(['/client/help']);
     }
 
+    goToPayment(): void {
+        this.router.navigate(['/client/payment']);
+    }
+
+    getCurrentPlanName(): string {
+        if (this.currentTenant?.subscription_plan?.display_name || this.currentTenant?.subscription_plan?.name || this.currentTenant?.plan_type) {
+            return getSubscriptionPlanLabel(
+                this.currentTenant?.subscription_plan?.display_name,
+                this.currentTenant?.subscription_plan?.name,
+                this.currentTenant?.plan_type
+            );
+        }
+
+        if (this.subscriptionStatus?.plan_display) {
+            return getSubscriptionPlanLabel(this.subscriptionStatus.plan_display);
+        }
+
+        try {
+            const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+            return getSubscriptionPlanLabel(
+                tenant?.subscription_plan?.display_name,
+                tenant?.subscription_plan?.name,
+                tenant?.plan_type,
+                'Plan activo'
+            );
+        } catch {
+            return 'Plan activo';
+        }
+    }
+
+    getCurrentPlanStatusText(): string {
+        const status = String(this.subscriptionStatus?.current_status || '').toLowerCase();
+        const graceDays = Number(this.subscriptionStatus?.days_in_grace || 0);
+
+        if (status === 'active') return 'Activo';
+        if (graceDays > 0) return `Gracia (${graceDays} día(s))`;
+        if (status === 'trial') return 'Prueba';
+        if (status) return status;
+        return 'No disponible';
+    }
+
+    getCurrentPlanCopy(): string {
+        const status = String(this.subscriptionStatus?.current_status || '').toLowerCase();
+        const graceDays = Number(this.subscriptionStatus?.days_in_grace || 0);
+
+        if (status === 'active') {
+            return 'Tu suscripción está al día. Si necesitas más capacidad o funciones, puedes actualizar cuando quieras.';
+        }
+
+        if (graceDays > 0) {
+            return `Tu suscripción está en período de gracia. Te quedan ${graceDays} día(s) para renovarla o actualizarla.`;
+        }
+
+        if (status === 'trial') {
+            return 'Estás en período de prueba. Revisa los planes disponibles para elegir el que mejor acompañe tu operación.';
+        }
+
+        return 'Puedes revisar tus planes disponibles y actualizar tu suscripción desde aquí.';
+    }
+
     startMfaSetup(): void {
         this.settingUpMfa.set(true);
         this.authService.setupMfa().subscribe({
@@ -845,5 +930,27 @@ export class UserProfileComponent implements OnInit {
 
     isValidDisableMfaCode(): boolean {
         return /^\d{6}$/.test(this.disableMfaCode.trim());
+    }
+
+    private loadSubscriptionStatus(): void {
+        this.subscriptionService.getSubscriptionStatus().subscribe({
+            next: (status) => {
+                this.subscriptionStatus = status;
+            },
+            error: () => {
+                this.subscriptionStatus = null;
+            }
+        });
+    }
+
+    private loadCurrentTenant(): void {
+        this.tenantService.getCurrentTenant().subscribe({
+            next: (tenant) => {
+                this.currentTenant = tenant;
+            },
+            error: () => {
+                this.currentTenant = null;
+            }
+        });
     }
 }

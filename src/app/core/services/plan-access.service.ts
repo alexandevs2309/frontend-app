@@ -11,6 +11,7 @@ interface TenantPlanLike {
 interface TenantLike {
   id?: number;
   name?: string;
+  plan_type?: string;
   subscription_plan?: TenantPlanLike | null;
 }
 
@@ -49,12 +50,31 @@ export class PlanAccessService {
 
   getPlanName(): string {
     const plan = this.getStoredPlan();
-    return String(plan?.display_name || plan?.name || 'tu plan actual');
+    const tenant = this.getStoredTenant();
+    return String(plan?.display_name || plan?.name || tenant?.plan_type || 'tu plan actual');
   }
 
   hasFeature(featureName: string): boolean {
     const features = this.getStoredPlan()?.features;
     return !!features && !!features[featureName];
+  }
+
+  canAccessFeature(featureName: string): boolean {
+    const plan = this.getStoredPlan();
+    const features = plan?.features;
+
+    if (features && typeof features === 'object' && featureName in features) {
+      return !!features[featureName];
+    }
+
+    const currentPlan = this.getCurrentPlanKey();
+    const featureMatrix: Record<string, string[]> = {
+      basic: ['basic_reports', 'cash_register', 'client_history'],
+      standard: ['basic_reports', 'cash_register', 'client_history', 'inventory', 'advanced_reports', 'multi_location'],
+      premium: ['basic_reports', 'cash_register', 'client_history', 'inventory', 'advanced_reports', 'multi_location', 'custom_branding']
+    };
+
+    return (featureMatrix[currentPlan] || []).includes(featureName);
   }
 
   getUserLimitStatus(currentUsers: number): PlanLimitStatus {
@@ -65,7 +85,7 @@ export class PlanAccessService {
 
   getEmployeeLimitStatus(currentEmployees: number): PlanLimitStatus {
     const plan = this.getStoredPlan();
-    const limit = Number(plan?.max_employees || 0);
+    const limit = Number(plan?.max_users || 0);
     return this.buildLimitStatus(currentEmployees, limit);
   }
 
@@ -74,19 +94,19 @@ export class PlanAccessService {
   }
 
   getEmployeeLimitMessage(status: PlanLimitStatus): string {
-    return `Has alcanzado el límite de empleados de ${status.planName} (${status.current}/${status.limit}). Actualiza tu plan para seguir agregando personal.`;
+    return `Has alcanzado el límite de usuarios activos de ${status.planName} (${status.current}/${status.limit}). Actualiza tu plan para seguir agregando personal.`;
   }
 
-  getUpgradeRecommendation(limitType: 'users' | 'employees'): UpgradeRecommendation | null {
-    const currentPlan = String(this.getStoredPlan()?.name || '').toLowerCase();
+  getUpgradeRecommendation(limitType: 'users' | 'employees', contextText?: string): UpgradeRecommendation | null {
+    const currentPlan = this.getCurrentPlanKey(contextText);
 
     if (currentPlan === 'basic') {
       return {
         nextPlanName: 'Business',
         reason: limitType === 'employees'
-          ? 'Necesitas más capacidad para seguir sumando personal.'
+          ? 'Necesitas más usuarios activos para seguir sumando personal.'
           : 'Necesitas más capacidad para seguir sumando usuarios internos.',
-        detail: 'Business te lleva a 25 empleados y 50 usuarios, además de multi-sucursal, inventario y reportes avanzados.'
+        detail: 'Business te lleva a 25 usuarios activos, además de multi-sucursal, inventario y reportes avanzados.'
       };
     }
 
@@ -94,13 +114,92 @@ export class PlanAccessService {
       return {
         nextPlanName: 'Premium',
         reason: limitType === 'employees'
-          ? 'Tu operación ya pide una capacidad más alta sin topes fijos.'
+          ? 'Tu operación ya pide más usuarios activos sin topes fijos para seguir creciendo.'
           : 'Tu operación ya pide más usuarios y una capa más premium.',
-        detail: 'Premium te lleva a empleados y usuarios ilimitados, además de branding, acceso a API y permisos avanzados por rol.'
+        detail: 'Premium te lleva a usuarios activos ilimitados, además de branding y operación sin topes fijos.'
       };
     }
 
     return null;
+  }
+
+  getFeatureUpgradeRecommendation(featureName: string): UpgradeRecommendation | null {
+    const currentPlan = this.getCurrentPlanKey();
+
+    if (featureName === 'inventory' || featureName === 'advanced_reports' || featureName === 'multi_location') {
+      if (currentPlan === 'basic') {
+        return {
+          nextPlanName: 'Business',
+          reason: 'Tu plan actual no incluye esta funcionalidad operativa.',
+          detail: 'Business habilita inventario, reportes avanzados y operación multi-sucursal.'
+        };
+      }
+      if (currentPlan === 'standard') {
+        return {
+          nextPlanName: 'Premium',
+          reason: 'Tu operación ya está en Business y esta mejora pide una capa superior.',
+          detail: 'Premium elimina topes de usuarios y añade branding personalizado.'
+        };
+      }
+    }
+
+    if (featureName === 'custom_branding') {
+      return {
+        nextPlanName: 'Premium',
+        reason: 'La personalización de marca está reservada para el plan Premium.',
+        detail: 'Premium habilita logo personalizado y una experiencia más alineada a tu marca.'
+      };
+    }
+
+    return null;
+  }
+
+  private getCurrentPlanKey(contextText?: string): string {
+    const tenant = this.getStoredTenant();
+    const rawPlan =
+      tenant?.subscription_plan?.name ||
+      tenant?.subscription_plan?.display_name ||
+      tenant?.plan_type ||
+      this.inferPlanFromText(contextText) ||
+      '';
+
+    const normalized = String(rawPlan).trim().toLowerCase();
+
+    if (['basic', 'professional', 'profesional'].includes(normalized)) {
+      return 'basic';
+    }
+
+    if (['standard', 'business'].includes(normalized)) {
+      return 'standard';
+    }
+
+    if (normalized === 'premium') {
+      return 'premium';
+    }
+
+    return normalized;
+  }
+
+  private inferPlanFromText(contextText?: string): string {
+    const normalized = String(contextText || '').trim().toLowerCase();
+
+    if (!normalized) {
+      return '';
+    }
+
+    if (normalized.includes('plan basic') || normalized.includes('professional') || normalized.includes('profesional')) {
+      return 'basic';
+    }
+
+    if (normalized.includes('plan standard') || normalized.includes('business')) {
+      return 'standard';
+    }
+
+    if (normalized.includes('premium')) {
+      return 'premium';
+    }
+
+    return '';
   }
 
   private buildLimitStatus(current: number, limit: number): PlanLimitStatus {

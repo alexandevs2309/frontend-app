@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -15,167 +15,7 @@ declare const Stripe: any;
   standalone: true,
   imports: [CommonModule, FormsModule, ButtonModule, CardModule],
   templateUrl: './checkout.html',
-  styles: [`
-    .checkout-container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-
-    .checkout-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    .checkout-header h1 {
-      color: var(--primary-color);
-      margin-bottom: 0.5rem;
-    }
-
-    .checkout-content {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin-bottom: 2rem;
-    }
-
-    .plan-summary {
-      background: var(--surface-card);
-      padding: 1.5rem;
-      border-radius: 8px;
-      border: 1px solid var(--surface-border);
-    }
-
-    .plan-summary h3 {
-      margin-top: 0;
-      color: var(--text-color);
-    }
-
-    .plan-details {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .plan-name {
-      font-size: 1.2rem;
-      font-weight: 600;
-    }
-
-    .plan-price {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: var(--primary-color);
-    }
-
-    .plan-features {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .feature-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.9rem;
-    }
-
-    .payment-form {
-      background: var(--surface-card);
-      padding: 1.5rem;
-      border-radius: 8px;
-      border: 1px solid var(--surface-border);
-    }
-
-    .payment-form h3 {
-      margin-top: 0;
-      color: var(--text-color);
-    }
-
-    .form-group {
-      margin-bottom: 1rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: var(--text-color);
-    }
-
-    .stripe-card-shell {
-      background: linear-gradient(180deg, rgba(248,250,252,0.95) 0%, rgba(241,245,249,0.9) 100%);
-      border: 1px solid var(--surface-border);
-      border-radius: 12px;
-      padding: 1rem;
-      min-height: 56px;
-    }
-
-    :host-context(.app-dark) .stripe-card-shell {
-      background: linear-gradient(180deg, rgba(15,23,42,0.88) 0%, rgba(30,41,59,0.82) 100%);
-      border-color: rgba(148,163,184,0.2);
-    }
-
-    .stripe-card-shell--error {
-      border-color: #ef4444;
-      box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
-    }
-
-    .payment-note {
-      font-size: 0.9rem;
-      color: var(--text-color-secondary);
-      line-height: 1.5;
-    }
-
-    .payment-helper {
-      font-size: 0.85rem;
-      color: var(--text-color-secondary);
-      margin-top: 0.75rem;
-    }
-
-    .payment-actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1.5rem;
-    }
-
-    .payment-actions button {
-      flex: 1;
-    }
-
-    .security-info {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      padding: 1rem;
-      background: var(--surface-50);
-      border-radius: 8px;
-    }
-
-    .security-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.9rem;
-      color: var(--text-color-secondary);
-    }
-
-    @media (max-width: 768px) {
-      .checkout-content {
-        grid-template-columns: 1fr;
-      }
-
-      .security-info {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-    }
-  `]
+  styles: [``]
 })
 export class CheckoutComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('cardElementHost') cardElementHost?: ElementRef<HTMLDivElement>;
@@ -338,6 +178,20 @@ export class CheckoutComponent implements OnInit, AfterViewInit, OnDestroy {
 
   goBack() {
     this.router.navigate(['/client/payment']);
+  }
+
+  @HostListener('document:keydown.enter', ['$event'])
+  handleEnterShortcut(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName?.toLowerCase();
+    if (tag === 'textarea' || this.processing) {
+      return;
+    }
+
+    if (tag !== 'button') {
+      event.preventDefault();
+      this.processPayment();
+    }
   }
 
   getTotalAmount(): number {

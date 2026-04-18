@@ -38,33 +38,43 @@ interface ScheduleFormState {
                     <div class="space-y-5">
                         <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                             <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                            Operación del equipo
+                            Turnos
                         </div>
                         <div>
                             <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Turnos y asistencia</h2>
-                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Gestiona horarios del equipo, controla entradas y salidas y mantén visible la cobertura operativa del día.</p>
+                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Turnos, entradas y salidas del equipo en una sola pantalla.</p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                                <i class="pi pi-calendar-plus text-xs"></i>
-                                {{ schedules.length }} turnos
-                            </div>
-                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                                <i class="pi pi-users text-xs"></i>
-                                {{ employees.length }} empleados
-                            </div>
-                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                                <i class="pi pi-clock text-xs"></i>
-                                {{ attendanceRecords.length }} registros de hoy
-                            </div>
+                        <div class="grid gap-3 md:grid-cols-3">
+                            <article class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/70">
+                                <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Turnos</div>
+                                <div class="mt-2 text-2xl font-black text-slate-950 dark:text-white">{{ schedules.length }}</div>
+                            </article>
+                            <article class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/70">
+                                <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Equipo</div>
+                                <div class="mt-2 text-2xl font-black text-slate-950 dark:text-white">{{ employees.length }}</div>
+                            </article>
+                            <article class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/70">
+                                <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Asistencia</div>
+                                <div class="mt-2 text-2xl font-black text-slate-950 dark:text-white">{{ attendanceRecords.length }}</div>
+                            </article>
                         </div>
                     </div>
 
                     <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Resumen operativo</div>
-                        <div class="mt-2 text-2xl font-black">Cobertura del equipo</div>
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Accion principal</div>
+                        <div class="mt-2 text-2xl font-black">Crear o ajustar turno</div>
                         <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
                             {{ getSchedulesNarrative() }}
+                        </div>
+                        <div class="mt-5 flex flex-col gap-2">
+                            <button class="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
+                                (click)="resetForm()">
+                                Nuevo turno
+                            </button>
+                            <button class="rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/5"
+                                (click)="loadData()">
+                                Recargar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -72,9 +82,11 @@ interface ScheduleFormState {
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700 lg:col-span-1">
-                    <h3 class="text-lg font-semibold mb-4 text-slate-900 dark:text-white">
-                        {{ form.id ? 'Editar Turno' : 'Nuevo Turno' }}
-                    </h3>
+                    <div class="mb-4 rounded-2xl bg-slate-950 p-4 text-white">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Turno</div>
+                        <div class="mt-2 text-xl font-black">{{ form.id ? 'Editar turno' : 'Nuevo turno' }}</div>
+                        <div class="mt-2 text-sm text-slate-300">Empleado, dia y horario.</div>
+                    </div>
 
                     <div class="space-y-3">
                         <label class="block">
@@ -249,10 +261,10 @@ export class SchedulesManagement implements OnInit {
 
     getSchedulesNarrative(): string {
         if (!this.employees.length) {
-            return 'Aun no hay empleados cargados para asignar turnos o registrar asistencia.';
+            return 'No hay empleados cargados para asignar turnos.';
         }
 
-        return `${this.schedules.length} turnos registrados y ${this.attendanceRecords.length} movimientos recientes de asistencia visibles para seguimiento operativo.`;
+        return `${this.schedules.length} turnos y ${this.attendanceRecords.length} registros recientes.`;
     }
 
     ngOnInit(): void {
@@ -260,7 +272,7 @@ export class SchedulesManagement implements OnInit {
         this.loadData();
     }
 
-    private async loadData(): Promise<void> {
+    async loadData(): Promise<void> {
         this.loading = true;
         this.errorMessage = '';
         try {

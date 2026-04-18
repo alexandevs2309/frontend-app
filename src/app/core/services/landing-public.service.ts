@@ -49,13 +49,11 @@ export class LandingPublicService {
         maxEmployees: 8,
         popular: false,
         highlightFeatures: [
-          '8 empleados',
-          '16 usuarios',
+          '8 usuarios activos',
           '1 sucursal'
         ],
         technicalFeatures: [
-          'Hasta 8 empleados',
-          'Hasta 16 usuarios',
+          'Hasta 8 usuarios activos',
           'Agenda completa',
           'Caja y ventas',
           'Historial de clientes',
@@ -73,13 +71,11 @@ export class LandingPublicService {
         maxEmployees: 25,
         popular: true,
         highlightFeatures: [
-          '25 empleados',
-          '50 usuarios',
+          '25 usuarios activos',
           'Multi-sucursal'
         ],
         technicalFeatures: [
-          'Hasta 25 empleados',
-          'Hasta 50 usuarios',
+          'Hasta 25 usuarios activos',
           'Agenda completa',
           'Caja y ventas',
           'Historial de clientes',
@@ -98,12 +94,10 @@ export class LandingPublicService {
         maxEmployees: 0,
         popular: false,
         highlightFeatures: [
-          'Empleados ilimitados',
           'Usuarios ilimitados',
           'Logo personalizado'
         ],
         technicalFeatures: [
-          'Empleados ilimitados',
           'Usuarios ilimitados',
           'Agenda completa',
           'Control de caja',
@@ -111,9 +105,7 @@ export class LandingPublicService {
           'Inventario',
           'Reportes avanzados',
           'Multiples sucursales',
-          'Branding basico con logo personalizado',
-          'Permisos avanzados por rol',
-          'Acceso a API'
+          'Branding basico con logo personalizado'
         ],
         commercialBenefits: [
           'Atencion prioritaria',

@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -74,28 +75,28 @@ interface PaymentDto {
           <div class="space-y-5">
             <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
               <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-              Equipo activo
+              Equipo
             </div>
 
             <div>
-              <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Gestión de empleados</h2>
+              <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Empleados</h2>
               <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
-                Administra tu equipo, revisa roles operativos y mantén visible quién está activo, asignado y listo para atender.
+                Alta, rol, servicios y nómina en una sola vista.
               </p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-              <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                <i class="pi pi-users text-xs"></i>
-                {{ empleados().length }} empleados registrados
+            <div class="grid gap-3 sm:grid-cols-3">
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/60">
+                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Total</div>
+                <div class="mt-2 text-3xl font-black text-slate-950 dark:text-white">{{ empleados().length }}</div>
               </div>
-              <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                <i class="pi pi-check-circle text-xs"></i>
-                {{ getActiveEmployeesCount() }} activos
+              <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-200">Activos</div>
+                <div class="mt-2 text-3xl font-black text-emerald-700 dark:text-emerald-200">{{ getActiveEmployeesCount() }}</div>
               </div>
-              <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                <i class="pi pi-briefcase text-xs"></i>
-                {{ getServiceAssignableCount() }} atienden servicios
+              <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-500/30 dark:bg-blue-500/10">
+                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-blue-700 dark:text-blue-200">Atienden</div>
+                <div class="mt-2 text-3xl font-black text-blue-700 dark:text-blue-200">{{ getServiceAssignableCount() }}</div>
               </div>
             </div>
           </div>
@@ -103,40 +104,30 @@ interface PaymentDto {
           <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
             <div class="flex items-start justify-between gap-4">
               <div>
-                <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Resumen operativo</div>
-                <div class="mt-2 text-2xl font-black">Equipo de trabajo</div>
+                <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Acción principal</div>
+                <div class="mt-2 text-2xl font-black">Mover equipo rápido</div>
               </div>
               <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
                 <i class="pi pi-briefcase text-lg"></i>
               </div>
             </div>
 
-            <div class="mt-5 grid gap-3 sm:grid-cols-2">
-              <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Roles con agenda</div>
-                <div class="mt-1 text-lg font-bold">{{ getServiceAssignableCount() }}</div>
-              </div>
-              <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Inactivos</div>
-                <div class="mt-1 text-lg font-bold">{{ getInactiveEmployeesCount() }}</div>
-              </div>
+            <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+              {{ getActiveEmployeesCount() }} activos, {{ getInactiveEmployeesCount() }} inactivos. Entra aquí cuando necesites crear personal, cambiar rol o tocar nómina.
             </div>
 
-            <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
-              {{ getEmployeesNarrative() }}
+            <div class="mt-4 grid gap-3">
+              <button pButton label="Nuevo empleado" icon="pi pi-plus" (click)="abrirDialogo()" class="w-full !border-0 !bg-white !text-slate-950 hover:!bg-slate-100"></button>
+              <button pButton label="Ir a nómina" icon="pi pi-wallet" (click)="irANomina()" class="w-full p-button-outlined p-button-secondary"></button>
+              <button pButton label="Recargar" icon="pi pi-refresh" (click)="cargarDatos()" [loading]="cargando()" class="w-full p-button-text !text-slate-300 hover:!bg-white/10"></button>
             </div>
           </div>
         </div>
 
         <div class="border-t border-slate-200/80 px-6 py-5 dark:border-slate-800 xl:px-8">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex flex-wrap gap-2">
-              <button pButton icon="pi pi-refresh" (click)="cargarDatos()"
-                      [loading]="cargando()" class="p-button-outlined"></button>
-              <button pButton label="Nuevo empleado" icon="pi pi-plus" (click)="abrirDialogo()"></button>
-            </div>
             <div class="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-              Mantén al día roles, especialidades y disponibilidad del equipo.
+              Busca por nombre, email o especialidad y entra directo a editar.
             </div>
           </div>
         </div>
@@ -149,11 +140,11 @@ interface PaymentDto {
         <ng-template pTemplate="caption">
           <div class="flex flex-col gap-3 p-2 lg:flex-row lg:items-center lg:justify-between">
             <span class="text-sm text-slate-600 dark:text-slate-300">
-              Total: {{empleados().length}} empleados
+              {{empleados().length}} empleados
             </span>
             <span class="p-input-icon-left w-full lg:w-80">
               <i class="pi pi-search"></i>
-              <input pInputText type="text" placeholder="Buscar empleados..."
+              <input pInputText type="text" placeholder="Nombre, email o especialidad"
                      class="w-full"
                      (input)="dt.filterGlobal($any($event.target).value, 'contains')">
             </span>
@@ -239,9 +230,9 @@ interface PaymentDto {
                 [closable]="!guardando()" [closeOnEscape]="!guardando()">
         <div [formGroup]="formulario" class="grid gap-5 p-1">
           <div class="rounded-2xl bg-slate-950 p-4 text-white">
-            <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Perfil del equipo</div>
-            <div class="mt-2 text-xl font-black">{{ empleadoSeleccionado ? 'Actualizar colaborador' : 'Registrar nuevo colaborador' }}</div>
-            <div class="mt-2 text-sm text-slate-300">Configura rol, contacto y disponibilidad del miembro del equipo desde una sola vista.</div>
+            <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Empleado</div>
+            <div class="mt-2 text-xl font-black">{{ empleadoSeleccionado ? 'Editar empleado' : 'Nuevo empleado' }}</div>
+            <div class="mt-2 text-sm text-slate-300">Completa solo lo necesario y guarda.</div>
           </div>
 
           <div>
@@ -264,7 +255,7 @@ interface PaymentDto {
 
           <div>
             <label class="block font-medium mb-1">Rol *</label>
-            <select formControlName="role" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
+            <select formControlName="role" class="w-full rounded border border-slate-300 bg-white p-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
               <option *ngFor="let option of rolesOptions" [value]="option.value">{{option.label}}</option>
             </select>
           </div>
@@ -281,7 +272,7 @@ interface PaymentDto {
 
           <div>
             <label class="block font-medium mb-1">Fecha de Contratación</label>
-            <input type="date" formControlName="hire_date" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
+            <input type="date" formControlName="hire_date" class="w-full rounded border border-slate-300 bg-white p-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
           </div>
 
           <div *ngIf="isServiceAssignableRole(formulario.get('role')?.value)">
@@ -341,7 +332,15 @@ interface PaymentDto {
           </div>
         </div>
         <ng-template pTemplate="footer">
-          <button pButton label="Entendido" icon="pi pi-check" (click)="mostrarDialogoLimitePlan = false"></button>
+          <div class="flex justify-end gap-2">
+            <button pButton label="Entendido" icon="pi pi-check" class="p-button-text" (click)="mostrarDialogoLimitePlan = false"></button>
+            <button
+              *ngIf="recomendacionUpgradePlan"
+              pButton
+              label="Actualizar plan"
+              icon="pi pi-arrow-up-right"
+              (click)="irAActualizarPlan()"></button>
+          </div>
         </ng-template>
       </p-dialog>
 
@@ -353,13 +352,13 @@ interface PaymentDto {
         <div class="p-4" *ngIf="empleadoDetalle">
           <div [formGroup]="formularioNomina" class="grid gap-4">
             <div class="rounded-2xl bg-slate-950 p-4 text-white">
-              <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Compensación</div>
+              <div class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Nómina</div>
               <div class="mt-2 text-xl font-black">{{ getSelectedEmployeeDisplayName() }}</div>
-              <div class="mt-2 text-sm text-slate-300">Define modalidad de pago, frecuencia y descuentos legales del colaborador.</div>
+              <div class="mt-2 text-sm text-slate-300">Configura modalidad y monto de pago.</div>
             </div>
             <div>
               <label class="block font-medium mb-1">Tipo de Pago</label>
-              <select formControlName="salary_type" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
+              <select formControlName="salary_type" class="w-full rounded border border-slate-300 bg-white p-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                 <option value="fixed">Sueldo Fijo</option>
                 <option value="commission">Comisión</option>
                 <option value="mixed">Mixto</option>
@@ -367,7 +366,7 @@ interface PaymentDto {
             </div>
             <div>
               <label class="block font-medium mb-1">Frecuencia de Pago</label>
-              <select formControlName="payment_frequency" class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
+              <select formControlName="payment_frequency" class="w-full rounded border border-slate-300 bg-white p-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                 <option value="biweekly">Quincenal</option>
                 <option value="monthly">Mensual</option>
                 <option value="weekly">Semanal</option>
@@ -376,12 +375,12 @@ interface PaymentDto {
             <div>
               <label class="block font-medium mb-1">Porcentaje Comisión (%)</label>
               <input type="number" formControlName="commission_percentage" min="0" max="100"
-                     class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
+                     class="w-full rounded border border-slate-300 bg-white p-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
             </div>
             <div>
               <label class="block font-medium mb-1">Salario Mensual ({{ currencySymbol() }})</label>
               <input type="number" formControlName="contractual_monthly_salary" min="0"
-                     class="w-full p-2 border border-gray-300 rounded bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600">
+                     class="w-full rounded border border-slate-300 bg-white p-2 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
             </div>
             <div>
               <label class="block font-medium mb-2">Descuentos Legales</label>
@@ -514,7 +513,7 @@ interface PaymentDto {
             <ng-template pTemplate="emptymessage">
               <tr>
                 <td colspan="8" class="text-center py-8">
-                  <div class="text-gray-500">
+                  <div class="text-slate-500 dark:text-slate-400">
                     <i class="pi pi-info-circle text-3xl mb-2"></i>
                     <div>No hay préstamos registrados para este empleado</div>
                   </div>
@@ -562,7 +561,7 @@ interface PaymentDto {
           </div>
 
           <!-- Resumen del préstamo -->
-          <div class="bg-gray-50 p-3 rounded" *ngIf="formularioPrestamo.get('amount')?.value && formularioPrestamo.get('installments')?.value">
+          <div class="rounded bg-slate-50 p-3 dark:bg-slate-800/70" *ngIf="formularioPrestamo.get('amount')?.value && formularioPrestamo.get('installments')?.value">
             <h4 class="font-medium mb-2">Resumen:</h4>
             <div class="text-sm space-y-1">
               <div class="flex justify-between">
@@ -643,8 +642,8 @@ interface PaymentDto {
             <p-card>
               <div class="flex justify-between items-center">
                 <div>
-                  <div class="font-semibold text-gray-700">Último Pago</div>
-                  <div class="text-sm text-gray-500">
+                  <div class="font-semibold text-slate-700 dark:text-slate-200">Último Pago</div>
+                  <div class="text-sm text-slate-500 dark:text-slate-400">
                     {{paymentStats()?.last_payment?.date | date:'dd/MM/yyyy'}} -
                     {{paymentStats()?.last_payment?.method}}
                   </div>
@@ -708,7 +707,7 @@ interface PaymentDto {
               <ng-template pTemplate="emptymessage">
                 <tr>
                   <td colspan="8" class="text-center py-8">
-                    <div class="text-gray-500">
+                    <div class="text-slate-500 dark:text-slate-400">
                       <i class="pi pi-info-circle text-3xl mb-2"></i>
                       <div>No hay pagos registrados para este empleado</div>
                     </div>
@@ -832,12 +831,14 @@ export class EmployeesManagement implements OnInit {
   private employeeService = inject(EmployeeService);
   private serviceService = inject(ServiceService);
   private authService = inject(AuthService);
+  private router = inject(Router);
   private planAccessService = inject(PlanAccessService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private fb = inject(FormBuilder);
 
   empleados = signal<EmployeeWithUserDto[]>([]);
+  usuariosActivos = signal(0);
   cargando = signal(false);
   guardando = signal(false);
   mostrarDialogo = false;
@@ -1060,6 +1061,16 @@ export class EmployeesManagement implements OnInit {
       });
 
       this.empleados.set(empleadosFusionados);
+
+      const usersResponse: any = await firstValueFrom(this.authService.getUsers({ is_active: true, page_size: 1 }) as any);
+      const activeUsersCount = typeof usersResponse?.count === 'number'
+        ? usersResponse.count
+        : Array.isArray(usersResponse?.results)
+          ? usersResponse.results.length
+          : Array.isArray(usersResponse)
+            ? usersResponse.length
+            : 0;
+      this.usuariosActivos.set(activeUsersCount);
     } catch (error) {
       if (!environment.production) {
         
@@ -1086,11 +1097,11 @@ export class EmployeesManagement implements OnInit {
   async abrirDialogo() {
     await this.sincronizarEmpleadosAntesDeCrear();
 
-    const limitStatus = this.planAccessService.getEmployeeLimitStatus(this.getActiveEmployeesCount());
-    if (limitStatus.reached) {
-      this.abrirDialogoLimitePlan(
-        'No se puede crear el empleado',
-        this.planAccessService.getEmployeeLimitMessage(limitStatus)
+      const limitStatus = this.planAccessService.getEmployeeLimitStatus(this.usuariosActivos());
+      if (limitStatus.reached) {
+        this.abrirDialogoLimitePlan(
+          'No se puede crear el empleado',
+          this.planAccessService.getEmployeeLimitMessage(limitStatus)
       );
       return;
     }
@@ -1135,7 +1146,7 @@ export class EmployeesManagement implements OnInit {
     }
 
     if (!this.empleadoSeleccionado) {
-      const employeeLimitStatus = this.planAccessService.getEmployeeLimitStatus(this.getActiveEmployeesCount());
+      const employeeLimitStatus = this.planAccessService.getEmployeeLimitStatus(this.usuariosActivos());
       if (employeeLimitStatus.reached) {
         const message = this.planAccessService.getEmployeeLimitMessage(employeeLimitStatus);
         this.messageService.add({
@@ -1227,6 +1238,7 @@ export class EmployeesManagement implements OnInit {
         ? 'No se pudo actualizar el empleado'
         : 'No se pudo crear el empleado';
       const planLimitMessage = this.buildPlanLimitErrorMessage(error);
+      const planLimitContext = this.getPlanLimitContext(error);
 
       // Detectar límite de usuarios
       if (planLimitMessage) {
@@ -1236,10 +1248,10 @@ export class EmployeesManagement implements OnInit {
       } else if (error?.error?.error && error.error.error.includes('User limit reached')) {
         errorMessage = `Límite de usuarios alcanzado. Actualiza tu plan para agregar más usuarios.`;
       } else if (error?.error?.error && String(error.error.error).toLowerCase().includes('employee limit')) {
-        const limitStatus = this.planAccessService.getEmployeeLimitStatus(this.getActiveEmployeesCount());
+        const limitStatus = this.planAccessService.getEmployeeLimitStatus(this.usuariosActivos());
         errorMessage = limitStatus.reached
           ? this.planAccessService.getEmployeeLimitMessage(limitStatus)
-          : 'Has alcanzado un límite operativo de tu plan. Actualiza tu plan para seguir agregando personal.';
+          : 'Has alcanzado el límite de usuarios activos de tu plan. Actualiza tu plan para seguir agregando personal.';
       } else if (error?.error?.detail) {
         errorMessage = error.error.detail;
       } else if (error?.error?.error) {
@@ -1259,18 +1271,32 @@ export class EmployeesManagement implements OnInit {
       });
 
       if (!isUpdate && this.isPlanLimitMessage(errorMessage)) {
-        this.abrirDialogoLimitePlan('No se puede crear el empleado', errorMessage);
+        this.abrirDialogoLimitePlan('No se puede crear el empleado', errorMessage, planLimitContext);
       }
     } finally {
       this.guardando.set(false);
     }
   }
 
-  private abrirDialogoLimitePlan(titulo: string, mensaje: string) {
+  private abrirDialogoLimitePlan(titulo: string, mensaje: string, recommendationContext?: string) {
     this.tituloDialogoLimitePlan = titulo;
     this.mensajeDialogoLimitePlan = mensaje;
-    this.recomendacionUpgradePlan = this.planAccessService.getUpgradeRecommendation('employees');
+    this.recomendacionUpgradePlan = this.planAccessService.getUpgradeRecommendation('employees', recommendationContext || mensaje);
     this.mostrarDialogoLimitePlan = true;
+  }
+
+  irANomina() {
+    this.router.navigate(['/client/payroll']);
+  }
+
+  irAActualizarPlan() {
+    this.mostrarDialogoLimitePlan = false;
+    this.router.navigate(['/client/payment'], {
+      state: {
+        recommendedPlanName: this.recomendacionUpgradePlan?.nextPlanName || null,
+        source: 'employee-limit'
+      }
+    });
   }
 
   private async sincronizarEmpleadosAntesDeCrear(): Promise<void> {
@@ -1278,6 +1304,15 @@ export class EmployeesManagement implements OnInit {
       const data = await firstValueFrom(this.employeeService.getEmployees());
       const responseEmployees = (Array.isArray((data as any)?.results) ? (data as any).results : (Array.isArray(data) ? data : [])) as EmployeeWithUserDto[];
       this.empleados.set(responseEmployees);
+      const usersResponse: any = await firstValueFrom(this.authService.getUsers({ is_active: true, page_size: 1 }) as any);
+      const activeUsersCount = typeof usersResponse?.count === 'number'
+        ? usersResponse.count
+        : Array.isArray(usersResponse?.results)
+          ? usersResponse.results.length
+          : Array.isArray(usersResponse)
+            ? usersResponse.length
+            : 0;
+      this.usuariosActivos.set(activeUsersCount);
     } catch {
       // Si falla el refresh, usamos el estado local como fallback.
     }
@@ -1296,9 +1331,9 @@ export class EmployeesManagement implements OnInit {
 
     if (rawError.includes('Límite de empleados alcanzado')) {
       if (rawCurrent && rawLimit) {
-        return `Límite de empleados alcanzado (${rawCurrent}/${rawLimit}). Actualiza tu plan para agregar más personal.`;
+        return `Límite de usuarios activos alcanzado (${rawCurrent}/${rawLimit}). Actualiza tu plan para agregar más personal.`;
       }
-      return rawMessage || 'Límite de empleados alcanzado. Actualiza tu plan para agregar más personal.';
+      return rawMessage || 'Límite de usuarios activos alcanzado. Actualiza tu plan para agregar más personal.';
     }
 
     if (rawError.includes('User limit reached')) {
@@ -1309,6 +1344,18 @@ export class EmployeesManagement implements OnInit {
     }
 
     return null;
+  }
+
+  private getPlanLimitContext(error: any): string {
+    const payload = error?.error;
+    if (!payload || typeof payload !== 'object') {
+      return '';
+    }
+
+    const rawError = this.normalizeBackendErrorValue(payload.error);
+    const rawMessage = this.normalizeBackendErrorValue(payload.message);
+
+    return `${rawError} ${rawMessage}`.trim();
   }
 
   private normalizeBackendErrorValue(value: unknown): string {

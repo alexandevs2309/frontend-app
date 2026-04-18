@@ -48,13 +48,20 @@ import { getDefaultPromotions, mapSaleForTicketPreview, mapSalesHistory } from '
 
 type CartItem = PosCartItem;
 type PaymentMethod = 'cash' | 'card' | 'transfer' | 'mixed';
+type FiscalVoucherType = 'consumer' | 'credit';
 
 @Component({
     selector: 'app-pos-system',
     standalone: true,
     imports: [CommonModule, ButtonModule, InputTextModule, SelectModule, TableModule, CardModule, DividerModule, ToastModule, DialogModule, InputNumberModule, TooltipModule, FormsModule],
     providers: [MessageService],
-    templateUrl: './pos-system.html'
+    templateUrl: './pos-system.html',
+    styles: [`
+        :host {
+            display: block;
+            height: 100%;
+        }
+    `]
 })
 export class PosSystem implements OnInit, OnDestroy {
     private readonly posService = inject(PosService);
@@ -98,7 +105,9 @@ export class PosSystem implements OnInit, OnDestroy {
         const empleadoSeleccionado = this.empleadoSeleccionado();
         const empleadoValido = !tieneServicios || !!(empleadoSeleccionado && empleadoSeleccionado.id);
 
-        return tieneItems && tienePago && cajaAbierta && totalValido && empleadoValido;
+        const fiscalValido = !this.requiereComprobanteFiscal() || this.isFiscalDataValid();
+
+        return tieneItems && tienePago && cajaAbierta && totalValido && empleadoValido && fiscalValido;
     });
 
     servicios: any[] = [];
@@ -117,6 +126,9 @@ export class PosSystem implements OnInit, OnDestroy {
     descuento = signal(0);
     tipoDescuento = signal<'$' | '%'>('$');
     limiteDescuento = 20;
+    requiereComprobanteFiscal = signal(false);
+    tipoComprobanteFiscal = signal<FiscalVoucherType>('consumer');
+    datosComprobanteFiscal = { nombre: '', documento: '' };
 
     metodoPagoTemporal = '';
     montoTemporal = 0;
@@ -179,7 +191,11 @@ export class PosSystem implements OnInit, OnDestroy {
             client_name: backendSale.client_name,
             employee_name: backendSale.employee_name,
             user_name: backendSale.user_name,
-            cashier_name: backendSale.cashier_name || backendSale.user_name
+            cashier_name: backendSale.cashier_name || backendSale.user_name,
+            fiscal_requested: backendSale.fiscal_requested,
+            fiscal_voucher_type: backendSale.fiscal_voucher_type,
+            fiscal_name: backendSale.fiscal_name,
+            fiscal_document: backendSale.fiscal_document
         };
     }
 
@@ -223,6 +239,10 @@ export class PosSystem implements OnInit, OnDestroy {
             return 'Asigna un empleado';
         }
 
+        if (this.requiereComprobanteFiscal() && !this.isFiscalDataValid()) {
+            return 'Completa los datos fiscales';
+        }
+
         return 'Completa los datos de la venta';
     }
 
@@ -264,6 +284,18 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     private categorySubject = new Subject<string>();
     private cache = new Map<string, { data: any, timestamp: number }>();
     private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos // Nueva propiedad para toggle de vista
+    private quickSearchResetTimer: number | null = null;
+    private dateTimeInterval: ReturnType<typeof setInterval> | null = null;
+    currentDateTime = signal(this.buildDateTime());
+
+    private buildDateTime(): string {
+        const now = new Date();
+        now.setSeconds(0, 0);
+        return now.toLocaleString('es-ES', {
+            weekday: 'long', year: 'numeric', month: 'long',
+            day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+    }
 
     metodosPago = [
         { label: 'Efectivo', value: 'cash' },
@@ -271,11 +303,15 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         { label: 'Transferencia', value: 'transfer' },
         { label: 'Mixto', value: 'mixed' }
     ];
+    tiposComprobanteFiscal = [
+        { label: 'Consumo (02/32)', value: 'consumer' },
+        { label: 'Credito fiscal (01/31)', value: 'credit' }
+    ];
 
     constructor() {
         // Configurar debounce para búsqueda
         this.searchSubject.pipe(
-            debounceTime(300),
+            debounceTime(120),
             distinctUntilChanged()
         ).subscribe(term => {
             this.busqueda = term;
@@ -293,7 +329,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     async ngOnInit(): Promise<void> {
-        // ⚡ OPTIMIZACIÓN: Cargar configuración primero para obtener rol
+        this.dateTimeInterval = setInterval(() => this.currentDateTime.set(this.buildDateTime()), 60_000);
         await this.cargarConfiguracion();
         
         // Validar permisos para usar POS
@@ -323,15 +359,21 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     ngOnDestroy(): void {
+        if (this.quickSearchResetTimer !== null) window.clearTimeout(this.quickSearchResetTimer);
+        if (this.dateTimeInterval !== null) clearInterval(this.dateTimeInterval);
         this.searchSubject.complete();
         this.categorySubject.complete();
     }
 
     onSearchChange(value: string): void {
+        this.busqueda = value;
+        this.filtrarItems();
         this.searchSubject.next(value);
     }
 
     onCategoryChange(value: string): void {
+        this.categoriaSeleccionada = value;
+        this.filtrarItems();
         this.categorySubject.next(value);
     }
 
@@ -355,11 +397,11 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
         try {
             const loadedCatalog = await loadPosCatalogData({
-                getServices: async () => this.servicesService.getServices().toPromise(),
-                getServiceCategories: async () => this.servicesService.getServiceCategories().toPromise(),
-                getProducts: async () => this.inventoryService.getProducts().toPromise(),
-                getClients: async () => this.clientsService.getClients().toPromise(),
-                getEmployees: async () => this.employeesService.getEmployees().toPromise()
+                getServices: () => firstValueFrom(this.servicesService.getServices()),
+                getServiceCategories: () => firstValueFrom(this.servicesService.getServiceCategories()),
+                getProducts: () => firstValueFrom(this.inventoryService.getProducts()),
+                getClients: () => firstValueFrom(this.clientsService.getClients()),
+                getEmployees: () => firstValueFrom(this.employeesService.getEmployees())
             });
 
             this.servicios = loadedCatalog.servicios;
@@ -449,7 +491,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         // Verificar stock en tiempo real antes de agregar
         if (this.tipoActivo === 'products') {
             try {
-                const productoActual = await this.inventoryService.getProduct(item.id).toPromise();
+                const productoActual = await firstValueFrom(this.inventoryService.getProduct(item.id));
                 if (productoActual && productoActual.stock <= 0) {
                     this.messageService.add({
                         severity: 'error',
@@ -465,7 +507,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 // Actualizar stock local con valor real
                 if (productoActual) item.stock = productoActual.stock;
             } catch (error) {
-                console.error('Error verificando stock:', error);
+                if (!environment.production) console.error('Error verificando stock:', error);
             }
         }
 
@@ -523,6 +565,9 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         this.metodoPagoSeleccionado.set('');
         this.descuento.set(0);
         this.tipoDescuento.set('$');
+        this.requiereComprobanteFiscal.set(false);
+        this.tipoComprobanteFiscal.set('consumer');
+        this.datosComprobanteFiscal = { nombre: '', documento: '' };
         this.resetearPago();
     }
 
@@ -535,6 +580,15 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     puedeAgregarMas(item: any): boolean {
         return this.obtenerStockDisponible(item) > 0;
+    }
+
+    getCantidadEnCarrito(item: any): number {
+        const cartItem = this.carrito().find((entry) => {
+            const expectedType = this.tipoActivo === 'services' ? 'service' : 'product';
+            return entry.type === expectedType && entry.item.id === item.id;
+        });
+
+        return cartItem?.quantity || 0;
     }
 
     calcularSubtotal(): number {
@@ -592,6 +646,10 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     }
 
     obtenerMensajeValidacion(): string {
+        if (this.requiereComprobanteFiscal() && !this.isFiscalDataValid()) {
+            return 'Completa nombre y RNC/Cedula para emitir comprobante fiscal';
+        }
+
         return getSaleValidationMessage({
             cartLength: this.carrito().length,
             isCashRegisterOpen: this.cajaAbierta(),
@@ -817,7 +875,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
             this.mostrarDialogoCerrarCaja = true;
         } catch (error) {
-            console.error('Error preparando cierre de caja:', error);
+            if (!environment.production) console.error('Error preparando cierre de caja:', error);
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -917,24 +975,14 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         try {
             await this.sincronizarEstadisticasDesdeBackend();
         } catch (error) {
-            console.error('Error actualizando pagos no cash:', error);
+            if (!environment.production) console.error('Error actualizando pagos no cash:', error);
         }
     }
 
 
 
     getCurrentDateTime(): string {
-        const now = new Date();
-        // Redondear a minutos para evitar cambios constantes
-        now.setSeconds(0, 0);
-        return now.toLocaleString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return this.currentDateTime();
     }
 
     calcularCambio(): number {
@@ -943,6 +991,72 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     validarMontoRecibido(): boolean {
         return (Number(this.montoRecibido) || 0) >= this.calcularTotal();
+    }
+
+    toggleComprobanteFiscal(): void {
+        const next = !this.requiereComprobanteFiscal();
+        this.requiereComprobanteFiscal.set(next);
+
+        if (!next) {
+            this.tipoComprobanteFiscal.set('consumer');
+            this.datosComprobanteFiscal = { nombre: '', documento: '' };
+            return;
+        }
+
+        if (this.clienteSeleccionado?.full_name && !this.datosComprobanteFiscal.nombre) {
+            this.datosComprobanteFiscal.nombre = this.clienteSeleccionado.full_name;
+        }
+    }
+
+    getFiscalVoucherLabel(): string {
+        return this.tipoComprobanteFiscal() === 'credit'
+            ? 'Factura de credito fiscal'
+            : 'Factura de consumo';
+    }
+
+    getFiscalDocumentLabel(): string {
+        return this.tipoComprobanteFiscal() === 'credit' ? 'RNC' : 'RNC o Cedula';
+    }
+
+    sanitizeFiscalDocumentInput(value: string): void {
+        this.datosComprobanteFiscal.documento = (value || '').replace(/[^\d-]/g, '').trim();
+    }
+
+    isFiscalDocumentValid(): boolean {
+        const digits = (this.datosComprobanteFiscal.documento || '').replace(/\D/g, '');
+        return digits.length === 9 || digits.length === 11;
+    }
+
+    isFiscalDataValid(): boolean {
+        return !!this.datosComprobanteFiscal.nombre.trim() && this.isFiscalDocumentValid();
+    }
+
+    usarMontoRecibido(monto: number): void {
+        this.montoRecibido = Math.max(0, Number(monto) || 0);
+        this.cambio = this.calcularCambio();
+    }
+
+    getMontosRapidosEfectivo(): number[] {
+        const total = this.calcularTotal();
+        if (total <= 0) return [];
+
+        const rounded = [
+            total,
+            this.redondearHaciaArriba(total, 50),
+            this.redondearHaciaArriba(total, 100),
+            this.redondearHaciaArriba(total, 500),
+            this.redondearHaciaArriba(total, 1000)
+        ];
+
+        return [...new Set(rounded.filter((value) => value >= total))].slice(0, 4);
+    }
+
+    getMontoRestanteMixto(): number {
+        return Math.max(0, this.calcularTotal() - this.calcularTotalPagosMixtos());
+    }
+
+    completarPagoMixto(metodo: string): void {
+        this.agregarPagoMixto(metodo, this.getMontoRestanteMixto());
     }
 
     agregarPagoMixto(metodo: string, monto: number) {
@@ -987,7 +1101,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         try {
             let response;
             try {
-                response = await this.posService.getPromotions().toPromise();
+                response = await firstValueFrom(this.posService.getPromotions());
             } catch (error: any) {
                 if (isForbiddenStatus(error)) {
                     this.promociones = [];
@@ -997,9 +1111,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             }
             this.promociones = response?.results || [];
         } catch (error) {
-            if (!environment.production) {
-                console.error('Error cargando promociones:', error);
-            }
+            if (!environment.production) console.error('Error cargando promociones:', error);
         }
     }
 
@@ -1012,12 +1124,10 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     async cargarHistorialVentas() {
         this.cargandoHistorial = true;
         try {
-            const response = await this.posService.getSales().toPromise();
+            const response = await firstValueFrom(this.posService.getSales());
             this.historialVentas = mapSalesHistory(response, (venta) => this.mapBackendSaleToDto(venta));
         } catch (error) {
-            if (!environment.production) {
-                console.error('Error cargando historial:', error);
-            }
+            if (!environment.production) console.error('Error cargando historial:', error);
             this.historialVentas = [];
         } finally {
             this.cargandoHistorial = false;
@@ -1039,7 +1149,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     async imprimirRecibo(ventaId: number) {
         try {
-            await this.posService.printReceipt(ventaId).toPromise();
+            await firstValueFrom(this.posService.printReceipt(ventaId));
             this.messageService.add({
                 severity: 'success',
                 summary: 'Recibo generado',
@@ -1066,7 +1176,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             return;
         }
         try {
-            await this.posService.refundSale(ventaId, { reason: reason.trim() }).toPromise();
+            await firstValueFrom(this.posService.refundSale(ventaId, { reason: reason.trim() }));
             this.messageService.add({
                 severity: 'success',
                 summary: 'Venta reembolsada',
@@ -1118,7 +1228,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             // Limpiar denominaciones al abrir
             this.limpiarArqueo();
         } catch (error) {
-            console.error('Error cargando datos de arqueo:', error);
+            if (!environment.production) console.error('Error cargando datos de arqueo:', error);
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -1189,7 +1299,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             this.nombreUsuarioActual = userIdentity.nombreUsuarioActual;
             this.rolUsuarioActual = userIdentity.rolUsuarioActual;
         } catch (error) {
-            console.error('Error cargando configuración:', error);
+            if (!environment.production) console.error('Error cargando configuración:', error);
             this.configuracionPos = buildDefaultPosConfig(businessName);
             const userIdentity = getCurrentUserIdentity();
             this.nombreUsuarioActual = userIdentity.nombreUsuarioActual;
@@ -1200,7 +1310,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
     async buscarPorCodigoBarras() {
         if (!this.codigoBarras.trim()) return;
         try {
-            const producto = await this.posService.searchByBarcode(this.codigoBarras).toPromise();
+            const producto = await firstValueFrom(this.posService.searchByBarcode(this.codigoBarras));
             if (producto) {
                 this.tipoActivo = 'products';
                 this.filtrarItems();
@@ -1219,6 +1329,49 @@ getSubtotal(venta: SaleWithDetailsDto): number {
 
     @HostListener('document:keydown', ['$event'])
     handleKeyboard(event: KeyboardEvent) {
+        if (this.handleDialogKeyboard(event)) {
+            return;
+        }
+
+        const target = event.target as HTMLElement | null;
+        const isEditable = this.isEditableTarget(target);
+
+        if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+            if (event.key === 'Enter' && !isEditable) {
+                event.preventDefault();
+                if (this.puedeVender()) {
+                    void this.procesarVenta();
+                }
+                return;
+            }
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (!this.procesandoVenta && this.carrito().length > 0) {
+                    this.limpiarCarrito();
+                    this.messageService.add({
+                        severity: 'info',
+                        summary: 'Orden limpia',
+                        detail: 'La orden actual fue reiniciada',
+                        life: 2000
+                    });
+                }
+                return;
+            }
+
+            if (!isEditable && event.key === 'Backspace') {
+                event.preventDefault();
+                this.syncQuickSearch(this.busqueda.slice(0, -1), true);
+                return;
+            }
+
+            if (!isEditable && event.key.length === 1) {
+                event.preventDefault();
+                this.syncQuickSearch(`${this.busqueda}${event.key}`, true);
+                return;
+            }
+        }
+
         if (event.ctrlKey) {
             switch (event.key) {
                 case 'n':
@@ -1237,7 +1390,9 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         }
     }
 
-    setupKeyboardShortcuts() {}
+    setupKeyboardShortcuts() {
+        window.setTimeout(() => this.focusQuickSearch(), 0);
+    }
 
     calcularTotalPagosMixtos(): number {
         return calculateMixedPaymentsTotal(this.pagosMixtos);
@@ -1294,7 +1449,11 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 this.empleadoSeleccionado()?.display_name ||
                 this.empleadoSeleccionado()?.user?.full_name ||
                 this.empleadoSeleccionado()?.full_name,
-            cashierName: this.nombreCajeroTurno || this.nombreUsuarioActual
+            cashierName: this.nombreCajeroTurno || this.nombreUsuarioActual,
+            fiscalRequested: this.requiereComprobanteFiscal(),
+            fiscalVoucherType: this.getFiscalVoucherLabel(),
+            fiscalName: this.datosComprobanteFiscal.nombre.trim(),
+            fiscalDocument: this.datosComprobanteFiscal.documento.trim()
         });
         this.mostrarDialogoTicket = true;
         this.posTicketFlowService.scheduleQrRender(() => this.generarQR());
@@ -1385,7 +1544,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
                 detail: 'Reporte de cuadre descargado'
             });
         } catch (error) {
-            console.error('Error generando reporte:', error);
+            if (!environment.production) console.error('Error generando reporte:', error);
         }
     }
 
@@ -1436,7 +1595,7 @@ getSubtotal(venta: SaleWithDetailsDto): number {
         try {
             await this.sincronizarEstadisticasDesdeBackend();
         } catch (error) {
-            console.error('Error cargando estadísticas desde backend:', error);
+            if (!environment.production) console.error('Error cargando estadísticas desde backend:', error);
             this.estadisticasDia.set({ ventas: 0, ingresos: 0, ticketPromedio: 0 });
         }
     }
@@ -1529,5 +1688,154 @@ getSubtotal(venta: SaleWithDetailsDto): number {
             detail: 'Se recargarán los datos desde el servidor',
             life: 2000
         });
+    }
+
+    @ViewChild('quickSearchInput') quickSearchInput?: ElementRef<HTMLInputElement>;
+
+    seleccionarMetodoPago(metodo: PaymentMethod): void {
+        this.metodoPagoSeleccionado.set(metodo);
+    }
+
+    onCashDialogShow(): void {
+        if (!this.montoRecibido || this.montoRecibido < this.calcularTotal()) {
+            this.usarMontoRecibido(this.calcularTotal());
+        }
+
+        this.focusCurrencyInput('.pos-cash-input');
+    }
+
+    onMixedPaymentDialogShow(): void {
+        this.focusCurrencyInput('.pos-mixed-amount-input');
+    }
+
+    private focusQuickSearch(cursorAtEnd = true): void {
+        const input = this.quickSearchInput?.nativeElement;
+        if (!input) return;
+
+        input.focus();
+        if (cursorAtEnd) {
+            const end = input.value.length;
+            input.setSelectionRange(end, end);
+        }
+    }
+
+    private syncQuickSearch(value: string, focusInput = false): void {
+        this.onSearchChange(value);
+
+        if (focusInput) {
+            this.focusQuickSearch();
+        }
+
+        if (this.quickSearchResetTimer !== null) {
+            window.clearTimeout(this.quickSearchResetTimer);
+        }
+
+        this.quickSearchResetTimer = window.setTimeout(() => {
+            this.quickSearchResetTimer = null;
+        }, 1200);
+    }
+
+    private isDialogOpen(): boolean {
+        return [
+            this.mostrarDialogoAbrirCaja,
+            this.mostrarDialogoCerrarCaja,
+            this.mostrarDialogoPago,
+            this.mostrarDialogoPagosMixtos,
+            this.mostrarDialogoArqueo,
+            this.mostrarDialogoHistorialArqueos,
+            this.mostrarDialogoHistorial,
+            this.mostrarDialogoPromociones,
+            this.mostrarDialogoTicket,
+            this.mostrarDialogoFirma
+        ].some(Boolean);
+    }
+
+    private handleDialogKeyboard(event: KeyboardEvent): boolean {
+        if (!this.isDialogOpen()) {
+            return false;
+        }
+
+        if (event.ctrlKey || event.metaKey || event.altKey) {
+            return false;
+        }
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+
+            if (this.mostrarDialogoPago) this.mostrarDialogoPago = false;
+            else if (this.mostrarDialogoPagosMixtos) this.mostrarDialogoPagosMixtos = false;
+            else if (this.mostrarDialogoTicket) this.cerrarTicket();
+
+            return true;
+        }
+
+        if (event.key !== 'Enter') {
+            return false;
+        }
+
+        if (this.procesandoVenta) {
+            event.preventDefault();
+            return true;
+        }
+
+        if (this.mostrarDialogoPago) {
+            event.preventDefault();
+            if (this.validarMontoRecibido()) {
+                void this.confirmarVenta();
+            }
+            return true;
+        }
+
+        if (this.mostrarDialogoPagosMixtos) {
+            const canAddCurrentPayment = !!this.metodoPagoTemporal && (Number(this.montoTemporal) || 0) > 0;
+            event.preventDefault();
+
+            if (canAddCurrentPayment) {
+                this.agregarPagoMixto(this.metodoPagoTemporal, this.montoTemporal);
+                window.setTimeout(() => this.focusCurrencyInput('.pos-mixed-amount-input'), 0);
+                return true;
+            }
+
+            if (this.validarPagoMixto()) {
+                void this.confirmarVenta();
+                return true;
+            }
+
+            return true;
+        }
+
+        if (this.mostrarDialogoTicket) {
+            event.preventDefault();
+            this.cerrarTicket();
+            return true;
+        }
+
+        return false;
+    }
+
+    private isEditableTarget(target: HTMLElement | null): boolean {
+        if (!target) return false;
+
+        const tagName = target.tagName?.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
+            return true;
+        }
+
+        return target.isContentEditable || !!target.closest('.p-inputtext, .p-inputwrapper, .p-select, .p-dialog');
+    }
+
+    private redondearHaciaArriba(valor: number, paso: number): number {
+        if (paso <= 0) return valor;
+        return Math.ceil(valor / paso) * paso;
+    }
+
+    private focusCurrencyInput(selector: string): void {
+        window.setTimeout(() => {
+            const input = document.querySelector(selector) as HTMLInputElement | null;
+            if (!input) return;
+
+            input.focus();
+            input.select();
+        }, 0);
     }
 }

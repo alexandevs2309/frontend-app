@@ -373,24 +373,15 @@ function optionalEmailValidator(): ValidatorFn {
                             <p-tabpanel value="4">
                                 <div class="p-12">
                                     <form [formGroup]="limitsForm">
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                            <div>
-                                                <label for="basic_max_employees" class="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300 mb-4">
-                                                    <i class="pi pi-user text-blue-500"></i> Plan Básico - Máx. Empleados
-                                                </label>
-                                                <p-inputNumber id="basic_max_employees" formControlName="basic_plan_max_employees" [min]="1" placeholder="5" />
-                                            </div>
-                                            <div>
-                                                <label for="premium_max_employees" class="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300 mb-4">
-                                                    <i class="pi pi-users text-purple-500"></i> Plan Premium - Máx. Empleados
-                                                </label>
-                                                <p-inputNumber id="premium_max_employees" formControlName="premium_plan_max_employees" [min]="1" placeholder="25" />
-                                            </div>
-                                            <div>
-                                                <label for="enterprise_max_employees" class="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300 mb-4">
-                                                    <i class="pi pi-building text-gold-500"></i> Plan Enterprise - Máx. Empleados
-                                                </label>
-                                                <p-inputNumber id="enterprise_max_employees" formControlName="enterprise_plan_max_employees" [min]="1" placeholder="999" />
+                                        <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                            <div class="flex items-start gap-3">
+                                                <i class="pi pi-info-circle text-blue-500 mt-1"></i>
+                                                <div>
+                                                    <div class="font-semibold text-slate-900 dark:text-slate-100 mb-1">Límite comercial efectivo</div>
+                                                    <p class="text-sm text-slate-600 dark:text-slate-300 m-0">
+                                                        La plataforma ya opera comercialmente con límite de usuarios activos por plan. Los topes de empleados se conservan internamente por compatibilidad, pero no se gestionan desde esta pantalla.
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
@@ -474,7 +465,7 @@ function optionalEmailValidator(): ValidatorFn {
                                                 <p-toggleSwitch formControlName="auto_upgrade_limits" inputId="auto_upgrade" />
                                                 <div>
                                                     <label for="auto_upgrade" class="text-base font-medium text-gray-700 dark:text-gray-300">Auto-upgrade por Límites</label>
-                                                    <p class="text-sm text-gray-500">Cuando un tenant alcance el límite de usuarios o empleados, puede promocionarse automáticamente al siguiente plan disponible.</p>
+                                                    <p class="text-sm text-gray-500">Cuando un tenant alcance el límite de usuarios activos, puede promocionarse automáticamente al siguiente plan disponible.</p>
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
@@ -1085,4 +1076,3 @@ export class SystemSettings implements OnInit {
         this.errorLogger.log('SystemSettings', context, error);
     }
 }
-

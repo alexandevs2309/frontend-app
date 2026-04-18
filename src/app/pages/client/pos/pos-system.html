@@ -1,426 +1,240 @@
-<div class="p-4 flex flex-col gap-4">
-
-  <!-- HEADER -->
-  <div id="pos-tour-header" class="rounded-[1.75rem] p-6 mb-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5">
-      <div class="flex items-start gap-4">
-        <div class="p-4 rounded-2xl shadow-lg bg-gradient-to-br from-indigo-600 via-sky-500 to-cyan-400">
-          <i class="pi pi-shopping-cart text-4xl text-white"></i>
-        </div>
-        <div>
-          <div class="text-[0.72rem] uppercase tracking-[0.18em] font-bold text-indigo-600 dark:text-sky-300 mb-2">POS</div>
-          <h2 class="text-3xl font-bold mb-1 text-slate-900 dark:text-white">Terminal de venta</h2>
-          <div class="flex flex-wrap items-center gap-2 mt-2 text-sm">
-            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
-              <i class="pi pi-clock text-[0.8rem] text-indigo-500"></i>
-              {{ getCurrentDateTime() }}
-            </span>
-            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
-              <i class="pi pi-user text-[0.8rem] text-sky-500"></i>
-              {{ obtenerUsuarioActual() }}
-            </span>
-          </div>
-        </div>
+﻿<div class="pos-shell">
+  <section class="pos-toolbar">
+    <div class="pos-toolbar__left">
+      <div class="pos-status-pill" [class.is-open]="cajaAbierta()" [class.is-closed]="!cajaAbierta()">
+        <span class="pos-status-dot"></span>
+        {{ cajaAbierta() ? 'Caja abierta' : 'Caja cerrada' }}
       </div>
-      <div class="w-full xl:w-auto flex flex-col items-stretch xl:items-end gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border"
-               [class]="cajaAbierta() ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300' : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-300'">
-            <i class="pi pi-circle-fill text-[0.5rem]"></i>
-            <span class="text-sm font-semibold">{{ cajaAbierta() ? 'Caja abierta' : 'Caja cerrada' }}</span>
-          </div>
-          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
-            <i class="pi pi-chart-line text-indigo-500 text-sm"></i>
-            <span class="text-sm font-semibold">{{ estadisticasDia().ventas }} ventas hoy</span>
-          </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-3">
-        <button *ngIf="!cajaAbierta()" pButton label="Abrir Caja" icon="pi pi-unlock" 
-                (click)="mostrarDialogoAbrirCaja = true"
-                [disabled]="!puedeAbrirCaja()"
-                [pTooltip]="!puedeAbrirCaja() ? 'Sin permisos para abrir caja' : ''"
-                class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
-        <button *ngIf="cajaAbierta()" pButton label="Cerrar Caja" icon="pi pi-lock" 
-                [disabled]="!puedeCerrarCaja()"
-                [pTooltip]="!puedeCerrarCaja() ? 'Sin permisos para cerrar caja' : ''"
-                class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow" (click)="prepararCierreCaja()"></button>
-        <button *ngIf="cajaAbierta()" pButton label="Arqueo" icon="pi pi-calculator" 
-                (click)="mostrarDialogoArqueo = true"
-                class="bg-indigo-600 hover:bg-indigo-700 border-0 text-white shadow"></button>
-        </div>
-      </div>
-  </div>
-
-  <!-- CONTENIDO PRINCIPAL -->
-  <div class="grid gap-4 lg:grid-cols-3">
-
-    <!-- PANEL IZQUIERDO: Productos y Servicios -->
-    <div class="lg:col-span-2 flex flex-col gap-4">
-      <!-- Filtros -->
-      <div id="pos-tour-filters" class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 shadow-sm p-4 flex flex-col gap-4">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div>
-            <div class="text-sm font-semibold text-slate-900 dark:text-white">Catalogo de venta</div>
-            <div class="text-xs text-slate-500 dark:text-slate-400">Filtra rapido y agrega al carrito sin salir del flujo.</div>
-          </div>
-          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
-            <i class="pi pi-layers text-[0.72rem]"></i>
-            {{ itemsFiltrados.length }} resultados
-          </div>
-        </div>
-        <div class="flex flex-col xl:flex-row gap-2">
-        <p-select [options]="categorias" [(ngModel)]="categoriaSeleccionada"
-                  optionLabel="name" optionValue="value"
-                  placeholder="Categorias"
-                  (onChange)="onCategoryChange($event.value)" class="w-full xl:w-48" [disabled]="cargandoDatos"></p-select>
-        <input pInputText [ngModel]="busqueda" placeholder="Buscar servicio o producto..." (input)="onSearchChange($event.target.value)" class="w-full xl:flex-1" [disabled]="cargandoDatos" style="padding: 0.7rem 0.85rem;">
-        <div class="flex flex-wrap gap-2">
-        <button pButton [icon]="vistaCompacta ? 'pi pi-th-large' : 'pi pi-list'"
-                [class]="vistaCompacta ? 'p-button-success' : 'p-button-outlined'"
-                (click)="vistaCompacta = !vistaCompacta"
-                [pTooltip]="vistaCompacta ? 'Vista normal' : 'Vista compacta'"
-                [disabled]="cargandoDatos"
-                class="p-button-sm"></button>
-        <button pButton icon="pi pi-qrcode" [class]="modoScanner ? 'p-button-success' : 'p-button-outlined'" (click)="modoScanner = !modoScanner" pTooltip="Scanner" [disabled]="cargandoDatos" class="p-button-sm"></button>
-        <button pButton icon="pi pi-refresh" (click)="limpiarCache(); cargarDatos()" [loading]="cargandoDatos" pTooltip="Recargar datos" class="p-button-outlined p-button-sm"></button>
-        </div>
-        </div>
-      </div>
-
-      <!-- Scanner de Código de Barras -->
-      <div *ngIf="modoScanner" class="flex gap-2 p-3 rounded" style="background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);">
-        <input pInputText [(ngModel)]="codigoBarras" placeholder="Escanear código de barras..."
-               (keyup.enter)="buscarPorCodigoBarras()" class="flex-1" autofocus>
-        <button pButton label="Buscar" icon="pi pi-search" (click)="buscarPorCodigoBarras()" class="p-button-success"></button>
-      </div>
-
-      <!-- Tabs Servicios/Productos -->
-      <div class="flex" style="border-bottom: 1px solid var(--surface-border);">
-        <button pButton 
-                label="Servicios" 
-                (click)="cambiarTipoActivo('services')"
-                [severity]="tipoActivo==='services' ? 'info' : 'secondary'"
-                [outlined]="tipoActivo!=='services'"
-                [text]="true"
-                class="border-b-2"
-                [style]="tipoActivo==='services' ? 'border-bottom-color: var(--primary-color)' : 'border-bottom-color: transparent'"></button>
-        <button pButton 
-                label="Productos" 
-                (click)="cambiarTipoActivo('products')"
-                [severity]="tipoActivo==='products' ? 'info' : 'secondary'"
-                [outlined]="tipoActivo!=='products'"
-                [text]="true"
-                class="border-b-2"
-                [style]="tipoActivo==='products' ? 'border-bottom-color: var(--primary-color)' : 'border-bottom-color: transparent'"></button>
-      </div>
-
-      <!-- GRID DE ITEMS -->
-      <div *ngIf="!cargandoDatos; else loadingTemplate">
-
-        <!-- Vista Normal (Tarjetas) -->
-        <div *ngIf="!vistaCompacta" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div *ngFor="let item of itemsFiltrados; trackBy: trackByItemId"
-               class="group relative p-5 rounded-2xl shadow-sm transition-all duration-200 border cursor-pointer bg-surface-0 dark:bg-surface-800 hover:shadow-md"
-               [class.opacity-50]="!puedeAgregarMas(item)"
-               [class.cursor-not-allowed]="!puedeAgregarMas(item)"
-               [style.border-color]="puedeAgregarMas(item) ? 'var(--primary-color)' : 'var(--surface-border)'"
-               (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
-
-            <!-- Imagen o icono -->
-            <div class="relative z-10">
-              <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="w-full h-36 object-cover rounded-xl mb-3 shadow-md">
-              <div *ngIf="!item.image" class="w-full h-36 bg-surface-100 dark:bg-surface-700 rounded-xl mb-3 flex items-center justify-center">
-                <i [class]="tipoActivo === 'services' ? 'pi pi-cut' : 'pi pi-box'" class="text-5xl text-primary-600 dark:text-primary-400"></i>
-              </div>
-              
-              <!-- Nombre y precio -->
-              <div class="flex justify-between items-start mb-2">
-                <h6 class="font-bold text-lg text-surface-900 dark:text-surface-0 group-hover:text-primary-600 transition-colors">{{ item.name }}</h6>
-                <div class="px-3 py-1 rounded-full bg-primary-500">
-                  <span class="text-lg font-bold text-white">{{ formatearMoneda(item.price) }}</span>
-                </div>
-              </div>
-              
-              <p class="text-sm text-surface-600 dark:text-surface-400 mb-3 line-clamp-2" *ngIf="item.description">{{ item.description }}</p>
-              
-              <!-- Footer con categoría y stock -->
-              <div class="flex justify-between items-center">
-                <span class="text-xs px-3 py-1.5 rounded-full font-semibold bg-surface-200 dark:bg-surface-700 text-surface-900 dark:text-surface-0">
-                  {{ item.category || 'General' }}
-                </span>
-                <div *ngIf="tipoActivo==='products'" class="flex items-center gap-1">
-                  <i class="pi pi-box text-xs" [style.color]="obtenerStockDisponible(item) > 5 ? 'var(--primary-color)' : obtenerStockDisponible(item) > 0 ? '#f59e0b' : '#ef4444'"></i>
-                  <span class="text-xs font-bold" [style.color]="obtenerStockDisponible(item) > 5 ? 'var(--primary-color)' : obtenerStockDisponible(item) > 0 ? '#f59e0b' : '#ef4444'">
-                    {{ obtenerStockDisponible(item) }}
-                  </span>
-                </div>
-              </div>
-              
-              <!-- Botón de agregar (aparece al hover) -->
-              <div *ngIf="puedeAgregarMas(item)" class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-500 hover:bg-primary-600">
-                  <i class="pi pi-plus text-white font-bold"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Vista Compacta (Lista) -->
-        <div *ngIf="vistaCompacta" class="rounded-lg shadow overflow-hidden bg-surface-0 dark:bg-surface-800">
-          <div class="divide-y divide-surface-200 dark:divide-surface-700">
-            <div *ngFor="let item of itemsFiltrados; trackBy: trackByItemId"
-                 class="flex items-center p-3 transition-colors"
-                 [class.cursor-pointer]="puedeAgregarMas(item)"
-                 [class.opacity-50]="!puedeAgregarMas(item)"
-                 [class.cursor-not-allowed]="!puedeAgregarMas(item)"
-                 [style.background-color]="puedeAgregarMas(item) ? 'var(--surface-hover)' : 'transparent'"
-                 (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
-
-              <!-- Icono de tipo -->
-              <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3"
-                   [style.background-color]="tipoActivo === 'services' ? 'color-mix(in srgb, var(--success-color) 15%, transparent)' : 'color-mix(in srgb, var(--primary-color) 15%, transparent)'"
-                   [style.color]="tipoActivo === 'services' ? 'var(--success-color-text)' : 'var(--primary-color-text)'">
-                <i [class]="tipoActivo === 'services' ? 'pi pi-cut' : 'pi pi-box'" class="text-sm"></i>
-              </div>
-
-              <!-- Información principal -->
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-1">
-                  <h6 class="font-semibold text-sm truncate">{{ item.name }}</h6>
-                  <!-- Indicador de empleado requerido para servicios -->
-                  <span *ngIf="tipoActivo === 'services'"
-                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                        style="background-color: color-mix(in srgb, var(--warning-color) 15%, transparent); color: var(--warning-color-text);">
-                    <i class="pi pi-user text-xs mr-1"></i>Empleado
-                  </span>
-                </div>
-                <div class="flex items-center gap-3 text-xs" style="color: var(--text-color-secondary);">
-                  <span class="px-2 py-1 rounded" style="background-color: var(--surface-100);">{{ item.category || 'General' }}</span>
-                  <span *ngIf="tipoActivo === 'products'"
-                        [style.color]="obtenerStockDisponible(item) > 5 ? 'var(--success-color-text)' : obtenerStockDisponible(item) > 0 ? 'var(--warning-color-text)' : 'var(--danger-color-text)'">
-                    Stock: {{ obtenerStockDisponible(item) }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Precio -->
-              <div class="shrink-0 text-right">
-                <span class="text-lg font-bold" style="color: var(--primary-color);">{{ formatearMoneda(item.price) }}</span>
-                <div *ngIf="tipoActivo === 'products' && obtenerStockDisponible(item) === 0"
-                     class="text-xs font-semibold" style="color: var(--danger-color-text);">Sin stock</div>
-              </div>
-
-              <!-- Botón de agregar -->
-              <div class="shrink-0 ml-3">
-                <button *ngIf="puedeAgregarMas(item)"
-                        pButton icon="pi pi-plus"
-                        size="small"
-                        severity="info"
-                        [rounded]="true"
-                        (click)="$event.stopPropagation(); agregarAlCarrito(item)"
-                        [pTooltip]="'Agregar ' + item.name"></button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mensaje cuando no hay items -->
-        <div *ngIf="itemsFiltrados.length === 0" class="text-center py-8">
-          <i class="pi pi-search text-4xl mb-4" style="color: var(--text-color-secondary);"></i>
-          <p style="color: var(--text-color-secondary);">No se encontraron {{ tipoActivo === 'services' ? 'servicios' : 'productos' }}</p>
-          <button pButton label="Limpiar filtros" (click)="categoriaSeleccionada=''; busqueda=''; filtrarItems()" class="p-button-text mt-2"></button>
-        </div>
-      </div>
-
-      <ng-template #loadingTemplate>
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div *ngFor="let i of [1,2,3,4,5,6]" class="p-4 rounded-lg shadow-sm" style="background-color: var(--surface-card);">
-            <div class="h-4 rounded mb-2" style="background-color: var(--surface-200);"></div>
-            <div class="h-3 rounded mb-2 w-3/4" style="background-color: var(--surface-200);"></div>
-            <div class="h-3 rounded w-1/2" style="background-color: var(--surface-200);"></div>
-          </div>
-        </div>
-      </ng-template>
-
-      <div class="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/60 px-4 py-3 flex flex-col gap-1">
-        <div class="text-sm font-semibold text-slate-900 dark:text-white">Flujo de caja rapido</div>
-        <p class="text-xs text-slate-500 dark:text-slate-400 m-0">
-          Busca, agrega al cobro y confirma desde el panel derecho sin cambiar de pantalla.
-        </p>
+      <div class="pos-toolbar__text">
+        <strong>{{ obtenerUsuarioActual() }}</strong>
+        <span>{{ getCurrentDateTime() }}</span>
       </div>
     </div>
 
-    <!-- PANEL DERECHO: Checkout -->
-    <div class="sticky top-4">
-      <div id="pos-tour-summary" class="pos-checkout-panel p-5 rounded-[1.75rem] shadow-sm flex flex-col gap-5 bg-surface-0 dark:bg-surface-800 border border-surface-200 dark:border-surface-700">
+    <div class="pos-toolbar__right">
+      <button *ngIf="!cajaAbierta()" pButton label="Abrir caja" icon="pi pi-unlock"
+              (click)="mostrarDialogoAbrirCaja = true"
+              [disabled]="!puedeAbrirCaja()"
+              [pTooltip]="!puedeAbrirCaja() ? 'Sin permisos para abrir caja' : ''"></button>
+      <button *ngIf="cajaAbierta()" pButton label="Cerrar caja" icon="pi pi-lock"
+              (click)="prepararCierreCaja()"
+              [disabled]="!puedeCerrarCaja()"
+              [pTooltip]="!puedeCerrarCaja() ? 'Sin permisos para cerrar caja' : ''"
+              class="p-button-outlined"></button>
+      <button *ngIf="cajaAbierta()" pButton label="Arqueo" icon="pi pi-calculator"
+              (click)="mostrarDialogoArqueo = true"
+              class="p-button-outlined"></button>
+      <button pButton icon="pi pi-history"
+              (click)="mostrarDialogoHistorial=true; cargarHistorialVentas()"
+              [disabled]="procesandoVenta || !puedeVerHistorial()"
+              [pTooltip]="!puedeVerHistorial() ? 'Sin permisos para ver historial' : 'Historial'"
+              class="p-button-outlined"></button>
+    </div>
+  </section>
 
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <div class="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-sky-500 shadow">
-              <i class="pi pi-credit-card text-xl text-white"></i>
-            </div>
-            <div>
-              <h5 class="font-bold text-xl text-slate-900 dark:text-white">Cobro actual</h5>
-              <p class="text-xs text-surface-600 dark:text-surface-400">{{ carrito().length }} items listos para caja</p>
-            </div>
-          </div>
-          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-semibold"
-               [ngClass]="getSaleReadinessClass()">
-            <i class="pi" [ngClass]="puedeVenderComputed() ? 'pi-check-circle' : (procesandoVenta ? 'pi-spin pi-spinner' : 'pi-info-circle')"></i>
-            <span>{{ getSaleReadinessLabel() }}</span>
-          </div>
+  <div class="pos-workspace">
+    <section class="pos-catalog">
+      <div class="pos-controls" id="pos-tour-filters">
+        <div class="pos-type-switch">
+          <button pButton label="Servicios" [class.is-active]="tipoActivo==='services'" [text]="tipoActivo!=='services'" (click)="cambiarTipoActivo('services')"></button>
+          <button pButton label="Productos" [class.is-active]="tipoActivo==='products'" [text]="tipoActivo!=='products'" (click)="cambiarTipoActivo('products')"></button>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/70 overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div class="text-sm font-semibold text-slate-900 dark:text-white">Orden en curso</div>
-            <button pButton label="Limpiar" icon="pi pi-trash" (click)="limpiarCarrito()" class="p-button-text p-button-sm" [disabled]="carrito().length === 0 || procesandoVenta"></button>
+        <div class="pos-search-row">
+          <div class="pos-search">
+            <i class="pi pi-search"></i>
+            <input #quickSearchInput pInputText [ngModel]="busqueda" placeholder="Escribe para buscar" (input)="onSearchChange($any($event.target).value)" [disabled]="cargandoDatos" autocomplete="off">
           </div>
-
-          <div *ngIf="carrito().length > 0; else checkoutEmptyState" class="max-h-[18rem] overflow-y-auto px-3 py-3 flex flex-col gap-2">
-            <div *ngFor="let item of carrito(); let i=index; trackBy: trackByCartItem" class="pos-checkout-item rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 grid place-items-center shrink-0">
-                <i class="pi" [ngClass]="item.type==='service' ? 'pi pi-cut text-sky-500' : 'pi pi-box text-indigo-500'"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="font-semibold text-sm text-slate-900 dark:text-white truncate">{{ item.item.name }}</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">{{ item.type==='service'?'Servicio':'Producto' }}</div>
-              </div>
-              <div class="flex items-center gap-1">
-                <button pButton icon="pi pi-minus" size="small" (click)="cambiarCantidad(i,-1)" [text]="true"></button>
-                <span class="w-6 text-center text-sm font-semibold">{{ item.quantity }}</span>
-                <button pButton icon="pi pi-plus" size="small" (click)="cambiarCantidad(i,1)" [text]="true"></button>
-              </div>
-              <div class="text-right shrink-0">
-                <div class="font-bold text-sm text-slate-900 dark:text-white">{{ formatearMoneda(item.subtotal) }}</div>
-                <button pButton icon="pi pi-trash" severity="danger" size="small" (click)="removerDelCarrito(i)" [text]="true"></button>
-              </div>
-            </div>
-          </div>
-
-          <ng-template #checkoutEmptyState>
-            <div class="px-5 py-10 text-center">
-              <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 grid place-items-center">
-                <i class="pi pi-shopping-bag text-2xl text-slate-400"></i>
-              </div>
-              <div class="font-semibold text-slate-900 dark:text-white mb-2">Sin articulos en la orden</div>
-              <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">Agrega productos o servicios desde la izquierda para empezar a cobrar.</p>
-            </div>
-          </ng-template>
+          <p-select [options]="categorias" [(ngModel)]="categoriaSeleccionada" optionLabel="name" optionValue="value" placeholder="Categoria" (onChange)="onCategoryChange($event.value)" [disabled]="cargandoDatos" class="pos-category-select"></p-select>
+          <button pButton icon="pi pi-qrcode" [class.is-active]="modoScanner" (click)="modoScanner = !modoScanner" [disabled]="cargandoDatos" [pTooltip]="modoScanner ? 'Ocultar escaner' : 'Mostrar escaner'" class="p-button-outlined"></button>
+          <button pButton icon="pi pi-refresh" (click)="limpiarCache(); cargarDatos()" [loading]="cargandoDatos" pTooltip="Recargar" class="p-button-outlined"></button>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label class="block font-medium mb-1">Cliente</label>
-            <p-select [options]="clientes" [(ngModel)]="clienteSeleccionado"
-                      optionLabel="full_name" placeholder="Cliente general"
-                      [showClear]="true" class="w-full"
-                      (onChange)="aplicarDescuentoClienteFrecuente()">
+        <div class="pos-meta-row">
+          <div class="pos-meta-row__selectors">
+            <p-select [options]="clientes" [(ngModel)]="clienteSeleccionado" optionLabel="full_name" placeholder="Cliente general" [showClear]="true" class="pos-inline-select" (onChange)="aplicarDescuentoClienteFrecuente()">
               <ng-template pTemplate="item" let-cliente>
                 <div class="flex items-center justify-between w-full">
                   <span>{{ cliente.full_name }}</span>
-                  <span *ngIf="esClienteFrecuente(cliente)" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">VIP</span>
+                  <span *ngIf="esClienteFrecuente(cliente)" class="pos-inline-badge">VIP</span>
                 </div>
               </ng-template>
             </p-select>
-          </div>
 
-          <div *ngIf="tieneServicios()">
-            <label class="block font-medium mb-1">Empleado</label>
-            <p-select [options]="empleados" [ngModel]="empleadoSeleccionado()" (ngModelChange)="empleadoSeleccionado.set($event)"
-                      optionLabel="displayName"
-                      placeholder="Seleccionar empleado"
-                      class="w-full">
+            <p-select *ngIf="tieneServicios()" [options]="empleados" [ngModel]="empleadoSeleccionado()" (ngModelChange)="empleadoSeleccionado.set($event)" optionLabel="displayName" placeholder="Empleado" class="pos-inline-select">
               <ng-template pTemplate="item" let-empleado>
                 <div class="flex items-center gap-2">
-                  <i class="pi pi-user text-primary-500"></i>
+                  <i class="pi pi-user"></i>
                   <span>{{ empleado?.displayName || empleado?.name || 'Sin nombre' }}</span>
                 </div>
               </ng-template>
             </p-select>
           </div>
-        </div>
 
-        <div class="pos-totals-card rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-950 text-white p-5">
-          <div class="flex justify-between items-start gap-3 mb-4">
-            <div>
-              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 font-semibold">Total a cobrar</div>
-              <div class="text-4xl font-black mt-2">{{ formatearMoneda(calcularTotal()) }}</div>
-            </div>
-            <div class="text-right text-sm text-slate-300">
-              <div>{{ carrito().length }} items</div>
-              <div>{{ getSelectedPaymentMethodLabel() }}</div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3 text-sm">
-            <div class="rounded-xl bg-white/5 px-3 py-3">
-              <div class="text-slate-400">Subtotal</div>
-              <div class="font-semibold mt-1">{{ formatearMoneda(calcularSubtotal()) }}</div>
-            </div>
-            <div class="rounded-xl bg-white/5 px-3 py-3">
-              <div class="text-slate-400">Descuento</div>
-              <div class="flex items-center justify-between gap-2 mt-1">
-                <input type="number" pInputText [ngModel]="descuento()" (ngModelChange)="descuento.set($event); validarDescuento()" class="w-16 text-right bg-transparent border-white/10 text-white" min="0" [max]="tipoDescuento() === '%' ? limiteDescuento : calcularSubtotal()">
-                <button pButton [label]="tipoDescuento()" size="small" class="p-button-outlined p-button-sm" (click)="alternarTipoDescuento()"></button>
-              </div>
-            </div>
+          <div class="pos-shortcuts">
+            <span>Enter cobrar</span>
+            <span>Esc limpiar</span>
+            <span>Escribir buscar</span>
           </div>
         </div>
 
-        <div>
-          <label class="block font-medium mb-1">Metodo de pago</label>
-          <p-select [options]="metodosPago" [ngModel]="metodoPagoSeleccionado()" (ngModelChange)="metodoPagoSeleccionado.set($event)" optionLabel="label" optionValue="value" placeholder="Seleccionar metodo" class="w-full"></p-select>
+        <div *ngIf="modoScanner" class="pos-scanner-row">
+          <input pInputText [(ngModel)]="codigoBarras" placeholder="Escanear codigo de barras" (keyup.enter)="buscarPorCodigoBarras()" class="flex-1" autofocus>
+          <button pButton label="Buscar" icon="pi pi-search" (click)="buscarPorCodigoBarras()"></button>
         </div>
-
-        <div class="grid gap-2">
-          <button id="pos-tour-process-btn" pButton
-                  [label]="procesandoVenta ? 'Procesando...' : (puedeVenderComputed() ? 'Cobrar ahora' : 'Completar datos')"
-                  [icon]="procesandoVenta ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
-                  [disabled]="!puedeVenderComputed() || procesandoVenta"
-                  [loading]="procesandoVenta"
-                  (click)="procesarVenta()"
-                  class="w-full shadow-lg"
-                  severity="success"
-                  [pTooltip]="!puedeVenderComputed() ? obtenerMensajeValidacion() : 'Procesar venta'"></button>
-          <button pButton label="Ver historial" icon="pi pi-history" 
-                  (click)="mostrarDialogoHistorial=true; cargarHistorialVentas()" 
-                  [disabled]="procesandoVenta || !puedeVerHistorial()"
-                  [pTooltip]="!puedeVerHistorial() ? 'Sin permisos para ver historial' : ''"
-                  class="p-button-outlined w-full"></button>
-        </div>
-
-        <div class="grid gap-3 sm:grid-cols-3">
-          <div class="pos-insight-card rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-4">
-            <div class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 font-semibold">Ventas</div>
-            <div class="text-2xl font-bold text-slate-900 dark:text-white mt-2">{{ estadisticasDia().ventas }}</div>
-          </div>
-          <div class="pos-insight-card rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-4">
-            <div class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 font-semibold">Ingresos</div>
-            <div class="text-2xl font-bold text-slate-900 dark:text-white mt-2">{{ formatearMoneda(estadisticasDia().ingresos) }}</div>
-          </div>
-          <div class="pos-insight-card rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-4">
-            <div class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 font-semibold">Ticket</div>
-            <div class="text-2xl font-bold text-slate-900 dark:text-white mt-2">{{ formatearMoneda(estadisticasDia().ticketPromedio) }}</div>
-          </div>
-        </div>
-
-        <div *ngIf="pagosNoCash().length > 0" class="pos-info-card rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 px-4 py-4">
-          <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-semibold mb-2">
-            <i class="pi pi-info-circle"></i>
-            Otros metodos del dia
-          </div>
-          <div *ngFor="let pago of pagosNoCash()" class="flex justify-between text-sm mb-1 text-amber-900 dark:text-amber-200">
-            <span>{{ pago.payment_method }}:</span>
-            <span class="font-semibold">{{ formatearMoneda(pago.total) }}</span>
-          </div>
-          <div class="text-xs text-amber-700 dark:text-amber-300 mt-3">Estos montos no entran en el arqueo fisico.</div>
-        </div>
-
       </div>
-    </div>
 
+      <div class="pos-catalog__header">
+        <strong>{{ itemsFiltrados.length }} resultados</strong>
+        <span>{{ tipoActivo === 'services' ? 'Click para agregar servicio' : 'Click para agregar producto' }}</span>
+      </div>
+
+      <div *ngIf="!cargandoDatos; else loadingTemplate" class="pos-results">
+        <div *ngIf="itemsFiltrados.length > 0" class="pos-results-grid">
+          <button *ngFor="let item of itemsFiltrados; trackBy: trackByItemId" type="button" class="pos-product-tile" [class.is-disabled]="!puedeAgregarMas(item)" [class.has-quantity]="getCantidadEnCarrito(item) > 0" (click)="puedeAgregarMas(item) && agregarAlCarrito(item)">
+            <div class="pos-product-tile__top">
+              <span class="pos-product-type">{{ tipoActivo === 'services' ? 'SERVICIO' : 'PRODUCTO' }}</span>
+              <span *ngIf="getCantidadEnCarrito(item) > 0" class="pos-product-qty">{{ getCantidadEnCarrito(item) }}</span>
+            </div>
+            <div class="pos-product-tile__body">
+              <strong>{{ item.name }}</strong>
+              <span>{{ item.category || 'General' }}</span>
+            </div>
+            <div class="pos-product-tile__bottom">
+              <span class="pos-product-price">{{ formatearMoneda(item.price) }}</span>
+              <span *ngIf="tipoActivo==='products'" class="pos-product-stock" [class.is-empty]="obtenerStockDisponible(item) <= 0">{{ obtenerStockDisponible(item) > 0 ? ('Stock ' + obtenerStockDisponible(item)) : 'Sin stock' }}</span>
+              <span *ngIf="tipoActivo==='services'" class="pos-product-stock">{{ tieneServicios() ? 'Requiere empleado' : 'Agregar' }}</span>
+            </div>
+          </button>
+        </div>
+
+        <div *ngIf="itemsFiltrados.length === 0" class="pos-empty-state">
+          <i class="pi pi-search"></i>
+          <strong>Sin coincidencias</strong>
+          <span>Ajusta la busqueda o limpia la categoria.</span>
+          <button pButton label="Limpiar filtros" (click)="categoriaSeleccionada=''; busqueda=''; filtrarItems()" class="p-button-outlined"></button>
+        </div>
+      </div>
+
+      <ng-template #loadingTemplate>
+        <div class="pos-results-grid">
+          <div *ngFor="let i of [1,2,3,4,5,6,7,8]" class="pos-loading-tile">
+            <div class="pos-loading-line w-16"></div>
+            <div class="pos-loading-line w-full"></div>
+            <div class="pos-loading-line w-2/3"></div>
+            <div class="pos-loading-line w-1/2"></div>
+          </div>
+        </div>
+      </ng-template>
+    </section>
+
+    <aside class="pos-payment" id="pos-tour-summary">
+      <div class="pos-order-panel">
+        <div class="pos-order-panel__header">
+          <strong>Orden</strong>
+          <div class="flex items-center gap-2">
+            <span>{{ carrito().length }} item{{ carrito().length === 1 ? '' : 's' }}</span>
+            <button pButton icon="pi pi-trash" (click)="limpiarCarrito()" [disabled]="carrito().length === 0 || procesandoVenta" class="p-button-text p-button-sm"></button>
+          </div>
+        </div>
+
+        <div *ngIf="carrito().length > 0; else checkoutEmptyState" class="pos-order-list">
+          <div *ngFor="let item of carrito(); let i=index; trackBy: trackByCartItem" class="pos-order-item">
+            <div class="pos-order-item__main">
+              <strong>{{ item.item.name }}</strong>
+              <span>{{ item.type==='service' ? 'Servicio' : 'Producto' }}</span>
+            </div>
+            <div class="pos-order-item__qty">
+              <button pButton icon="pi pi-minus" size="small" (click)="cambiarCantidad(i,-1)" [text]="true"></button>
+              <span>{{ item.quantity }}</span>
+              <button pButton icon="pi pi-plus" size="small" (click)="cambiarCantidad(i,1)" [text]="true"></button>
+            </div>
+            <div class="pos-order-item__price">
+              <strong>{{ formatearMoneda(item.subtotal) }}</strong>
+              <button pButton icon="pi pi-times" severity="danger" size="small" (click)="removerDelCarrito(i)" [text]="true"></button>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #checkoutEmptyState>
+          <div class="pos-empty-order">
+            <i class="pi pi-shopping-bag"></i>
+            <strong>Orden vacia</strong>
+            <span>Selecciona productos o servicios para empezar a cobrar.</span>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="pos-total-panel">
+        <span class="pos-total-panel__label">TOTAL</span>
+        <strong class="pos-total-panel__value">{{ formatearMoneda(calcularTotal()) }}</strong>
+        <div class="pos-total-panel__meta">
+          <span>SUBTOTAL {{ formatearMoneda(calcularSubtotal()) }}</span>
+          <span *ngIf="descuento() > 0">DESC {{ tipoDescuento() }}{{ descuento() }}</span>
+          <span>{{ getSelectedPaymentMethodLabel() }}</span>
+        </div>
+        <div class="pos-discount-row">
+          <input type="number" pInputText [ngModel]="descuento()" (ngModelChange)="descuento.set($event); validarDescuento()" min="0" [max]="tipoDescuento() === '%' ? limiteDescuento : calcularSubtotal()" placeholder="Descuento">
+          <button pButton [label]="tipoDescuento()" (click)="alternarTipoDescuento()" class="p-button-outlined"></button>
+        </div>
+      </div>
+
+      <div class="pos-payment-methods">
+        <button *ngFor="let metodo of metodosPago" pButton type="button" [label]="metodo.label" [class.is-active]="metodoPagoSeleccionado() === metodo.value" [outlined]="metodoPagoSeleccionado() !== metodo.value" (click)="seleccionarMetodoPago($any(metodo.value))"></button>
+      </div>
+
+      <div class="pos-fiscal-panel">
+        <div class="pos-fiscal-panel__header">
+          <strong>Comprobante fiscal</strong>
+          <button pButton type="button"
+                  [label]="requiereComprobanteFiscal() ? 'Activo' : 'Opcional'"
+                  [outlined]="!requiereComprobanteFiscal()"
+                  [class.is-active]="requiereComprobanteFiscal()"
+                  (click)="toggleComprobanteFiscal()"></button>
+        </div>
+
+        <div *ngIf="requiereComprobanteFiscal()" class="pos-fiscal-fields">
+          <p-select [options]="tiposComprobanteFiscal"
+                    [ngModel]="tipoComprobanteFiscal()"
+                    (ngModelChange)="tipoComprobanteFiscal.set($event)"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full"></p-select>
+          <input pInputText
+                 [ngModel]="datosComprobanteFiscal.nombre"
+                 (ngModelChange)="datosComprobanteFiscal.nombre = $event"
+                 placeholder="Nombre o razon social">
+          <input pInputText
+                 [ngModel]="datosComprobanteFiscal.documento"
+                 (ngModelChange)="sanitizeFiscalDocumentInput($event)"
+                 [placeholder]="getFiscalDocumentLabel()">
+          <small class="pos-fiscal-note" [class.is-invalid]="datosComprobanteFiscal.documento && !isFiscalDocumentValid()">
+            {{ getFiscalVoucherLabel() }}. {{ getFiscalDocumentLabel() }} valido de 9 u 11 digitos.
+          </small>
+        </div>
+      </div>
+
+      <button id="pos-tour-process-btn" pButton [label]="procesandoVenta ? 'Procesando...' : 'COBRAR'" [icon]="procesandoVenta ? 'pi pi-spin pi-spinner' : 'pi pi-check'" [disabled]="!puedeVenderComputed() || procesandoVenta" [loading]="procesandoVenta" (click)="procesarVenta()" severity="success" class="pos-charge-button" [pTooltip]="!puedeVenderComputed() ? obtenerMensajeValidacion() : 'Cobrar'"></button>
+
+      <div class="pos-readiness" [ngClass]="getSaleReadinessClass()">
+        {{ getSaleReadinessLabel() }}
+      </div>
+
+      <div class="pos-bottom-strip">
+        <div><span>Ventas</span><strong>{{ estadisticasDia().ventas }}</strong></div>
+        <div><span>Ingresos</span><strong>{{ formatearMoneda(estadisticasDia().ingresos) }}</strong></div>
+        <div><span>Ticket</span><strong>{{ formatearMoneda(estadisticasDia().ticketPromedio) }}</strong></div>
+      </div>
+
+      <div *ngIf="pagosNoCash().length > 0" class="pos-noncash-note">
+        <div *ngFor="let pago of pagosNoCash()" class="flex items-center justify-between gap-3">
+          <span>{{ pago.payment_method }}</span>
+          <strong>{{ formatearMoneda(pago.total) }}</strong>
+        </div>
+      </div>
+    </aside>
   </div>
+
 
   <!-- DIALOGS Y TOAST -->
   <p-dialog header="Abrir Caja" [(visible)]="mostrarDialogoAbrirCaja" [modal]="true" [style]="{width:'400px'}" styleClass="pos-dialog pos-dialog--cash">
@@ -510,125 +324,88 @@
   <!-- DIÁLOGO DE TICKET PROFESIONAL -->
   <p-dialog [(visible)]="mostrarDialogoTicket" [modal]="true" [style]="{width:'520px'}" [closable]="false" [showHeader]="false" styleClass="pos-dialog pos-dialog--ticket">
     <div class="ticket-profesional ticket-profesional--premium" *ngIf="ventaActual">
-      <div class="ticket-premium-shell">
-        <div class="ticket-premium-header">
-          <div class="ticket-premium-brand">
-            <div class="ticket-premium-mark">
-              <img *ngIf="getBusinessLogo(); else fallbackTicketLogoPremium" [src]="getBusinessLogo()!" alt="Logo negocio" class="logo-image">
-              <ng-template #fallbackTicketLogoPremium>
-                <div class="ticket-premium-mark-fallback">
-                  <i class="pi pi-receipt"></i>
-                </div>
-              </ng-template>
-            </div>
-            <div>
-              <div class="ticket-premium-eyebrow">Auron POS</div>
-              <h1 class="business-name">{{ configuracionPos?.business_name || obtenerNombreNegocio() }}</h1>
-              <p class="ticket-premium-subtitle">Comprobante digital de venta</p>
-            </div>
-          </div>
-          <div class="ticket-premium-total">
-            <span>Total</span>
-            <strong>{{ formatearMoneda(ventaActual.total) }}</strong>
-            <small>{{ getPaymentMethodName(ventaActual.payment_method) }}</small>
-          </div>
+      <div class="ticket-thermal">
+        <div class="ticket-thermal__brand">
+          <img *ngIf="getBusinessLogo(); else thermalFallbackLogo" [src]="getBusinessLogo()!" alt="Logo negocio" class="logo-image ticket-thermal__logo">
+          <ng-template #thermalFallbackLogo>
+            <div class="ticket-thermal__logo-fallback">{{ (configuracionPos?.business_name || obtenerNombreNegocio()).charAt(0) }}</div>
+          </ng-template>
+
+          <div class="ticket-thermal__title">{{ configuracionPos?.business_name || obtenerNombreNegocio() }}</div>
+          <div class="ticket-thermal__subtitle">COMPROBANTE DE VENTA</div>
+          <div class="ticket-thermal__meta" *ngIf="configuracionPos?.address">{{ configuracionPos.address }}</div>
+          <div class="ticket-thermal__meta" *ngIf="configuracionPos?.rnc">RNC: {{ configuracionPos.rnc }}</div>
+          <div class="ticket-thermal__meta" *ngIf="configuracionPos?.phone">Tel: {{ configuracionPos.phone }}</div>
+          <div class="ticket-thermal__meta" *ngIf="configuracionPos?.email">Email: {{ configuracionPos.email }}</div>
+          <div class="ticket-thermal__meta" *ngIf="configuracionPos?.website">{{ configuracionPos.website }}</div>
         </div>
 
-        <div class="ticket-premium-grid">
-          <div class="ticket-premium-stat">
-            <span>Ticket</span>
-            <strong>#{{ ventaActual.id.toString().padStart(6, '0') }}</strong>
-          </div>
-          <div class="ticket-premium-stat">
-            <span>Fecha</span>
-            <strong>{{ getCurrentDateTime().split(',')[0] }}</strong>
-          </div>
-          <div class="ticket-premium-stat">
-            <span>Hora</span>
-            <strong>{{ getCurrentDateTime().split(',')[1] }}</strong>
-          </div>
-          <div class="ticket-premium-stat">
-            <span>Estado</span>
-            <strong>{{ ventaActual.paid ? 'Pagada' : 'Pendiente' }}</strong>
-          </div>
+        <div class="ticket-thermal__divider"></div>
+
+        <div class="ticket-thermal__info">
+          <div><span>Recibo</span><strong>#{{ ventaActual.id.toString().padStart(6, '0') }}</strong></div>
+          <div><span>Fecha</span><strong>{{ ventaActual.date_time | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+          <div><span>Estado</span><strong>{{ ventaActual.paid ? 'PAGADA' : 'PENDIENTE' }}</strong></div>
+          <div><span>Metodo</span><strong>{{ getPaymentMethodName(ventaActual.payment_method) }}</strong></div>
+          <div><span>Cliente</span><strong>{{ ventaActual.client_name || 'CLIENTE GENERAL' }}</strong></div>
+          <div><span>Cajero</span><strong>{{ ventaActual.cashier_name || ventaActual.user_name || obtenerUsuarioActual() }}</strong></div>
+          <div *ngIf="ventaActual.employee_name"><span>Atendido por</span><strong>{{ ventaActual.employee_name }}</strong></div>
+          <div *ngIf="ventaActual.fiscal_requested"><span>Comprobante</span><strong>{{ ventaActual.fiscal_voucher_type }}</strong></div>
+          <div *ngIf="ventaActual.fiscal_requested && ventaActual.fiscal_name"><span>Razon social</span><strong>{{ ventaActual.fiscal_name }}</strong></div>
+          <div *ngIf="ventaActual.fiscal_requested && ventaActual.fiscal_document"><span>Documento</span><strong>{{ ventaActual.fiscal_document }}</strong></div>
         </div>
 
-        <div class="ticket-premium-grid ticket-premium-grid--people">
-          <div class="ticket-premium-person" *ngIf="ventaActual.client || ventaActual.client_name">
-            <span>Cliente</span>
-            <strong>{{ ventaActual.client_name || ('ID ' + ventaActual.client) }}</strong>
-            <small>Venta atendida en mostrador</small>
-          </div>
-          <div class="ticket-premium-person" *ngIf="ventaActual.employee_name">
-            <span>Responsable</span>
-            <strong>{{ ventaActual.employee_name }}</strong>
-            <small>Operacion registrada por el equipo</small>
-          </div>
-        </div>
+        <div class="ticket-thermal__divider"></div>
 
-        <div class="ticket-premium-items">
-          <div class="ticket-premium-items-head">
-            <span>Concepto</span>
-            <span>Cant.</span>
-            <span>Precio</span>
-            <span>Total</span>
+        <div class="ticket-thermal__items">
+          <div class="ticket-thermal__items-head">
+            <span>Descripcion</span>
+            <span>Cant</span>
+            <span>Imp</span>
           </div>
-          <div *ngFor="let item of ventaActual.details" class="ticket-premium-item-row">
-            <div class="ticket-premium-item-main">
+          <div *ngFor="let item of ventaActual.details" class="ticket-thermal__item">
+            <div class="ticket-thermal__item-main">
               <strong>{{ item.name }}</strong>
-              <small>{{ item.content_type === 'service' ? 'Servicio' : 'Producto' }}</small>
+              <small>{{ item.content_type === 'service' ? 'Servicio' : 'Producto' }} x {{ formatearMoneda(item.price) }}</small>
             </div>
             <span>{{ item.quantity }}</span>
-            <span>{{ formatearMoneda(item.price) }}</span>
             <span>{{ formatearMoneda(item.price * item.quantity) }}</span>
           </div>
         </div>
 
-        <div class="ticket-premium-totals">
-          <div class="ticket-premium-total-row">
-            <span>Subtotal</span>
-            <strong>{{ formatearMoneda(getSubtotal(ventaActual)) }}</strong>
-          </div>
-          <div class="ticket-premium-total-row" *ngIf="ventaActual.discount > 0">
-            <span>Descuento</span>
-            <strong class="text-emerald-300">-{{ formatearMoneda(ventaActual.discount) }}</strong>
-          </div>
-          <div class="ticket-premium-total-row ticket-premium-total-row--final">
-            <span>Total cobrado</span>
-            <strong>{{ formatearMoneda(ventaActual.total) }}</strong>
-          </div>
+        <div class="ticket-thermal__divider"></div>
+
+        <div class="ticket-thermal__totals">
+          <div><span>Subtotal</span><strong>{{ formatearMoneda(getSubtotal(ventaActual)) }}</strong></div>
+          <div *ngIf="ventaActual.discount > 0"><span>Descuento</span><strong>-{{ formatearMoneda(ventaActual.discount) }}</strong></div>
+          <div class="ticket-thermal__grand-total"><span>Total</span><strong>{{ formatearMoneda(ventaActual.total) }}</strong></div>
         </div>
 
-        <div *ngIf="ventaActual.payment_method === 'mixed' && ventaActual.payments && ventaActual.payments.length > 1" class="ticket-premium-breakdown">
-          <div class="ticket-premium-breakdown-title">Distribucion del pago</div>
-          <div *ngFor="let pago of ventaActual.payments" class="ticket-premium-breakdown-row">
+        <div *ngIf="ventaActual.payment_method === 'mixed' && ventaActual.payments && ventaActual.payments.length > 1" class="ticket-thermal__payments">
+          <div class="ticket-thermal__payments-title">Detalle de pago</div>
+          <div *ngFor="let pago of ventaActual.payments" class="ticket-thermal__payments-row">
             <span>{{ getPaymentMethodName(pago.method) }}</span>
             <strong>{{ formatearMoneda(pago.amount) }}</strong>
           </div>
         </div>
 
-        <div class="ticket-premium-evidence">
-          <div *ngIf="firmaCliente" class="ticket-premium-evidence-card">
-            <span>Firma del cliente</span>
-            <img [src]="firmaCliente" class="signature-image">
-          </div>
-          <div class="ticket-premium-evidence-card">
-            <span>Verificacion</span>
-            <div class="qr-container">
-              <canvas #qrCanvas width="80" height="80" class="qr-code"></canvas>
+        <div class="ticket-thermal__footer-block">
+          <div class="ticket-thermal__evidence">
+            <div *ngIf="firmaCliente" class="ticket-thermal__evidence-card">
+              <span>Firma</span>
+              <img [src]="firmaCliente" class="signature-image">
+            </div>
+            <div class="ticket-thermal__evidence-card">
+              <span>Verificacion</span>
+              <div class="qr-container">
+                <canvas #qrCanvas width="80" height="80" class="qr-code"></canvas>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="ticket-premium-footer">
-          <div class="thank-you">
-            <p class="main-message">Operacion completada</p>
-            <p class="sub-message">Gracias por confiar en {{ configuracionPos?.business_name || obtenerNombreNegocio() }}</p>
-          </div>
-          <div class="ticket-premium-meta">
-            <span *ngIf="configuracionPos?.phone">{{ configuracionPos.phone }}</span>
-            <span *ngIf="configuracionPos?.phone && configuracionPos?.address">·</span>
-            <span *ngIf="configuracionPos?.address">{{ configuracionPos.address }}</span>
+          <div class="ticket-thermal__footer-note">
+            <p>Gracias por su compra.</p>
+            <p>Conserve este comprobante para devoluciones o consultas.</p>
           </div>
         </div>
       </div>
@@ -642,7 +419,7 @@
   </p-dialog>
 
   <!-- DIÁLOGO DE PAGO EFECTIVO -->
-  <p-dialog header="Cobro en efectivo" [(visible)]="mostrarDialogoPago" [modal]="true" [style]="{width:'460px'}" styleClass="pos-dialog pos-dialog--payment">
+  <p-dialog header="Cobro en efectivo" [(visible)]="mostrarDialogoPago" [modal]="true" [style]="{width:'460px'}" styleClass="pos-dialog pos-dialog--payment" (onShow)="onCashDialogShow()">
     <div class="flex flex-col gap-5">
       <div class="rounded-[1.75rem] bg-slate-950 p-5 text-white shadow-lg">
         <div class="text-[11px] uppercase tracking-[0.28em] text-slate-400">Total a cobrar</div>
@@ -655,7 +432,16 @@
         <p-inputNumber [(ngModel)]="montoRecibido"
                        mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()"
                        class="w-full"
+                       inputStyleClass="pos-cash-input"
                        (onInput)="cambio = calcularCambio()"></p-inputNumber>
+        <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <button *ngFor="let monto of getMontosRapidosEfectivo()"
+                  pButton
+                  type="button"
+                  [label]="formatearMoneda(monto)"
+                  (click)="usarMontoRecibido(monto)"
+                  class="p-button-outlined p-button-sm w-full"></button>
+        </div>
         <div class="mt-3 text-xs text-surface-500 dark:text-slate-400">La venta se confirma cuando el efectivo cubre el total completo.</div>
       </div>
 
@@ -686,7 +472,7 @@
   </p-dialog>
 
   <!-- DIÁLOGO DE PAGOS MIXTOS -->
-  <p-dialog header="Pago combinado" [(visible)]="mostrarDialogoPagosMixtos" [modal]="true" [style]="{width:'560px'}" styleClass="pos-dialog pos-dialog--payment">
+  <p-dialog header="Pago combinado" [(visible)]="mostrarDialogoPagosMixtos" [modal]="true" [style]="{width:'560px'}" styleClass="pos-dialog pos-dialog--payment" (onShow)="onMixedPaymentDialogShow()">
     <div class="flex flex-col gap-5">
       <div class="rounded-[1.75rem] bg-gradient-to-br from-slate-950 via-violet-900 to-sky-700 p-5 text-white shadow-lg">
         <div class="text-[11px] uppercase tracking-[0.28em] text-white/70">Total a distribuir</div>
@@ -702,8 +488,19 @@
             {label: 'Tarjeta', value: 'card'},
             {label: 'Transferencia', value: 'transfer'}
           ]" optionLabel="label" optionValue="value" placeholder="Metodo" class="flex-1"></p-select>
-          <p-inputNumber [(ngModel)]="montoTemporal" mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()" placeholder="Monto" class="flex-1"></p-inputNumber>
+          <p-inputNumber [(ngModel)]="montoTemporal" mode="currency" [currency]="currencyCode()" [locale]="currencyLocale()" placeholder="Monto" class="flex-1" inputStyleClass="pos-mixed-amount-input"></p-inputNumber>
           <button pButton icon="pi pi-plus" label="Agregar" (click)="agregarPagoMixto(metodoPagoTemporal, montoTemporal)" class="p-button-success"></button>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button pButton type="button" label="Restante en efectivo" class="p-button-outlined p-button-sm"
+                  [disabled]="getMontoRestanteMixto() <= 0"
+                  (click)="completarPagoMixto('cash')"></button>
+          <button pButton type="button" label="Restante en tarjeta" class="p-button-outlined p-button-sm"
+                  [disabled]="getMontoRestanteMixto() <= 0"
+                  (click)="completarPagoMixto('card')"></button>
+          <button pButton type="button" label="Restante en transferencia" class="p-button-outlined p-button-sm"
+                  [disabled]="getMontoRestanteMixto() <= 0"
+                  (click)="completarPagoMixto('transfer')"></button>
         </div>
       </div>
 
@@ -744,6 +541,7 @@
                [class]="validarPagoMixto() ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'">
             {{ obtenerMensajePagoMixto() }}
           </div>
+          <div class="mt-2 text-xs text-surface-500 dark:text-slate-400">Restante: {{ formatearMoneda(getMontoRestanteMixto()) }}</div>
         </div>
       </div>
 
@@ -897,6 +695,528 @@
 
 <!-- Estilos profesionales para ticket -->
 <style>
+.pos-shell {
+  height: calc(100vh - 5.5rem);
+  min-height: 40rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+  margin: -0.75rem;
+  padding: 0.75rem;
+  background: var(--surface-ground);
+}
+
+.pos-shell .p-button,
+.pos-shell .p-inputtext,
+.pos-shell .p-select,
+.pos-shell .p-select-label,
+.pos-shell .p-inputnumber-input {
+  border-radius: 6px;
+}
+
+.pos-toolbar,
+.pos-catalog,
+.pos-payment {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+}
+
+.pos-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.pos-toolbar__left,
+.pos-toolbar__right,
+.pos-toolbar__text,
+.pos-search,
+.pos-meta-row,
+.pos-order-panel__header,
+.pos-order-item,
+.pos-order-item__qty,
+.pos-order-item__price,
+.pos-product-tile__top,
+.pos-product-tile__bottom {
+  display: flex;
+  align-items: center;
+}
+
+.pos-toolbar__left,
+.pos-toolbar__right,
+.pos-meta-row {
+  justify-content: space-between;
+}
+
+.pos-toolbar__left,
+.pos-toolbar__right,
+.pos-meta-row__selectors,
+.pos-shortcuts,
+.pos-payment-methods {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pos-toolbar__text {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.pos-toolbar__text span {
+  font-size: 0.82rem;
+  color: var(--text-color-secondary);
+}
+
+.pos-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.pos-status-pill.is-open {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.pos-status-pill.is-closed {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+
+.pos-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.pos-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(22rem, 28rem);
+  gap: 0.75rem;
+}
+
+.pos-catalog,
+.pos-payment {
+  min-height: 0;
+}
+
+.pos-catalog {
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-controls,
+.pos-catalog__header,
+.pos-payment {
+  padding: 0.75rem;
+}
+
+.pos-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.pos-type-switch,
+.pos-payment-methods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.pos-type-switch .p-button.is-active,
+.pos-payment-methods .p-button.is-active {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+.pos-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12rem auto auto;
+  gap: 0.5rem;
+}
+
+.pos-search {
+  gap: 0.55rem;
+  border: 1px solid var(--surface-border);
+  padding: 0 0.75rem;
+}
+
+.pos-search i,
+.pos-shortcuts,
+.pos-catalog__header span,
+.pos-product-tile__body span,
+.pos-product-stock,
+.pos-order-item__main span,
+.pos-readiness,
+.pos-bottom-strip span,
+.pos-noncash-note {
+  color: var(--text-color-secondary);
+}
+
+.pos-search input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0.85rem 0;
+}
+
+.pos-inline-select,
+.pos-category-select {
+  min-width: 0;
+}
+
+.pos-shortcuts {
+  font-size: 0.78rem;
+}
+
+.pos-inline-badge,
+.pos-product-type,
+.pos-product-qty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.pos-catalog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.pos-results {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem;
+}
+
+.pos-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.75rem;
+}
+
+.pos-product-tile,
+.pos-loading-tile,
+.pos-order-item,
+.pos-empty-state,
+.pos-empty-order {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-ground);
+}
+
+.pos-product-tile {
+  min-height: 9rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  text-align: left;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.pos-product-tile.has-quantity {
+  border-color: #16a34a;
+  box-shadow: inset 0 0 0 1px #16a34a;
+}
+
+.pos-product-tile:hover {
+  transform: translateY(-1px);
+  border-color: #111827;
+}
+
+.pos-product-tile.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pos-product-tile__top,
+.pos-product-tile__bottom {
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pos-product-tile__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pos-product-tile__body strong,
+.pos-order-item__main strong {
+  font-size: 0.95rem;
+  line-height: 1.2;
+  color: var(--text-color);
+}
+
+.pos-product-price,
+.pos-order-item__price strong {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.pos-product-stock.is-empty {
+  color: #b91c1c;
+}
+
+.pos-loading-tile,
+.pos-empty-state,
+.pos-empty-order {
+  padding: 1rem;
+}
+
+.pos-loading-line {
+  height: 0.8rem;
+  margin-bottom: 0.55rem;
+  background: var(--surface-200);
+}
+
+.pos-empty-state,
+.pos-empty-order,
+.pos-payment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.pos-empty-state,
+.pos-empty-order {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.pos-payment {
+  overflow: hidden;
+}
+
+.pos-order-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--surface-border);
+}
+
+.pos-order-panel__header {
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.pos-order-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pos-order-item {
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.65rem;
+}
+
+.pos-order-item__main {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pos-order-item__qty span {
+  width: 1.5rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.pos-order-item__price {
+  gap: 0.4rem;
+}
+
+.pos-total-panel {
+  padding: 1rem;
+  color: #fff;
+  background: #111111;
+}
+
+.pos-total-panel__label,
+.pos-total-panel__meta {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+.pos-total-panel__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.pos-total-panel__value {
+  display: block;
+  margin: 0.4rem 0 0.6rem;
+  font-family: 'Courier New', monospace;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+}
+
+.pos-discount-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.pos-charge-button {
+  min-height: 4.25rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.pos-readiness {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--surface-border);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.pos-bottom-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.pos-bottom-strip div {
+  padding: 0.65rem;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-ground);
+}
+
+.pos-bottom-strip strong {
+  display: block;
+  margin-top: 0.3rem;
+}
+
+.pos-fiscal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-ground);
+}
+
+.pos-fiscal-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pos-fiscal-panel__header .p-button.is-active {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+.pos-fiscal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pos-fiscal-note {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+}
+
+.pos-fiscal-note.is-invalid {
+  color: #b91c1c;
+}
+
+.pos-noncash-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px dashed var(--surface-border);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 1100px) {
+  .pos-shell {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pos-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-search-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-payment {
+    min-height: 36rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .pos-toolbar,
+  .pos-catalog__header,
+  .pos-meta-row,
+  .pos-order-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pos-meta-row__selectors,
+  .pos-type-switch,
+  .pos-payment-methods,
+  .pos-bottom-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-results-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .pos-checkout-panel {
   backdrop-filter: blur(12px);
   background:
@@ -993,6 +1313,180 @@
   color: #0f172a;
 }
 
+.ticket-thermal {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 0.5rem 0.35rem 0.25rem;
+  color: #111827;
+  background: #fff;
+  font-family: 'Courier New', monospace;
+}
+
+.ticket-thermal__brand {
+  text-align: center;
+}
+
+.ticket-thermal__logo {
+  max-height: 56px;
+  max-width: 140px;
+  margin: 0 auto 0.45rem;
+}
+
+.ticket-thermal__logo-fallback {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 0.45rem;
+  border: 1px solid #111827;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.ticket-thermal__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.ticket-thermal__subtitle,
+.ticket-thermal__payments-title {
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ticket-thermal__meta,
+.ticket-thermal__footer-note {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.ticket-thermal__divider {
+  border-top: 1px dashed #111827;
+  margin: 0.7rem 0;
+}
+
+.ticket-thermal__info,
+.ticket-thermal__totals,
+.ticket-thermal__payments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+}
+
+.ticket-thermal__info > div,
+.ticket-thermal__totals > div,
+.ticket-thermal__payments-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.ticket-thermal__info span,
+.ticket-thermal__totals span,
+.ticket-thermal__payments-row span {
+  color: #4b5563;
+}
+
+.ticket-thermal__info strong,
+.ticket-thermal__totals strong,
+.ticket-thermal__payments-row strong {
+  text-align: right;
+}
+
+.ticket-thermal__items {
+  font-size: 0.76rem;
+}
+
+.ticket-thermal__items-head,
+.ticket-thermal__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.7rem 5.2rem;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.ticket-thermal__items-head {
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid #d1d5db;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.ticket-thermal__item {
+  padding: 0.32rem 0;
+}
+
+.ticket-thermal__item > span,
+.ticket-thermal__items-head > span:nth-child(n+2) {
+  text-align: right;
+}
+
+.ticket-thermal__item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.ticket-thermal__item-main strong {
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.ticket-thermal__item-main small {
+  color: #6b7280;
+  font-size: 0.68rem;
+}
+
+.ticket-thermal__grand-total {
+  margin-top: 0.2rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid #111827;
+  font-size: 0.95rem;
+}
+
+.ticket-thermal__footer-block {
+  margin-top: 0.7rem;
+}
+
+.ticket-thermal__evidence {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.ticket-thermal__evidence-card {
+  border: 1px solid #d1d5db;
+  padding: 0.45rem;
+  text-align: center;
+}
+
+.ticket-thermal__evidence-card span {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+.ticket-thermal__footer-note {
+  text-align: center;
+}
+
+.ticket-thermal__footer-note p {
+  margin: 0.25rem 0 0;
+}
+
 .ticket-premium-shell {
   display: flex;
   flex-direction: column;
@@ -1048,11 +1542,21 @@
   color: #64748b;
 }
 
+.ticket-premium-business-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
 .ticket-premium-total {
   min-width: 9rem;
   padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  background: #f8fafc;
+  border-radius: 0.85rem;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
   text-align: right;
 }
 
@@ -1097,8 +1601,8 @@
 .ticket-premium-person,
 .ticket-premium-evidence-card {
   border: 1px solid #e2e8f0;
-  border-radius: 1rem;
-  background: #f8fafc;
+  border-radius: 0.85rem;
+  background: #ffffff;
   padding: 0.85rem 0.95rem;
 }
 
@@ -1118,7 +1622,7 @@
 
 .ticket-premium-items {
   border: 1px solid #e2e8f0;
-  border-radius: 1.25rem;
+  border-radius: 0.85rem;
   overflow: hidden;
 }
 
@@ -1161,10 +1665,16 @@
 }
 
 .ticket-premium-totals {
-  border-radius: 1.25rem;
-  background: #020617;
+  border-radius: 0.85rem;
+  background: #0f172a;
   color: white;
   padding: 1rem 1.1rem;
+}
+
+.ticket-premium-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 0.75rem;
 }
 
 .ticket-premium-total-row {
@@ -1187,16 +1697,16 @@
 }
 
 .ticket-premium-breakdown {
-  border: 1px solid #ddd6fe;
-  background: #f5f3ff;
-  border-radius: 1.25rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 0.85rem;
   padding: 0.95rem 1rem;
 }
 
 .ticket-premium-breakdown-title {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #5b21b6;
+  color: #0f172a;
   margin-bottom: 0.55rem;
 }
 
@@ -1206,12 +1716,18 @@
   gap: 1rem;
   padding: 0.45rem 0;
   font-size: 0.86rem;
-  color: #312e81;
+  color: #334155;
 }
 
 .ticket-premium-evidence {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.ticket-premium-footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
 }
 
@@ -1221,10 +1737,11 @@
 }
 
 .ticket-premium-footer {
-  border-radius: 1rem;
-  background: #f8fafc;
+  border-radius: 0.85rem;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
   padding: 1rem;
-  text-align: center;
+  text-align: left;
 }
 
 /* Responsive para móviles y tablets */
@@ -1233,6 +1750,9 @@
     max-width: 100%;
     font-size: 11px;
     padding: 8px;
+  }
+  .ticket-thermal {
+    max-width: 100%;
   }
   .business-name { font-size: 16px !important; }
   .total-row.final { font-size: 13px !important; }
@@ -1251,7 +1771,11 @@
   }
   .ticket-premium-grid,
   .ticket-premium-grid--people,
-  .ticket-premium-evidence {
+  .ticket-premium-evidence,
+  .ticket-premium-summary {
+    grid-template-columns: 1fr;
+  }
+  .ticket-thermal__evidence {
     grid-template-columns: 1fr;
   }
   .ticket-premium-items-head,
@@ -1264,6 +1788,10 @@
   .ticket-profesional {
     font-size: 10px;
     padding: 4px;
+  }
+  .ticket-thermal__items-head,
+  .ticket-thermal__item {
+    grid-template-columns: minmax(0, 1fr) 2.3rem 4.6rem;
   }
   .business-name { font-size: 14px !important; }
   .total-row.final { font-size: 12px !important; }

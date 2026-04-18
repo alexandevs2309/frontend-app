@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { BaseApiService } from '../base-api.service';
 import { API_CONFIG } from '../../config/api.config';
 
@@ -68,11 +69,20 @@ export class TenantService extends BaseApiService {
   }
 
   getTenantUsers(id: number): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.TENANTS}${id}/users/`);
+    return this.get(API_CONFIG.ENDPOINTS.ADMIN_USERS, { tenant: id });
   }
 
   getTenantSubscription(id: number): Observable<any> {
-    return this.get(`${API_CONFIG.ENDPOINTS.TENANTS}${id}/subscription/`);
+    return this.get(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS.USER_SUBSCRIPTIONS, {
+      tenant: id,
+      is_active: true,
+      page_size: 1
+    }).pipe(
+      map((response: any) => {
+        const items = Array.isArray(response) ? response : response?.results || [];
+        return items[0] || null;
+      })
+    );
   }
 
   // Bulk operations (SuperAdmin)

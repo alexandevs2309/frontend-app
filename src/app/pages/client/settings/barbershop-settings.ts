@@ -12,6 +12,8 @@ import { MessageModule } from 'primeng/message';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { environment } from '../../../../environments/environment';
+import { Router } from '@angular/router';
+import { PlanAccessService } from '../../../core/services/plan-access.service';
 import { SettingsService } from '../../../core/services/settings/settings.service';
 
 interface BarbershopSettings {
@@ -31,6 +33,7 @@ interface BarbershopSettings {
   };
   pos_config?: {
     business_name: string;
+    rnc: string;
     address: string;
     phone: string;
     email: string;
@@ -51,8 +54,10 @@ interface BarbershopSettings {
 })
 export class BarbershopSettingsComponent implements OnInit {
   private settingsService = inject(SettingsService);
+  private planAccessService = inject(PlanAccessService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
+  private router = inject(Router);
 
   settings = signal<BarbershopSettings>({
     name: '',
@@ -76,6 +81,7 @@ export class BarbershopSettingsComponent implements OnInit {
     },
     pos_config: {
       business_name: '',
+      rnc: '',
       address: '',
       phone: '',
       email: '',
@@ -88,6 +94,7 @@ export class BarbershopSettingsComponent implements OnInit {
   showCriticalDialog = signal(false);
   criticalChanges = signal<any[]>([]);
   pendingData = signal<any>(null);
+  customBrandingEnabled = signal(false);
 
   currencies = [
     { label: 'Peso Colombiano (COP)', value: 'COP', symbol: '$' },
@@ -107,6 +114,7 @@ export class BarbershopSettingsComponent implements OnInit {
   ];
 
   ngOnInit() {
+    this.customBrandingEnabled.set(this.planAccessService.canAccessFeature('custom_branding'));
     this.loadSettings();
   }
 
@@ -138,6 +146,7 @@ export class BarbershopSettingsComponent implements OnInit {
             },
             pos_config: (data.pos_config as BarbershopSettings['pos_config']) || {
               business_name: '',
+              rnc: '',
               address: '',
               phone: '',
               email: '',
@@ -281,6 +290,16 @@ export class BarbershopSettingsComponent implements OnInit {
   }
 
   onLogoUpload(event: any) {
+    if (!this.customBrandingEnabled()) {
+      const recommendation = this.planAccessService.getFeatureUpgradeRecommendation('custom_branding');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Disponible en Premium',
+        detail: recommendation ? `${recommendation.reason} ${recommendation.detail}` : 'Esta funcionalidad requiere Premium.'
+      });
+      return;
+    }
+
     const file = event.files[0];
     if (file) {
       const formData = new FormData();
@@ -305,6 +324,24 @@ export class BarbershopSettingsComponent implements OnInit {
           }
         });
     }
+  }
+
+  updatePosConfig(field: keyof NonNullable<BarbershopSettings['pos_config']>, value: string) {
+    this.settings.update(s => ({
+      ...s,
+      pos_config: { ...s.pos_config!, [field]: value }
+    }));
+  }
+
+  updateContact(field: keyof BarbershopSettings['contact'], value: string) {
+    this.settings.update(s => ({
+      ...s,
+      contact: { ...s.contact, [field]: value }
+    }));
+  }
+
+  updateName(value: string) {
+    this.settings.update(s => ({ ...s, name: value }));
   }
 
   updateBusinessHour(day: string, field: 'open' | 'close' | 'closed', value: any) {
@@ -360,6 +397,10 @@ export class BarbershopSettingsComponent implements OnInit {
     return this.settings().pos_config?.address?.trim() || this.settings().contact?.address?.trim() || 'Direccion no configurada';
   }
 
+  getTicketPreviewRnc(): string {
+    return this.settings().pos_config?.rnc?.trim() || 'RNC no configurado';
+  }
+
   getTicketPreviewPhone(): string {
     return this.settings().pos_config?.phone?.trim() || this.settings().contact?.phone?.trim() || 'Telefono no configurado';
   }
@@ -374,6 +415,31 @@ export class BarbershopSettingsComponent implements OnInit {
 
   getTicketPreviewCurrency(): string {
     return this.settings().currency_symbol || '$';
+  }
+
+  getConfiguredContactCount(): number {
+    const contact = this.settings().contact;
+    return [contact?.phone, contact?.email, contact?.address].filter((value) => String(value || '').trim()).length;
+  }
+
+  hasFiscalIdentity(): boolean {
+    return Boolean(this.settings().pos_config?.business_name?.trim() && this.settings().pos_config?.rnc?.trim());
+  }
+
+  getOperationalReadinessMessage(): string {
+    if (!this.settings().name?.trim()) {
+      return 'Empieza por el nombre del negocio y los datos del ticket para que caja y recibos tengan identidad clara.';
+    }
+
+    if (!this.hasFiscalIdentity()) {
+      return 'Completa nombre comercial y RNC para dejar listo el ticket fiscal y evitar captura manual luego.';
+    }
+
+    if (this.getConfiguredContactCount() < 2) {
+      return 'Agrega teléfono, email o dirección para que el ticket y la información pública del negocio estén completos.';
+    }
+
+    return 'La configuración principal del negocio está lista para operar. Ajusta horarios o branding solo si hace falta.';
   }
 
   copyMondayScheduleToOpenDays() {
@@ -431,8 +497,14 @@ export class BarbershopSettingsComponent implements OnInit {
     switch (type) {
       case 'critical': return 'text-red-600';
       case 'sensitive': return 'text-orange-600';
-      default: return 'text-gray-600';
+      default: return 'text-slate-600';
     }
+  }
+
+  goToPlans() {
+    this.router.navigate(['/client/payment'], {
+      state: { recommendedPlanName: 'Premium' }
+    });
   }
 
   private toAbsoluteUrl(url?: string): string {

@@ -600,7 +600,7 @@ export class UsersManagement implements OnInit {
     private showUserLimitDialog(message: string): void {
         this.limitDialogTitle = 'No se puede crear el usuario';
         this.limitDialogMessage = message;
-        this.limitDialogRecommendation = this.planAccessService.getUpgradeRecommendation('users');
+        this.limitDialogRecommendation = this.planAccessService.getUpgradeRecommendation('users', message);
         this.limitDialog = true;
     }
 

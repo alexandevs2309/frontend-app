@@ -19,6 +19,10 @@ export class PosTicketFlowService {
         clientName?: string;
         employeeName?: string;
         cashierName?: string;
+        fiscalRequested?: boolean;
+        fiscalVoucherType?: string;
+        fiscalName?: string;
+        fiscalDocument?: string;
     }): SaleWithDetailsDto {
         return buildTicketSaleData(params);
     }

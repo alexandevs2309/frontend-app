@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -6,7 +6,6 @@ import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
-import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { TagModule } from 'primeng/tag';
@@ -14,14 +13,17 @@ import { SaasMetricsService, SaasMetrics } from '../../core/services/saas-metric
 import { ReportService, AdminReportResponse } from '../../core/services/report/report.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { forkJoin } from 'rxjs';
+import { AdminMrrTrendChartComponent } from './components/admin-mrr-trend-chart.component';
+import { AdminPlanRevenueChartComponent } from './components/admin-plan-revenue-chart.component';
 
 @Component({
     selector: 'app-admin-reports',
     standalone: true,
     imports: [
         CommonModule, FormsModule, CardModule, ButtonModule, DatePickerModule,
-        SelectModule, ChartModule, TableModule, ToastModule, TagModule
+        SelectModule, TableModule, ToastModule, TagModule, AdminMrrTrendChartComponent, AdminPlanRevenueChartComponent
     ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="grid grid-cols-12 gap-6">
             <div class="col-span-12">
@@ -197,14 +199,22 @@ import { forkJoin } from 'rxjs';
             <!-- MRR Trend Chart -->
             <div class="col-span-12 md:col-span-8">
                 <p-card header="Tendencia de MRR">
-                    <p-chart type="line" [data]="mrrChartData" [options]="chartOptions" />
+                    @defer (on viewport) {
+                        <app-admin-mrr-trend-chart [data]="mrrChartData" [options]="chartOptions"></app-admin-mrr-trend-chart>
+                    } @placeholder {
+                        <div class="h-[22rem] animate-pulse rounded-2xl bg-surface-100 dark:bg-surface-800"></div>
+                    }
                 </p-card>
             </div>
 
             <!-- Revenue by Plan -->
             <div class="col-span-12 md:col-span-4">
                 <p-card header="Revenue por Plan">
-                    <p-chart type="doughnut" [data]="planChartData" [options]="doughnutOptions" />
+                    @defer (on viewport) {
+                        <app-admin-plan-revenue-chart [data]="planChartData" [options]="doughnutOptions"></app-admin-plan-revenue-chart>
+                    } @placeholder {
+                        <div class="h-[22rem] animate-pulse rounded-2xl bg-surface-100 dark:bg-surface-800"></div>
+                    }
                 </p-card>
             </div>
 
@@ -298,10 +308,10 @@ export class AdminReports implements OnInit {
         { label: 'Personalizado', value: 'custom' }
     ];
 
-    mrrChartData: any;
-    planChartData: any;
-    chartOptions: any;
-    doughnutOptions: any;
+    mrrChartData: any = { labels: [], datasets: [] };
+    planChartData: any = { labels: [], datasets: [] };
+    chartOptions: any = {};
+    doughnutOptions: any = {};
 
     constructor(
         private saasMetricsService: SaasMetricsService,

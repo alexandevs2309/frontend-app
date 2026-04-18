@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -24,6 +24,7 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
     standalone: true,
     imports: [
         CommonModule,
+        FormsModule,
         ReactiveFormsModule,
         TableModule,
         ButtonModule,
@@ -41,220 +42,130 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
     providers: [MessageService, ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="space-y-6">
-            <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div class="grid gap-6 px-6 py-7 xl:grid-cols-[1.35fr,0.85fr] xl:px-8">
-                    <div class="space-y-5">
-                        <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                            Base de clientes
-                        </div>
-                        <div>
-                            <h2 class="text-3xl font-black tracking-tight text-slate-950 dark:text-white">Gestión de clientes</h2>
-                            <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">Mantén visible quién compra, cómo contactarlo y qué clientes siguen activos dentro del negocio.</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                                <i class="pi pi-users text-xs"></i>
-                                {{ clientes().length }} clientes
-                            </div>
-                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                                <i class="pi pi-check-circle text-xs"></i>
-                                {{ getActiveClientsCount() }} activos
-                            </div>
-                            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                                <i class="pi pi-id-card text-xs"></i>
-                                {{ getContactableClientsCount() }} con contacto
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="rounded-[1.6rem] bg-slate-950 p-5 text-white shadow-xl">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">Resumen comercial</div>
-                                <div class="mt-2 text-2xl font-black">Relación con clientes</div>
-                            </div>
-                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
-                                <i class="pi pi-users text-lg"></i>
-                            </div>
-                        </div>
-                        <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
-                            {{ getClientsNarrative() }}
-                        </div>
-                    </div>
+        <div class="clients-shell">
+            <section class="clients-hero">
+                <div>
+                    <span class="clients-hero__eyebrow">Clientes operativos</span>
+                    <h2>Encuentra y captura clientes sin fricción</h2>
+                    <p>La prioridad es buscar rápido, abrir una ficha mínima y volver a la venta o a la cita sin rodeos.</p>
                 </div>
-                <div class="border-t border-slate-200/80 px-6 py-5 dark:border-slate-800 xl:px-8">
-                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                        <button pButton label="Nuevo cliente" icon="pi pi-plus" (click)="abrirDialogo()"></button>
-                        <div class="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                            Mantén correos, teléfonos y notas listos para seguimiento.
-                        </div>
-                    </div>
+                <div class="clients-hero__panel">
+                    <span class="clients-hero__label">Acción rápida</span>
+                    <strong>{{ getClientsNarrative() }}</strong>
+                    <button pButton label="Nuevo cliente" icon="pi pi-plus" (click)="abrirDialogo()" class="w-full"></button>
                 </div>
             </section>
 
-            <section class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <p-table [value]="clientes()" [loading]="cargando()"
-                     [globalFilterFields]="['full_name', 'email', 'phone']"
-                     #dt>
-                <ng-template pTemplate="caption">
-                    <div class="flex flex-col gap-3 p-2 lg:flex-row lg:items-center lg:justify-between">
-                        <span class="text-sm text-gray-600 dark:text-slate-300">
-                            Total: {{clientes().length}} clientes
-                        </span>
-                        <span class="p-input-icon-left w-full lg:w-80">
-                            <i class="pi pi-search"></i>
-                            <input pInputText type="text" placeholder="Buscar clientes..."
-                                   class="w-full"
-                                   (input)="dt.filterGlobal($any($event.target).value, 'contains')">
-                        </span>
-                    </div>
-                </ng-template>
+            <div class="clients-toolbar">
+                <div class="clients-toolbar__left">
+                    <span class="clients-toolbar__count">{{ clientesVisibles().length }} visibles &middot; {{ getActiveClientsCount() }} activos</span>
+                </div>
+                <div class="clients-toolbar__right">
+                    <span class="p-input-icon-left">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" placeholder="Nombre, email o teléfono" class="clients-search" [(ngModel)]="textoBusqueda" (ngModelChange)="aplicarBusqueda()">
+                    </span>
+                    <div class="clients-toolbar__hint">RNC/Cédula sigue en POS y configuración hasta que exista soporte backend.</div>
+                </div>
+            </div>
 
+            <p-table [value]="clientesVisibles()" [loading]="cargando()" class="clients-table">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Cliente</th>
+                        <th pSortableColumn="full_name">Cliente <p-sortIcon field="full_name"></p-sortIcon></th>
                         <th>Contacto</th>
-                        <th>Género</th>
-                        <th>Fecha Nacimiento</th>
+                        <th>Cumplea&ntilde;os</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
+                        <th style="width:7rem">Acciones</th>
                     </tr>
                 </ng-template>
 
                 <ng-template pTemplate="body" let-cliente>
                     <tr>
                         <td>
-                            <div>
-                                <div class="font-medium">{{cliente.full_name}}</div>
-                                <div class="text-sm text-gray-500" *ngIf="cliente.notes">
-                                    {{cliente.notes}}
-                                </div>
+                            <div class="client-name">
+                                <strong>{{ cliente.full_name }}</strong>
+                                <span *ngIf="cliente.notes" class="client-notes">{{ cliente.notes }}</span>
                             </div>
                         </td>
                         <td>
-                            <div>
-                                <div>{{cliente.email}}</div>
-                                <div class="text-sm text-gray-500" *ngIf="cliente.phone">
-                                    {{cliente.phone}}
-                                </div>
-                                <div class="text-sm text-gray-500" *ngIf="cliente.address">
-                                    {{cliente.address}}
-                                </div>
+                            <div class="client-contact">
+                                <span *ngIf="cliente.email"><i class="pi pi-envelope"></i> {{ cliente.email }}</span>
+                                <span *ngIf="cliente.phone"><i class="pi pi-phone"></i> {{ cliente.phone }}</span>
                             </div>
                         </td>
                         <td>
-                            <p-tag [value]="cliente.gender || 'No especificado'"
-                                   [severity]="getGenderSeverity(cliente.gender)">
-                            </p-tag>
-                        </td>
-                        <td>
-                            <div class="flex items-center gap-2">
+                            <div class="client-bday">
                                 <span>{{ formatearFecha(cliente) }}</span>
-                                @if (esCumpleanosHoy(cliente)) {
-                                    <i class="pi pi-gift text-yellow-500" pTooltip="¡Cumpleaños hoy! 🎉"></i>
-                                } @else if (esCumpleanosEsteMes(cliente)) {
-                                    <i class="pi pi-calendar text-blue-500" pTooltip="Cumpleaños este mes"></i>
-                                }
-                                @if (calcularEdad(cliente)) {
-                                    <span class="text-xs text-gray-500">
-                                        ({{ calcularEdad(cliente) }} años)
-                                    </span>
-                                }
+                                <i *ngIf="esCumpleanosHoy(cliente)" class="pi pi-gift text-yellow-500" pTooltip="Cumplea&ntilde;os hoy"></i>
+                                <i *ngIf="!esCumpleanosHoy(cliente) && esCumpleanosEsteMes(cliente)" class="pi pi-calendar text-blue-500" pTooltip="Cumplea&ntilde;os este mes"></i>
                             </div>
                         </td>
                         <td>
-                            <p-tag [value]="cliente.is_active ? 'Activo' : 'Inactivo'"
-                                   [severity]="cliente.is_active ? 'success' : 'danger'">
-                            </p-tag>
+                            <p-tag [value]="cliente.is_active ? 'Activo' : 'Inactivo'" [severity]="cliente.is_active ? 'success' : 'danger'"></p-tag>
                         </td>
                         <td>
-                            <div class="flex gap-1">
-                                <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm"
-                                        (click)="editarCliente(cliente)" pTooltip="Editar"></button>
-                                <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
-                                        (click)="confirmarEliminar(cliente)" pTooltip="Eliminar"></button>
+                            <div class="client-actions">
+                                <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editarCliente(cliente)" pTooltip="Editar"></button>
+                                <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmarEliminar(cliente)" pTooltip="Eliminar"></button>
                             </div>
                         </td>
                     </tr>
                 </ng-template>
 
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="6" class="text-center py-4">No hay clientes registrados</td></tr>
+                    <tr><td colspan="5" class="clients-empty">Sin clientes registrados</td></tr>
                 </ng-template>
             </p-table>
-            </section>
 
-            <p-dialog [header]="clienteSeleccionado ? 'Editar Cliente' : 'Nuevo Cliente'"
-                      [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '600px'}"
+            <p-dialog [header]="clienteSeleccionado ? 'Editar cliente' : 'Nuevo cliente'"
+                      [(visible)]="mostrarDialogo" [modal]="true" [style]="{width: '560px'}"
                       [closable]="!guardando()" [closeOnEscape]="!guardando()">
                 <form [formGroup]="formulario" class="grid gap-4">
                     <div>
-                        <label class="block font-medium mb-1">Nombre Completo *</label>
+                        <label class="block font-medium mb-1">Nombre completo *</label>
+                        <small class="mb-2 block text-slate-500">Captura primero lo esencial para no frenar la operación.</small>
                         <input pInputText formControlName="full_name" class="w-full"
                                [class.ng-invalid]="formulario.get('full_name')?.invalid && formulario.get('full_name')?.touched">
                     </div>
-
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block font-medium mb-1">Email</label>
                             <input pInputText formControlName="email" type="email" class="w-full"
                                    [class.ng-invalid]="formulario.get('email')?.invalid && formulario.get('email')?.touched">
-                            <small *ngIf="formulario.get('email')?.invalid && formulario.get('email')?.touched"
-                                   class="text-red-500 block mt-1">
-                                Ingresa un correo válido.
-                            </small>
+                            <small *ngIf="formulario.get('email')?.invalid && formulario.get('email')?.touched" class="text-red-500 block mt-1">Correo invalido.</small>
                         </div>
                         <div>
-                            <label class="block font-medium mb-1">Teléfono</label>
+                            <label class="block font-medium mb-1">Telefono</label>
                             <input pInputText formControlName="phone" class="w-full">
                         </div>
                     </div>
-
-                    <small *ngIf="formulario.errors?.['contactRequired'] && (formulario.get('email')?.touched || formulario.get('phone')?.touched)"
-                           class="text-red-500 block -mt-2">
-                        Debes proporcionar al menos un medio de contacto: correo o teléfono.
-                    </small>
-
+                    <small *ngIf="formulario.errors?.['contactRequired'] && (formulario.get('email')?.touched || formulario.get('phone')?.touched)" class="text-red-500 block -mt-2">Ingresa correo o telefono.</small>
                     <div>
-                        <label class="block font-medium mb-1">Dirección</label>
+                        <label class="block font-medium mb-1">Direccion</label>
                         <input pInputText formControlName="address" class="w-full">
                     </div>
-
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block font-medium mb-1">Fecha de Nacimiento</label>
-                            <p-datepicker formControlName="birthday" dateFormat="dd/mm/yy" appendTo="body"
-                                        class="w-full" [showClear]="true" [maxDate]="todayDate">
-                            </p-datepicker>
+                            <label class="block font-medium mb-1">Cumpleanos</label>
+                            <p-datepicker formControlName="birthday" dateFormat="dd/mm/yy" appendTo="body" class="w-full" [showClear]="true" [maxDate]="todayDate"></p-datepicker>
                         </div>
                         <div>
-                            <label class="block font-medium mb-1">Género</label>
-                            <p-select formControlName="gender" [options]="generoOptions" appendTo="body"
-                                      optionLabel="label" optionValue="value"
-                                      placeholder="Seleccionar género" class="w-full">
-                            </p-select>
+                            <label class="block font-medium mb-1">Genero</label>
+                            <p-select formControlName="gender" [options]="generoOptions" appendTo="body" optionLabel="label" optionValue="value" placeholder="Seleccionar" class="w-full"></p-select>
                         </div>
                     </div>
-
                     <div>
                         <label class="block font-medium mb-1">Notas</label>
-                        <textarea pInputTextarea formControlName="notes" class="w-full" rows="3"
-                                  placeholder="Notas adicionales sobre el cliente..."></textarea>
+                        <textarea pInputTextarea formControlName="notes" class="w-full" rows="2" placeholder="Notas adicionales..."></textarea>
                     </div>
-
-                    <div class="flex items-center">
+                    <div class="flex items-center gap-2">
                         <p-checkbox formControlName="is_active" [binary]="true" inputId="activo"></p-checkbox>
-                        <label for="activo" class="ml-2 font-medium">Cliente Activo</label>
+                        <label for="activo" class="font-medium">Cliente activo</label>
                     </div>
-
-                    <div class="flex justify-end gap-2 mt-4">
-                        <button pButton label="Cancelar" type="button" class="p-button-text"
-                                (click)="cerrarDialogo()" [disabled]="guardando()"></button>
-                        <button pButton [label]="clienteSeleccionado ? 'Actualizar' : 'Crear'"
-                                type="button" icon="pi pi-check" [loading]="guardando()"
-                                [disabled]="formulario.invalid" (click)="guardarCliente()"></button>
+                    <div class="flex justify-end gap-2 mt-2">
+                        <button pButton label="Cancelar" type="button" class="p-button-text" (click)="cerrarDialogo()" [disabled]="guardando()"></button>
+                        <button pButton [label]="clienteSeleccionado ? 'Actualizar' : 'Crear'" type="button" icon="pi pi-check" [loading]="guardando()" [disabled]="formulario.invalid" (click)="guardarCliente()"></button>
                     </div>
                 </form>
             </p-dialog>
@@ -262,6 +173,94 @@ import { ClientDto, CreateClientDto, UpdateClientDto } from '../../../core/dto/c
 
         <p-confirmDialog></p-confirmDialog>
         <p-toast></p-toast>
+
+        <style>
+        .clients-shell { display: flex; flex-direction: column; gap: 0.75rem; }
+
+        .clients-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+            gap: 1rem;
+            padding: 1rem 1.1rem;
+            border: 1px solid var(--surface-border);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--surface-card) 82%, #ffffff 18%) 0%, color-mix(in srgb, var(--surface-card) 90%, #dbeafe 10%) 100%);
+            border-radius: 1rem;
+        }
+
+        .clients-hero__eyebrow {
+            display: inline-flex;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            background: var(--surface-100);
+            color: var(--text-color-secondary);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .clients-hero h2 {
+            margin: 0.5rem 0 0.65rem;
+            font-size: 1.85rem;
+            line-height: 1.03;
+            color: var(--text-color);
+        }
+
+        .clients-hero p {
+            margin: 0;
+            max-width: 40rem;
+            color: var(--text-color-secondary);
+            line-height: 1.55;
+        }
+
+        .clients-hero__panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            padding: 1rem;
+            border-radius: 1rem;
+            background: #0f172a;
+            color: #e2e8f0;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+        }
+
+        .clients-hero__label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: #94a3b8;
+        }
+
+        .clients-toolbar {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--surface-border);
+            background: var(--surface-card);
+            border-radius: 0.75rem;
+        }
+
+        .clients-toolbar__left, .clients-toolbar__right { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
+        .clients-toolbar__count { font-size: 0.85rem; color: var(--text-color-secondary); }
+        .clients-search { height: 2.25rem; font-size: 0.88rem; }
+        .clients-toolbar__hint { font-size: 0.8rem; color: var(--text-color-secondary); }
+
+        .client-name { display: flex; flex-direction: column; gap: 0.1rem; }
+        .client-name strong { font-size: 0.92rem; }
+        .client-notes { font-size: 0.78rem; color: var(--text-color-secondary); font-style: italic; }
+
+        .client-contact { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.82rem; color: var(--text-color-secondary); }
+        .client-contact span { display: flex; align-items: center; gap: 0.35rem; }
+
+        .client-bday { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; }
+        .client-actions { display: flex; gap: 0.25rem; }
+
+        .clients-empty { text-align: center; padding: 2rem; color: var(--text-color-secondary); font-size: 0.9rem; }
+
+        @media (max-width: 860px) {
+            .clients-hero { grid-template-columns: 1fr; }
+        }
+        </style>
     `
 })
 export class ClientsManagement implements OnInit {
@@ -271,11 +270,13 @@ export class ClientsManagement implements OnInit {
     private fb = inject(FormBuilder);
 
     clientes = signal<ClientDto[]>([]);
+    clientesVisibles = signal<ClientDto[]>([]);
     cargando = signal(false);
     guardando = signal(false);
     mostrarDialogo = false;
     clienteSeleccionado: ClientDto | null = null;
     todayDate = new Date();
+    textoBusqueda = '';
 
     getActiveClientsCount(): number {
         return this.clientes().filter((client) => client.is_active).length;
@@ -350,6 +351,7 @@ export class ClientsManagement implements OnInit {
             const clientesNormalizados = clientes.map((cliente: any) => this.mapBackendToClientDto(cliente));
             
             this.clientes.set(clientesNormalizados);
+            this.aplicarBusqueda();
 
         } catch (error) {
             if (!environment.production) {
@@ -497,6 +499,22 @@ export class ClientsManagement implements OnInit {
         this.mostrarDialogo = false;
         this.clienteSeleccionado = null;
         this.formulario.reset();
+    }
+
+    aplicarBusqueda(): void {
+        const termino = this.textoBusqueda.trim().toLowerCase();
+        if (!termino) {
+            this.clientesVisibles.set(this.clientes());
+            return;
+        }
+
+        this.clientesVisibles.set(
+            this.clientes().filter((cliente) =>
+                [cliente.full_name, cliente.email, cliente.phone]
+                    .filter(Boolean)
+                    .some((value) => String(value).toLowerCase().includes(termino))
+            )
+        );
     }
 
     private contactRequiredValidator(control: AbstractControl): ValidationErrors | null {

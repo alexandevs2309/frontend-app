@@ -1,13 +1,13 @@
 import { Routes } from '@angular/router';
 import { AppLayout } from '../layout/component/app.layout';
-import { AuthGuard, RoleGuard } from '../core/guards';
+import { AuthGuard, FeatureAccessGuard, RoleGuard } from '../core/guards';
 import { TrialGuard } from '../core/guards/trial.guard';
 
 export const clientRoutes: Routes = [
     {
-        path: 'client',
+        path: '',
         canActivate: [AuthGuard, RoleGuard],
-        data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
+        data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager', 'Utility'] },
         component: AppLayout,
         children: [
             {
@@ -44,12 +44,12 @@ export const clientRoutes: Routes = [
                 path: 'appointments',
                 canActivate: [TrialGuard, RoleGuard],
                 data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
-                loadComponent: () => import('../pages/client/appointments-management/appointments-main').then(m => m.AppointmentsMain)
+                loadChildren: () => import('../pages/client/appointments-management/appointments.routes').then(m => m.APPOINTMENTS_ROUTES)
             },
             {
                 path: 'pos',
-                canActivate: [TrialGuard, RoleGuard],
-                data: { roles: ['CLIENT_ADMIN', 'Cajera', 'Manager'] },
+                canActivate: [TrialGuard, RoleGuard, FeatureAccessGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Cajera', 'Manager'], requiredFeature: 'cash_register' },
                 loadComponent: () => import('../pages/client/pos/pos-system').then(m => m.PosSystem)
             },
             {
@@ -72,8 +72,8 @@ export const clientRoutes: Routes = [
             },
             {
                 path: 'products',
-                canActivate: [TrialGuard, RoleGuard],
-                data: { roles: ['CLIENT_ADMIN', 'Cajera', 'Manager'] },
+                canActivate: [TrialGuard, RoleGuard, FeatureAccessGuard],
+                data: { roles: ['CLIENT_ADMIN', 'Cajera', 'Manager'], requiredFeature: 'inventory' },
                 loadComponent: () => import('../pages/client/products/products-management').then(m => m.ProductsManagement)
             },
             {
@@ -91,19 +91,19 @@ export const clientRoutes: Routes = [
             {
                 path: 'profile',
                 canActivate: [RoleGuard],
-                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
+                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager', 'Utility'] },
                 loadComponent: () => import('../pages/client/profile/user-profile.component').then(m => m.UserProfileComponent)
             },
             {
                 path: 'change-password',
                 canActivate: [RoleGuard],
-                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
+                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager', 'Utility'] },
                 loadComponent: () => import('../pages/client/profile/change-password.component').then(m => m.ChangePasswordComponent)
             },
             {
                 path: 'help',
                 canActivate: [RoleGuard],
-                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager'] },
+                data: { roles: ['CLIENT_ADMIN', 'CLIENT_STAFF', 'Cajera', 'Estilista', 'Manager', 'Utility'] },
                 loadComponent: () => import('../pages/client/profile/help.component').then(m => m.HelpComponent)
             },
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' }

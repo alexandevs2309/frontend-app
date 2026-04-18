@@ -5,7 +5,7 @@ import { SuperAdminGuard } from '../core/guards/super-admin.guard';
 
 export const adminRoutes: Routes = [
     {
-        path: 'admin',
+        path: '',
         canActivate: [AuthGuard, SuperAdminGuard],
         canActivateChild: [AuthGuard, SuperAdminGuard],
         data: { roles: ['SUPER_ADMIN'] },

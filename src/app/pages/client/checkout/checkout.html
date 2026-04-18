@@ -1,110 +1,235 @@
-<div class="checkout-container">
-      <div class="checkout-header">
-        <h1>Finalizar Pago</h1>
-        <p>Completa tu información de pago para activar tu suscripción</p>
+<div class="checkout-shell">
+
+  <div class="checkout-header">
+    <div>
+      <span class="checkout-header__eyebrow">Checkout operativo</span>
+      <h1>Confirma el total y cobra</h1>
+      <p>La pantalla gira alrededor del monto, la tarjeta y la acción de completar el pago sin pasos extra.</p>
+    </div>
+  </div>
+
+  @if (!selectedPlan) {
+    <div class="checkout-loading">
+      <i class="pi pi-spin pi-spinner"></i> Cargando plan...
+    </div>
+  }
+
+  @if (selectedPlan) {
+    <div class="checkout-summary">
+      <div class="checkout-summary__plan">
+        <span class="checkout-summary__label">Plan</span>
+        <strong>{{ selectedPlan.get_name_display || selectedPlan.name }}</strong>
       </div>
-
-      @if (!selectedPlan) {
-        <div class="text-center p-4">
-          <i class="pi pi-spinner pi-spin" style="font-size: 2rem"></i>
-          <p>Cargando información del plan...</p>
-        </div>
-      }
-
-      @if (selectedPlan) {
-        <div class="checkout-content">
-          <div class="plan-summary">
-            <h3>Resumen del Plan</h3>
-            <div class="plan-details">
-              <div class="plan-name">{{ selectedPlan.get_name_display || selectedPlan.name }}</div>
-              <div class="plan-price">${{ selectedPlan.price }}/mes</div>
-            </div>
-            <div class="form-group">
-              <label for="months">Meses a pagar por adelantado</label>
-              <select id="months" class="w-full p-2 border-round border-1 surface-border" [(ngModel)]="selectedMonths" name="selectedMonths" [disabled]="enableAutoRenew">
-                @for (option of monthOptions; track option) {
-                  <option [ngValue]="option">{{ option }} mes(es)</option>
-                }
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="flex align-items-center gap-2">
-                <input type="checkbox" [(ngModel)]="enableAutoRenew" name="enableAutoRenew" />
-                Activar cobro automático mensual con Stripe
-              </label>
-            </div>
-            <div class="plan-details">
-              <div class="plan-name">Total</div>
-              <div class="plan-price">${{ getTotalAmount() }}</div>
-            </div>
-            <div class="plan-features">
-              @for (feature of selectedPlan.features; track feature) {
-                <div class="feature-item">
-                  <i class="pi pi-check text-green-500"></i>
-                  {{ feature }}
-                </div>
-              }
-            </div>
-          </div>
-
-          <div class="payment-form">
-            <h3>Información de Pago</h3>
-            <div class="form-group">
-              <label>Tarjeta</label>
-              <div class="stripe-card-shell" [class.stripe-card-shell--error]="!!cardError">
-                <div #cardElementHost></div>
-              </div>
-              @if (cardError) {
-                <small class="text-red-500 block mt-2">{{ cardError }}</small>
-              }
-              <div class="payment-helper">
-                Stripe procesa y tokeniza la tarjeta. Auron-Suite no almacena los datos completos en el frontend.
-              </div>
-            </div>
-
-            <div class="payment-note">
-              @if (enableAutoRenew) {
-                Al activar cobro automático, Stripe guardará este método de pago para renovar tu suscripción cada mes.
-              } @else {
-                Este pago cubre el período seleccionado por adelantado y no activa renovaciones automáticas.
-              }
-            </div>
-
-            <div class="payment-actions">
-              <button
-                pButton
-                type="button"
-                label="Cancelar"
-                class="p-button-outlined"
-                (click)="goBack()">
-              </button>
-              <button
-                pButton
-                type="button"
-                label="Pagar ${{ getTotalAmount() }}"
-                class="p-button-success"
-                [loading]="processing"
-                [disabled]="processing || stripeLoading || !stripeReady"
-                (click)="processPayment()">
-              </button>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Security Info -->
-      <div class="security-info">
-        <div class="security-item">
-          <i class="pi pi-shield text-green-500"></i>
-          <span>Pago seguro con encriptación SSL</span>
-        </div>
-        <div class="security-item">
-          <i class="pi pi-lock text-blue-500"></i>
-          <span>Información protegida según PCI DSS</span>
-        </div>
-        <div class="security-item">
-          <i class="pi pi-refresh text-orange-500"></i>
-          <span>Cancela en cualquier momento</span>
-        </div>
+      <div class="checkout-summary__price">
+        <strong>${{ getTotalAmount() }}</strong>
+        <span>{{ enableAutoRenew ? 'mensual automático' : (selectedMonths + ' mes' + (selectedMonths > 1 ? 'es' : '')) }}</span>
       </div>
     </div>
+
+    <div class="checkout-total-panel">
+      <span class="checkout-total-panel__label">Total a cobrar</span>
+      <strong class="checkout-total-panel__amount">${{ getTotalAmount() }}</strong>
+      <div class="checkout-total-panel__note">
+        {{ enableAutoRenew ? 'Se procesa el primer mes y queda activo el cobro automático.' : 'Pago único por el período seleccionado.' }}
+      </div>
+    </div>
+
+    <div class="checkout-options">
+      <div class="checkout-options__months">
+        <label>Meses</label>
+        <div class="checkout-months-grid">
+          <button *ngFor="let m of monthOptions" type="button"
+            class="checkout-month-btn" [class.is-active]="selectedMonths === m && !enableAutoRenew"
+            [disabled]="enableAutoRenew" (click)="selectedMonths = m">
+            {{ m }}
+          </button>
+        </div>
+      </div>
+      <label class="checkout-autorenew">
+        <input type="checkbox" [(ngModel)]="enableAutoRenew" name="enableAutoRenew">
+        <span>Cobro automático mensual</span>
+      </label>
+    </div>
+
+    <div class="checkout-card-section">
+      <label class="checkout-card-label">Tarjeta</label>
+      <div class="checkout-card-host" [class.checkout-card-host--error]="!!cardError">
+        <div #cardElementHost></div>
+      </div>
+      @if (stripeLoading) {
+        <div class="checkout-stripe-loading"><i class="pi pi-spin pi-spinner"></i> Cargando Stripe...</div>
+      }
+      @if (cardError) {
+        <small class="checkout-card-error">{{ cardError }}</small>
+      }
+    </div>
+
+    <div class="checkout-actions">
+      <button pButton type="button" label="Volver" class="p-button-text" (click)="goBack()"></button>
+      <button pButton type="button"
+        [label]="processing ? 'Procesando...' : 'Cobrar $' + getTotalAmount()"
+        class="p-button-success checkout-pay-btn"
+        [loading]="processing"
+        [disabled]="processing || stripeLoading || !stripeReady"
+        (click)="processPayment()">
+      </button>
+    </div>
+
+    <div class="checkout-trust">
+      <span><i class="pi pi-shield"></i> SSL</span>
+      <span><i class="pi pi-lock"></i> PCI DSS</span>
+      <span><i class="pi pi-refresh"></i> Cancela cuando quieras</span>
+    </div>
+  }
+
+</div>
+
+<style>
+.checkout-shell {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.checkout-header h1 {
+  margin: 0.45rem 0 0.6rem;
+  font-size: clamp(2rem, 6vw, 3.35rem);
+  line-height: 0.96;
+  color: var(--text-color);
+}
+
+.checkout-header p {
+  margin: 0;
+  color: var(--text-color-secondary);
+  line-height: 1.55;
+}
+
+.checkout-header__eyebrow {
+  display: inline-flex;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--surface-100);
+  color: var(--text-color-secondary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.checkout-loading {
+  display: flex; align-items: center; gap: 0.5rem;
+  justify-content: center; padding: 3rem;
+  color: var(--text-color-secondary);
+}
+
+.checkout-summary {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: #111827; color: #fff;
+  border-radius: 0.85rem;
+}
+
+.checkout-summary__plan { display: flex; flex-direction: column; gap: 0.15rem; }
+.checkout-summary__label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.55); }
+.checkout-summary__plan strong { font-size: 1rem; font-weight: 700; }
+
+.checkout-summary__price { text-align: right; }
+.checkout-summary__price strong { display: block; font-size: 1.9rem; font-weight: 800; font-family: 'Courier New', monospace; }
+.checkout-summary__price span { font-size: 0.78rem; color: rgba(255,255,255,0.6); }
+
+.checkout-total-panel {
+  padding: 1rem 1.2rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #f8fafc;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.checkout-total-panel__label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #94a3b8;
+}
+
+.checkout-total-panel__amount {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: clamp(3rem, 8vw, 4.8rem);
+  line-height: 0.92;
+  font-weight: 900;
+  font-family: 'Courier New', monospace;
+}
+
+.checkout-total-panel__note {
+  margin-top: 0.6rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+.checkout-options {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+  border-radius: 0.75rem;
+}
+
+.checkout-options__months { display: flex; align-items: center; gap: 0.5rem; }
+.checkout-options__months label { font-size: 0.82rem; font-weight: 600; color: var(--text-color-secondary); }
+
+.checkout-months-grid { display: flex; gap: 0.35rem; }
+.checkout-month-btn {
+  width: 2.2rem; height: 2.2rem;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-ground);
+  border-radius: 6px;
+  font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: all 120ms;
+  color: var(--text-color);
+}
+.checkout-month-btn.is-active { background: #111827; color: #fff; border-color: #111827; }
+.checkout-month-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.checkout-autorenew { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; cursor: pointer; color: var(--text-color); }
+
+.checkout-card-section {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+  border-radius: 0.75rem;
+}
+
+.checkout-card-label { font-size: 0.82rem; font-weight: 600; color: var(--text-color-secondary); }
+
+.checkout-card-host {
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 0.85rem;
+  min-height: 48px;
+  background: var(--surface-ground);
+}
+
+.checkout-card-host--error { border-color: #ef4444; }
+.checkout-card-error { color: #ef4444; font-size: 0.82rem; }
+.checkout-stripe-loading { font-size: 0.82rem; color: var(--text-color-secondary); display: flex; align-items: center; gap: 0.4rem; }
+
+.checkout-actions {
+  display: flex; gap: 0.75rem;
+}
+
+.checkout-pay-btn { flex: 1; height: 3rem; font-size: 1rem; font-weight: 700; }
+
+.checkout-trust {
+  display: flex; justify-content: center; gap: 1.25rem;
+  font-size: 0.78rem; color: var(--text-color-secondary);
+}
+.checkout-trust span { display: flex; align-items: center; gap: 0.3rem; }
+</style>

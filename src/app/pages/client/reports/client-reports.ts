@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
-import { ChartModule } from 'primeng/chart';
 import { DatePickerModule } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
@@ -15,6 +14,7 @@ import { DashboardService } from '../../../core/services/dashboard/dashboard.ser
 import { TenantService } from '../../../core/services/tenant/tenant.service';
 import { SettingsService } from '../../../core/services/settings/settings.service';
 import { environment } from '../../../../environments/environment';
+import { ClientRevenueChartComponent } from './components/client-revenue-chart.component';
 
 @Component({
     selector: 'app-client-reports',
@@ -23,14 +23,14 @@ import { environment } from '../../../../environments/environment';
         CommonModule,
         ReactiveFormsModule,
         CardModule,
-        ChartModule,
         DatePickerModule,
         SelectModule,
         ButtonModule,
         TableModule,
         TagModule,
         ProgressBarModule,
-        ToastModule
+        ToastModule,
+        ClientRevenueChartComponent
     ],
     providers: [MessageService],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -136,7 +136,11 @@ import { environment } from '../../../../environments/environment';
 
         @if (filteredRevenue().length > 0) {
           <div class="h-[22rem]">
-            <p-chart type="line" [data]="chartIngresos" [options]="chartOptions"></p-chart>
+            @defer (on viewport) {
+              <app-client-revenue-chart [data]="chartIngresos" [options]="chartOptions"></app-client-revenue-chart>
+            } @placeholder {
+              <div class="h-[22rem] animate-pulse rounded-2xl bg-surface-100 dark:bg-surface-800"></div>
+            }
           </div>
         } @else {
           <div class="flex h-[22rem] items-center justify-center rounded-2xl border border-dashed border-slate-300 text-slate-500 dark:border-slate-700 dark:text-slate-400">

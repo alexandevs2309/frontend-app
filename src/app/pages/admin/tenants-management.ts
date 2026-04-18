@@ -38,7 +38,6 @@ interface Tenant {
     trial_end_date?: string;
     billing_info?: any;
     settings?: any;
-    max_employees?: number;
     max_users?: number;
     branches_count?: number;
     is_active?: boolean;
@@ -182,7 +181,7 @@ interface Tenant {
                         <p-tag [value]="tenant.branches_count || 1" severity="info" />
                     </td>
                     <td>
-                        <small>Users: {{ tenant.max_users || 0 }}<br>Emp: {{ tenant.max_employees || 0 }}</small>
+                        <small>Usuarios activos: {{ tenant.max_users || 0 }}</small>
                     </td>
                     <td>
                         <p-tag [value]="tenant.is_active ? 'Sí' : 'No'" [severity]="tenant.is_active ? 'success' : 'danger'" />
