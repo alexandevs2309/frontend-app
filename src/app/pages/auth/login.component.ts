@@ -1,7 +1,7 @@
 import { Component, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputOtpModule } from 'primeng/inputotp';
@@ -45,11 +45,13 @@ export class Login implements OnInit {
     pendingMfaEmail: string | null = null;
     pendingMfaTenantSubdomain: string | null = null;
     public readonly isDarkTheme = computed(() => this.layoutService.layoutConfig().darkTheme);
+    private readonly tenantStorageKey = 'tenant_subdomain';
 
     constructor(
         private fb: FormBuilder,
         private authService: AuthService,
         public appConfig: AppConfigService,
+        private route: ActivatedRoute,
         private router: Router,
         private messageService: MessageService,
         private localeService: LocaleService,
@@ -67,6 +69,7 @@ export class Login implements OnInit {
 
         this.loginForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]],
+            tenant: [this.getInitialTenant()],
             password: ['', Validators.required],
             mfaCode: [''],
             rememberMe: [false]
@@ -81,6 +84,8 @@ export class Login implements OnInit {
                 rememberMe: true
             });
         }
+
+        this.persistTenantFromQueryParams();
     }
 
     get email() {
@@ -89,6 +94,10 @@ export class Login implements OnInit {
 
     get password() {
         return this.loginForm.get('password')!;
+    }
+
+    get tenant() {
+        return this.loginForm.get('tenant')!;
     }
 
     get mfaCode(): FormControl {
@@ -118,11 +127,18 @@ export class Login implements OnInit {
             return;
         }
 
-        const { email, password, rememberMe } = this.loginForm.value;
+        const { email, password, tenant } = this.loginForm.value;
         const normalizedEmail = (email || '').trim().toLowerCase();
+        const normalizedTenant = (tenant || '').trim().toLowerCase();
+        this.persistTenant(normalizedTenant);
         this.isLoading = true;
 
-        this.authService.loginSecure({ email: normalizedEmail, password }).subscribe({
+        this.authService.loginSecure({
+            email: normalizedEmail,
+            password,
+            tenant: normalizedTenant || undefined,
+            tenant_subdomain: normalizedTenant || undefined
+        }).subscribe({
             next: (response: LoginResponse | any) => {
                 this.isLoading = false;
 
@@ -171,9 +187,11 @@ export class Login implements OnInit {
 
     private syncAutofilledCredentials(): void {
         const emailInput = document.getElementById('email1') as HTMLInputElement | null;
+        const tenantInput = document.getElementById('tenant1') as HTMLInputElement | null;
         const passwordInput = document.getElementById('password1') as HTMLInputElement | null;
 
         const emailValue = emailInput?.value?.trim() ?? '';
+        const tenantValue = tenantInput?.value?.trim() ?? '';
         const passwordValue = passwordInput?.value ?? '';
 
         if (emailValue && emailValue !== this.email.value) {
@@ -182,6 +200,31 @@ export class Login implements OnInit {
 
         if (passwordValue && passwordValue !== this.password.value) {
             this.password.setValue(passwordValue);
+        }
+
+        if (tenantValue && tenantValue !== this.tenant.value) {
+            this.tenant.setValue(tenantValue);
+        }
+    }
+
+    private getInitialTenant(): string {
+        const queryTenant = this.route?.snapshot?.queryParamMap?.get('tenant')
+            || this.route?.snapshot?.queryParamMap?.get('tenant_subdomain')
+            || this.route?.snapshot?.queryParamMap?.get('subdomain');
+        return (queryTenant || localStorage.getItem(this.tenantStorageKey) || '').trim().toLowerCase();
+    }
+
+    private persistTenantFromQueryParams(): void {
+        const queryTenant = this.getInitialTenant();
+        if (queryTenant) {
+            this.tenant.setValue(queryTenant);
+            this.persistTenant(queryTenant);
+        }
+    }
+
+    private persistTenant(tenant: string): void {
+        if (tenant) {
+            localStorage.setItem(this.tenantStorageKey, tenant);
         }
     }
 

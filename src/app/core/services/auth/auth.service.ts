@@ -11,6 +11,8 @@ import { normalizeRole } from '../../utils/role-normalizer';
 export interface LoginRequest {
   email: string;
   password: string;
+  tenant?: string;
+  tenant_subdomain?: string;
 }
 
 export interface LoginResponse {
@@ -94,7 +96,6 @@ export class AuthService extends BaseApiService {
   }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    // ✅ Backend detecta tenant automáticamente por email
     return this.post<LoginResponse>('/auth/cookie-login/', credentials, { withCredentials: true })
       .pipe(
         tap(response => {

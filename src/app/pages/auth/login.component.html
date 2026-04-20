@@ -71,6 +71,26 @@
             </div>
 
             <div class="space-y-3">
+              <label for="tenant1" class="block text-sm font-semibold text-surface-700 dark:text-surface-300">Subdominio del negocio</label>
+              <div class="relative">
+                <i class="pi pi-building absolute left-3 top-1/2 transform -translate-y-1/2 text-surface-400"></i>
+                <input
+                  pInputText
+                  id="tenant1"
+                  name="tenant"
+                  type="text"
+                  autocomplete="organization"
+                  placeholder="ejemplo: barberiadeprueb71"
+                  formControlName="tenant"
+                  class="w-full pl-10 h-12 border-2 border-surface-300 focus:border-blue-500 rounded-lg transition-colors backdrop-blur-sm bg-white/50 dark:bg-slate-800/50"
+                />
+              </div>
+              <small class="text-surface-500 dark:text-surface-400">
+                Requerido para cuentas de cliente. SuperAdmin puede dejarlo vacío.
+              </small>
+            </div>
+
+            <div class="space-y-3">
               <label for="password1" class="block text-sm font-semibold text-surface-700 dark:text-surface-300">{{ t('auth.login.password_label') }}</label>
               <p-password
                 inputId="password1"
