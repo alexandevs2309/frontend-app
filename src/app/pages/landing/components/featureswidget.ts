@@ -16,26 +16,26 @@ import { MicroAnimationService } from './micro-animation.service';
                         <div>
                             <div class="inline-flex items-center gap-2 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 px-4 py-2 text-sm font-semibold mb-5">
                                 <i class="pi pi-sparkles"></i>
-                                Operacion centralizada
+                                Software conectado para el negocio
                             </div>
                             <h3 class="text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-4">
                                 Todo el flujo diario del negocio en un solo sistema
                             </h3>
                             <p class="text-lg text-slate-600 dark:text-slate-300 max-w-2xl">
-                                Auron conecta agenda, mostrador, clientes, reportes y seguimiento para que el equipo trabaje con menos friccion y mas claridad.
+                                Auron conecta software para salones, agenda barberia, mostrador, clientes y reportes para que el equipo trabaje con menos friccion y mas claridad.
                             </p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3 min-w-60">
                             <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 p-4">
-                                <div class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2">Agenda</div>
+                                <div class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2">Agenda barberia</div>
                                 <div class="text-2xl font-black text-slate-900 dark:text-white">1 vista</div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">reservas y seguimiento</div>
                             </div>
                             <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 p-4">
-                                <div class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2">Caja</div>
-                                <div class="text-2xl font-black text-slate-900 dark:text-white">POS</div>
-                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">servicios y productos</div>
+                                <div class="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2">POS barberia</div>
+                                <div class="text-2xl font-black text-slate-900 dark:text-white">Caja</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">servicios, productos y cobros</div>
                             </div>
                         </div>
                     </div>
@@ -53,7 +53,7 @@ import { MicroAnimationService } from './micro-animation.service';
                             <div class="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-5">
                                 <i class="pi pi-fw pi-dollar text-2xl! text-emerald-600"></i>
                             </div>
-                            <h4 class="text-xl font-semibold text-slate-900 dark:text-white mb-3">Comisiones y caja más claras</h4>
+                            <h4 class="text-xl font-semibold text-slate-900 dark:text-white mb-3">Comisiones y caja mas claras</h4>
                             <p class="text-slate-600 dark:text-slate-300 mb-4">Menos cierres manuales, menos cuentas por fuera del sistema y mejor control sobre lo que produce cada empleado.</p>
                             <div class="text-emerald-600 dark:text-emerald-400 text-sm font-semibold">Menos tiempo en calculos repetitivos</div>
                         </div>
@@ -75,7 +75,7 @@ import { MicroAnimationService } from './micro-animation.service';
                             <i class="pi pi-fw pi-shield text-2xl! text-blue-600"></i>
                         </div>
                         <h4 class="text-xl font-semibold text-slate-900 dark:text-white mb-3">Datos aislados por negocio</h4>
-                        <p class="text-slate-600 dark:text-slate-300 mb-4">Cada tenant opera con su propia informacion para que clientes, ventas y reportes no se mezclen con otros negocios.</p>
+                        <p class="text-slate-600 dark:text-slate-300 mb-4">Cada negocio opera con su propia informacion para que clientes, ventas y reportes no se mezclen con otros negocios.</p>
                         <div class="text-sm text-blue-600 dark:text-blue-400 font-semibold">Control de acceso y operacion separada</div>
                     </div>
 

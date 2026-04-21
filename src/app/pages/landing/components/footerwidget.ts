@@ -43,8 +43,8 @@ import { AppConfigService } from '../../../core/services/app-config.service';
                         <ul class="space-y-4">
                             <li><a (click)="scrollToSection('features')" class="text-slate-300 hover:text-white transition-colors cursor-pointer">Funciones</a></li>
                             <li><a (click)="scrollToSection('pricing')" class="text-slate-300 hover:text-white transition-colors cursor-pointer">Planes</a></li>
-                            <li><a (click)="scrollToSection('testimonials')" class="text-slate-300 hover:text-white transition-colors cursor-pointer">Resultados</a></li>
-                            <li><a routerLink="/auth/register" class="text-slate-300 hover:text-white transition-colors">Empezar prueba</a></li>
+                            <li><a (click)="scrollToSection('testimonials')" class="text-slate-300 hover:text-white transition-colors cursor-pointer">Beneficios</a></li>
+                            <li><a routerLink="/auth/register" class="text-slate-300 hover:text-white transition-colors">Crear cuenta</a></li>
                         </ul>
                     </div>
 
@@ -75,14 +75,14 @@ import { AppConfigService } from '../../../core/services/app-config.service';
                 <div class="relative z-10 bg-linear-to-br from-slate-900 via-slate-900 to-indigo-950 rounded-[2rem] p-8 mb-12 border border-slate-800 shadow-[0_28px_90px_-56px_rgba(15,23,42,0.8)]">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                         <div>
-                            <h4 class="text-2xl font-bold text-white mb-4">¿Quieres evaluar {{ appConfig.platformName() }}?</h4>
+                            <h4 class="text-2xl font-bold text-white mb-4">Lleva tu barberia o salon a una operacion mas ordenada</h4>
                             <p class="text-slate-300">
-                                Si estas revisando opciones para tu negocio, podemos orientarte por email sobre planes, implementacion y alcance actual del sistema.
+                                Si estas buscando un software para barberias y salones que te ayude a vender mejor, ahorrar tiempo y controlar tu operacion, este es el momento para empezar.
                             </p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-4">
                             <a [attr.href]="getSalesContactHref()" class="sm:flex-1">
-                                <button pButton pRipple label="Escribir a ventas" class="w-full bg-indigo-600! text-white! font-semibold! px-6! py-3! hover:bg-indigo-700! border-0!"></button>
+                                <button pButton pRipple label="Hablar con ventas" class="w-full bg-indigo-600! text-white! font-semibold! px-6! py-3! hover:bg-indigo-700! border-0!"></button>
                             </a>
                             <a routerLink="/auth/register" class="sm:flex-1">
                                 <button pButton pRipple label="Crear cuenta" class="w-full bg-slate-700! text-white! font-semibold! px-6! py-3! hover:bg-slate-600! border border-slate-600!"></button>

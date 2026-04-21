@@ -35,19 +35,19 @@ import { LandingPublicService, PublicMetrics } from '../../../core/services/land
 
                         <div class="inline-flex items-center gap-3 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-white/90 text-sm font-semibold mb-6 fade-in-up shadow-lg shadow-indigo-950/20 border border-white/10">
                             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                            SaaS para barberias, salones y operaciones multi-sucursal
+                            Software para barberias, salones y operaciones multi-sucursal
                         </div>
 
-                        <h1 class="text-5xl lg:text-[5.3rem] font-black leading-[0.98] tracking-[-0.055em] text-white mb-6 fade-in-up max-w-[13ch] mx-auto lg:mx-0">
-                            <span class="block text-white">Opera agenda, caja</span>
-                            <span class="block mt-2 text-white">y equipo desde un</span>
-                            <span class="text-sky-300 block">solo centro de control</span>
+                        <h1 class="text-5xl lg:text-[5.3rem] font-black leading-[0.98] tracking-[-0.055em] text-white mb-6 fade-in-up max-w-[14ch] mx-auto lg:mx-0">
+                            <span class="block text-white">Software para</span>
+                            <span class="block mt-2 text-white">barberias y salones</span>
+                            <span class="text-sky-300 block">que ordena tu operacion</span>
                         </h1>
 
                         <p class="text-lg lg:text-[1.24rem] text-white/90 leading-relaxed mb-8 fade-in-up max-w-[38rem] mx-auto lg:mx-0">
-                            Auron unifica reservas, ventas, comisiones, inventario y reportes para que el negocio se vea profesional por fuera y opere con claridad por dentro.
+                            Auron Suite unifica agenda de barberia, POS de barberia, clientes, comisiones e inventario para que atiendas mejor, ahorres tiempo y vendas con mas control.
                             <span class="text-white/75 block mt-3 text-base lg:text-lg">
-                                Ideal para negocios que ya no quieren depender de WhatsApp, hojas de calculo y procesos sueltos.
+                                Ideal para negocios que quieren dejar atras WhatsApp, libretas y cierres manuales sin complicar al equipo.
                             </span>
                         </p>
 
@@ -56,27 +56,27 @@ import { LandingPublicService, PublicMetrics } from '../../../core/services/land
                                 <div class="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mr-3 shrink-0">
                                     <i class="pi pi-check text-white text-xs font-bold"></i>
                                 </div>
-                                <span class="font-medium text-sm lg:text-base">Agenda y recordatorios desde una sola vista</span>
+                                <span class="font-medium text-sm lg:text-base">Agenda para barberia y salon desde una sola vista</span>
                             </div>
                             <div class="flex items-center text-white/90 rounded-2xl border border-white/10 bg-white/6 px-4 py-3">
                                 <div class="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mr-3 shrink-0">
                                     <i class="pi pi-check text-white text-xs font-bold"></i>
                                 </div>
-                                <span class="font-medium text-sm lg:text-base">Caja, POS y comisiones sin procesos manuales</span>
+                                <span class="font-medium text-sm lg:text-base">Caja, POS barberia y comisiones sin procesos manuales</span>
                             </div>
                             <div class="flex items-center text-white/90 rounded-2xl border border-white/10 bg-white/6 px-4 py-3">
                                 <div class="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mr-3 shrink-0">
                                     <i class="pi pi-check text-white text-xs font-bold"></i>
                                 </div>
-                                <span class="font-medium text-sm lg:text-base">Reportes e inventario con más visibilidad y control</span>
+                                <span class="font-medium text-sm lg:text-base">Reportes e inventario para tomar decisiones con mas claridad</span>
                             </div>
                         </div>
 
                         <div class="fade-in-up mb-8">
                             <div class="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                                 <button pButton routerLink="/auth/register" class="bg-white! text-indigo-700! px-8! py-4! text-lg! font-bold! rounded-full! hover:bg-slate-100! shadow-2xl! hover:shadow-3xl! transform! hover:-translate-y-1! transition-all! w-full! sm:w-auto!">
-                                    <span class="block">Empezar prueba</span>
-                                    <span class="block text-sm font-normal opacity-90">Sin configuracion complicada</span>
+                                    <span class="block">Crear cuenta</span>
+                                    <span class="block text-sm font-normal opacity-90">Empieza a ordenar tu negocio hoy</span>
                                 </button>
                                 <button pButton type="button" (click)="openVideoModal()" class="bg-white/8! text-white! border! border-white/15! px-7! py-4! text-base! font-semibold! rounded-full! backdrop-blur-md! hover:bg-white/12! w-full! sm:w-auto!">
                                     <span class="inline-flex items-center gap-2">
@@ -86,7 +86,7 @@ import { LandingPublicService, PublicMetrics } from '../../../core/services/land
                                 </button>
                             </div>
                             <div class="mt-4 text-center sm:text-left text-sm text-white/70">
-                                Implementacion simple, planes claros y operacion lista para crecer.
+                                Menos tiempo en tareas repetitivas y mas visibilidad para crecer con orden.
                             </div>
                         </div>
 

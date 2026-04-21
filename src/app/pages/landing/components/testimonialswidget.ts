@@ -24,13 +24,13 @@ interface Testimonial {
             <div class="max-w-[92rem] mx-auto px-6 lg:px-8">
                 <div class="text-center mb-20">
                     <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 mb-4">
-                        Escenarios ideales
+                        Donde encaja mejor
                     </div>
                     <h2 class="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-6">
-                        Donde <span class="text-indigo-600">Auron aporta mas valor</span>
+                        Resultados y <span class="text-indigo-600">beneficios por tipo de negocio</span>
                     </h2>
                     <p class="text-lg text-slate-600 dark:text-slate-300 max-w-4xl mx-auto">
-                        En vez de vender humo, aqui te mostramos los escenarios donde la plataforma suele aportar mas valor operativo hoy.
+                        Asi se traduce el sistema en beneficios concretos para distintos tipos de barberias y salones.
                     </p>
                 </div>
 
