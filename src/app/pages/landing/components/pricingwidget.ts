@@ -26,7 +26,8 @@ export class PricingWidget implements OnInit, OnDestroy {
 
     ngOnInit() {
         this.landingService.getPlans().subscribe((plans) => {
-            this.plans = plans;
+            // Filtrar planes gratuitos - solo mostrar planes pagos con trial incluido
+            this.plans = plans.filter(plan => plan.name !== 'free' && plan.name !== 'trial');
         });
     }
 
@@ -41,7 +42,6 @@ export class PricingWidget implements OnInit, OnDestroy {
 
     getPlanButtonText(name: string): string {
         const texts: { [key: string]: string } = {
-            free: 'Comenzar Gratis',
             basic: 'Elegir Plan',
             standard: 'Elegir Plan',
             premium: 'Elegir Plan',
@@ -64,18 +64,16 @@ export class PricingWidget implements OnInit, OnDestroy {
 
     getPlanDescription(name: string): string {
         const descriptions: { [key: string]: string } = {
-            free: 'Prueba sin compromiso',
-            basic: 'Para equipos pequenos',
-            standard: 'Para negocios en crecimiento',
-            premium: 'Para operaciones de mayor escala',
-            enterprise: 'Para cadenas grandes'
+            basic: 'Para equipos pequeños - incluye 7 días de prueba gratis',
+            standard: 'Para negocios en crecimiento - incluye 7 días de prueba gratis',
+            premium: 'Para operaciones de mayor escala - incluye 7 días de prueba gratis',
+            enterprise: 'Para cadenas grandes - incluye 7 días de prueba gratis'
         };
-        return descriptions[name] || 'Plan personalizado';
+        return descriptions[name] || 'Plan personalizado - incluye 7 días de prueba gratis';
     }
 
     getPlanIcon(name: string): string {
         const icons: { [key: string]: string } = {
-            free: 'pi pi-gift',
             basic: 'pi pi-home',
             standard: 'pi pi-star',
             premium: 'pi pi-crown',
