@@ -23,12 +23,15 @@ export function getSubscriptionPlanLabel(...candidates: Array<unknown>): string 
 function normalizeCommercialPlanName(value: string): string | null {
     const key = value.trim().toLowerCase();
     const map: Record<string, string> = {
-        basic: 'Professional',
-        standard: 'Business',
-        premium: 'Premium',
+        basic: 'Esencial',
+        standard: 'Crecimiento',
+        premium: 'Escala',
         enterprise: 'Enterprise',
-        professional: 'Professional',
-        business: 'Business'
+        professional: 'Esencial',
+        business: 'Crecimiento',
+        esencial: 'Esencial',
+        crecimiento: 'Crecimiento',
+        escala: 'Escala'
     };
 
     return map[key] || null;

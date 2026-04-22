@@ -72,7 +72,7 @@ import { AppConfigService } from '../../../core/services/app-config.service';
                     </div>
                 </div>
 
-                <div class="relative z-10 bg-linear-to-br from-slate-900 via-slate-900 to-indigo-950 rounded-[2rem] p-8 mb-12 border border-slate-800 shadow-[0_28px_90px_-56px_rgba(15,23,42,0.8)]">
+                <div class="relative z-10 bg-linear-to-br from-slate-900 via-slate-900 to-indigo-950 rounded-4xl p-8 mb-12 border border-slate-800 shadow-[0_28px_90px_-56px_rgba(15,23,42,0.8)]">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                         <div>
                             <h4 class="text-2xl font-bold text-white mb-4">Lleva tu barberia o salon a una operacion mas ordenada</h4>

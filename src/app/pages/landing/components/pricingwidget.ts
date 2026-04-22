@@ -26,7 +26,7 @@ export class PricingWidget implements OnInit, OnDestroy {
 
     ngOnInit() {
         this.landingService.getPlans().subscribe((plans) => {
-            // Filtrar planes gratuitos - solo mostrar planes pagos con trial incluido
+            // Mostrar solo planes pagos. El trial se comunica aparte para evitar competir con la oferta principal.
             this.plans = plans.filter(plan => plan.name !== 'free' && plan.name !== 'trial');
         });
     }
@@ -64,9 +64,9 @@ export class PricingWidget implements OnInit, OnDestroy {
 
     getPlanDescription(name: string): string {
         const descriptions: { [key: string]: string } = {
-            basic: 'Para equipos pequeños - incluye 7 días de prueba gratis',
-            standard: 'Para negocios en crecimiento - incluye 7 días de prueba gratis',
-            premium: 'Para operaciones de mayor escala - incluye 7 días de prueba gratis',
+            basic: 'Para barberias pequenas que quieren operar con orden desde el primer mes',
+            standard: 'Para negocios en crecimiento que necesitan mas control y mas visibilidad',
+            premium: 'Para operaciones grandes que necesitan crecer sin topes fijos',
             enterprise: 'Para cadenas grandes - incluye 7 días de prueba gratis'
         };
         return descriptions[name] || 'Plan personalizado - incluye 7 días de prueba gratis';
@@ -74,8 +74,8 @@ export class PricingWidget implements OnInit, OnDestroy {
 
     getPlanIcon(name: string): string {
         const icons: { [key: string]: string } = {
-            basic: 'pi pi-home',
-            standard: 'pi pi-star',
+            basic: 'pi pi-shop',
+            standard: 'pi pi-chart-line',
             premium: 'pi pi-crown',
             enterprise: 'pi pi-building'
         };

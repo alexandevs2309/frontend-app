@@ -102,21 +102,21 @@ export class PlanAccessService {
 
     if (currentPlan === 'basic') {
       return {
-        nextPlanName: 'Business',
+        nextPlanName: 'Crecimiento',
         reason: limitType === 'employees'
           ? 'Necesitas más usuarios activos para seguir sumando personal.'
           : 'Necesitas más capacidad para seguir sumando usuarios internos.',
-        detail: 'Business te lleva a 25 usuarios activos, además de multi-sucursal, inventario y reportes avanzados.'
+        detail: 'Crecimiento te lleva a 25 empleados, ademas de inventario, reportes avanzados y operacion en varias sucursales.'
       };
     }
 
     if (currentPlan === 'standard') {
       return {
-        nextPlanName: 'Premium',
+        nextPlanName: 'Escala',
         reason: limitType === 'employees'
           ? 'Tu operación ya pide más usuarios activos sin topes fijos para seguir creciendo.'
           : 'Tu operación ya pide más usuarios y una capa más premium.',
-        detail: 'Premium te lleva a usuarios activos ilimitados, además de branding y operación sin topes fijos.'
+        detail: 'Escala te lleva a empleados y usuarios ilimitados, ademas de logo personalizado y atencion prioritaria.'
       };
     }
 
@@ -129,25 +129,25 @@ export class PlanAccessService {
     if (featureName === 'inventory' || featureName === 'advanced_reports' || featureName === 'multi_location') {
       if (currentPlan === 'basic') {
         return {
-          nextPlanName: 'Business',
+          nextPlanName: 'Crecimiento',
           reason: 'Tu plan actual no incluye esta funcionalidad operativa.',
-          detail: 'Business habilita inventario, reportes avanzados y operación multi-sucursal.'
+          detail: 'Crecimiento habilita inventario, reportes avanzados y operacion en varias sucursales.'
         };
       }
       if (currentPlan === 'standard') {
         return {
-          nextPlanName: 'Premium',
-          reason: 'Tu operación ya está en Business y esta mejora pide una capa superior.',
-          detail: 'Premium elimina topes de usuarios y añade branding personalizado.'
+          nextPlanName: 'Escala',
+          reason: 'Tu operacion ya esta en Crecimiento y esta mejora pide una capa superior.',
+          detail: 'Escala elimina topes de usuarios y empleados y anade branding personalizado.'
         };
       }
     }
 
     if (featureName === 'custom_branding') {
       return {
-        nextPlanName: 'Premium',
-        reason: 'La personalización de marca está reservada para el plan Premium.',
-        detail: 'Premium habilita logo personalizado y una experiencia más alineada a tu marca.'
+        nextPlanName: 'Escala',
+        reason: 'La personalizacion de marca esta reservada para el plan Escala.',
+        detail: 'Escala habilita logo personalizado y una experiencia mas alineada a tu marca.'
       };
     }
 
@@ -165,15 +165,15 @@ export class PlanAccessService {
 
     const normalized = String(rawPlan).trim().toLowerCase();
 
-    if (['basic', 'professional', 'profesional'].includes(normalized)) {
+    if (['basic', 'professional', 'profesional', 'esencial'].includes(normalized)) {
       return 'basic';
     }
 
-    if (['standard', 'business'].includes(normalized)) {
+    if (['standard', 'business', 'crecimiento'].includes(normalized)) {
       return 'standard';
     }
 
-    if (normalized === 'premium') {
+    if (['premium', 'escala'].includes(normalized)) {
       return 'premium';
     }
 
@@ -187,15 +187,15 @@ export class PlanAccessService {
       return '';
     }
 
-    if (normalized.includes('plan basic') || normalized.includes('professional') || normalized.includes('profesional')) {
+    if (normalized.includes('plan basic') || normalized.includes('professional') || normalized.includes('profesional') || normalized.includes('esencial')) {
       return 'basic';
     }
 
-    if (normalized.includes('plan standard') || normalized.includes('business')) {
+    if (normalized.includes('plan standard') || normalized.includes('business') || normalized.includes('crecimiento')) {
       return 'standard';
     }
 
-    if (normalized.includes('premium')) {
+    if (normalized.includes('premium') || normalized.includes('escala')) {
       return 'premium';
     }
 

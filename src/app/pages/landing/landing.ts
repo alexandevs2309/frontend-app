@@ -43,7 +43,7 @@ import { VideoModal } from './components/video-modal';
 
                 <div class="bg-slate-950 py-20 lg:py-28 relative overflow-hidden" data-section="problem">
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(56,189,248,0.12),transparent_20%),radial-gradient(circle_at_85%_18%,rgba(99,102,241,0.18),transparent_24%)]"></div>
-                    <div class="max-w-[92rem] mx-auto px-6 lg:px-8 relative z-10">
+                    <div class="max-w-368 mx-auto px-6 lg:px-8 relative z-10">
                         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-8 items-start">
                             <div>
                                 <span class="inline-block px-4 py-2 bg-white/8 text-sky-300 rounded-full font-semibold text-sm mb-6 uppercase tracking-wide">El problema</span>
@@ -77,7 +77,7 @@ import { VideoModal } from './components/video-modal';
 
                 <div class="bg-slate-50 dark:bg-slate-900 py-20 lg:py-32 relative overflow-hidden transform -skew-y-2" data-section="features">
                     <div class="relative z-10 transform skew-y-2">
-                        <div class="max-w-[92rem] mx-auto px-6 lg:px-8">
+                        <div class="max-w-368 mx-auto px-6 lg:px-8">
                             <div class="text-center mb-20">
                                 <span class="inline-block px-4 py-2 bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-full font-semibold text-sm mb-6 uppercase tracking-wide">La solucion</span>
                                 <h2 class="text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mb-6">Un software para barberias y salones hecho para vender mas y operar mejor.</h2>

@@ -475,7 +475,11 @@ export class AdminReports implements OnInit {
         const severityMap: { [key: string]: 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' } = {
             'FREE': 'secondary',
             'Basic': 'info',
-            'Professional': 'success',
+            'Professional': 'info',
+            'Esencial': 'info',
+            'Business': 'success',
+            'Crecimiento': 'success',
+            'Escala': 'warn',
             'Enterprise': 'warn'
         };
         return severityMap[plan] || 'info';

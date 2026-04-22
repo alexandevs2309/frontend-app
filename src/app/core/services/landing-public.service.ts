@@ -43,73 +43,72 @@ export class LandingPublicService {
       {
         id: 'basic',
         name: 'basic',
-        displayName: 'Professional',
+        displayName: 'Esencial',
         price: 29.99,
-        description: 'Para barberias pequenas que necesitan operar con orden',
+        description: 'Para barberias pequenas que necesitan ordenar citas, cobros y seguimiento de clientes sin complicarse',
         maxEmployees: 8,
         popular: false,
         highlightFeatures: [
-          '8 usuarios activos',
+          'Hasta 8 empleados',
           '1 sucursal'
         ],
         technicalFeatures: [
-          'Hasta 8 usuarios activos',
-          'Agenda completa',
-          'Caja y ventas',
-          'Historial de clientes',
-          'Reportes basicos',
+          'Agenda de citas organizada',
+          'Caja y ventas en un solo lugar',
+          'Historial completo de clientes',
+          'Reportes basicos del negocio',
           '1 sucursal'
         ],
-        commercialBenefits: []
+        commercialBenefits: [
+          'Ideal para empezar a operar con orden',
+          'Sin limite de tiempo y listo para uso diario'
+        ]
       },
       {
         id: 'standard',
         name: 'standard',
-        displayName: 'Business',
+        displayName: 'Crecimiento',
         price: 69.99,
-        description: 'Para negocios en crecimiento con operacion multi-sucursal',
+        description: 'El plan recomendado para negocios en crecimiento que necesitan mas control, visibilidad y operacion multi-sucursal',
         maxEmployees: 25,
         popular: true,
         highlightFeatures: [
-          '25 usuarios activos',
-          'Multi-sucursal'
+          'Hasta 25 empleados',
+          'Varias sucursales'
         ],
         technicalFeatures: [
-          'Hasta 25 usuarios activos',
-          'Agenda completa',
-          'Caja y ventas',
-          'Historial de clientes',
-          'Inventario',
-          'Reportes basicos y avanzados',
-          'Multiples sucursales'
+          'Todo lo de Esencial',
+          'Control de inventario en tiempo real',
+          'Reportes avanzados para tomar decisiones',
+          'Gestion de multiples sucursales'
         ],
-        commercialBenefits: []
+        commercialBenefits: [
+          'La mejor relacion valor-precio para crecer',
+          'Mas control operativo para equipos y sucursales'
+        ]
       },
       {
         id: 'premium',
         name: 'premium',
-        displayName: 'Premium',
+        displayName: 'Escala',
         price: 129.99,
-        description: 'Para operaciones grandes que necesitan escala sin limites fijos',
+        description: 'Para operaciones grandes que necesitan crecer sin topes fijos y reforzar su marca',
         maxEmployees: 0,
         popular: false,
         highlightFeatures: [
-          'Usuarios ilimitados',
+          'Empleados ilimitados',
           'Logo personalizado'
         ],
         technicalFeatures: [
+          'Todo lo de Crecimiento',
+          'Empleados ilimitados',
           'Usuarios ilimitados',
-          'Agenda completa',
-          'Control de caja',
-          'Historial de clientes',
-          'Inventario',
-          'Reportes avanzados',
-          'Multiples sucursales',
-          'Branding basico con logo personalizado'
+          'Logo personalizado para tu negocio'
         ],
         commercialBenefits: [
           'Atencion prioritaria',
-          'Acompanamiento comercial'
+          'Acompanamiento comercial',
+          'Escala sin limite de empleados ni usuarios'
         ]
       }
     ];

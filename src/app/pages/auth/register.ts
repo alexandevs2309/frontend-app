@@ -106,9 +106,9 @@ export class Register implements OnInit {
   };
 
   plans = [
-    { name: 'basic', price: 29.99, features: ['8 usuarios activos', '1 sucursal', 'Caja y ventas', 'Reportes básicos'] },
-    { name: 'standard', price: 69.99, features: ['25 usuarios activos', 'Multi-sucursal', 'Inventario', 'Reportes avanzados'] },
-    { name: 'premium', price: 129.99, features: ['Usuarios ilimitados', 'Sucursales ilimitadas', 'Reportes avanzados', 'Marca personalizada'] }
+    { name: 'basic', price: 29.99, features: ['Hasta 8 empleados', '1 sucursal', 'Caja y ventas', 'Reportes basicos'] },
+    { name: 'standard', price: 69.99, features: ['Hasta 25 empleados', 'Varias sucursales', 'Inventario', 'Reportes avanzados'] },
+    { name: 'premium', price: 129.99, features: ['Empleados ilimitados', 'Usuarios ilimitados', 'Atencion prioritaria', 'Logo personalizado'] }
   ];
 
   constructor(
@@ -334,9 +334,9 @@ export class Register implements OnInit {
   // Get plan display name
   getPlanDisplayName(): string {
     const planNames: any = {
-      'basic': 'Professional',
-      'standard': 'Business',
-      'premium': 'Premium',
+      'basic': 'Esencial',
+      'standard': 'Crecimiento',
+      'premium': 'Escala',
     };
     return planNames[this.planData.selectedPlan] || this.planData.selectedPlan;
   }
