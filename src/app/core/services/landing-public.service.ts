@@ -15,6 +15,7 @@ export interface PublicPlan {
   commercialBenefits: string[];
   maxEmployees: number;
   popular: boolean;
+  isPublic: boolean;
 }
 
 export interface PublicMetrics {
@@ -48,6 +49,7 @@ export class LandingPublicService {
         description: 'Para barberias pequenas que necesitan ordenar citas, cobros y seguimiento de clientes sin complicarse',
         maxEmployees: 8,
         popular: false,
+        isPublic: true,
         highlightFeatures: [
           'Hasta 8 empleados',
           '1 sucursal'
@@ -72,6 +74,7 @@ export class LandingPublicService {
         description: 'El plan recomendado para negocios en crecimiento que necesitan mas control, visibilidad y operacion multi-sucursal',
         maxEmployees: 25,
         popular: true,
+        isPublic: true,
         highlightFeatures: [
           'Hasta 25 empleados',
           'Varias sucursales'
@@ -95,6 +98,7 @@ export class LandingPublicService {
         description: 'Para operaciones grandes que necesitan crecer sin topes fijos y reforzar su marca',
         maxEmployees: 0,
         popular: false,
+        isPublic: true,
         highlightFeatures: [
           'Empleados ilimitados',
           'Logo personalizado'
@@ -125,7 +129,8 @@ export class LandingPublicService {
       technicalFeatures: Array.isArray(plan.technical_features) ? plan.technical_features : [],
       commercialBenefits: Array.isArray(plan.commercial_benefits) ? plan.commercial_benefits : [],
       maxEmployees: Number(plan.max_employees ?? 0),
-      popular: plan.name === 'standard'
+      popular: plan.name === 'standard',
+      isPublic: plan.is_public !== false
     };
   }
 

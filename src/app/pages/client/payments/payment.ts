@@ -146,9 +146,9 @@ export class PaymentComponent implements OnInit {
       next: (data: any) => {
         
         const allPlans = Array.isArray(data) ? data : (data.results || []);
-        // Filter out free plan and add recommended flag
+        // Mostrar solo planes comerciales elegibles; trial es un estado del tenant.
         this.plans = allPlans
-          .filter((plan: any) => plan.name !== 'free')
+          .filter((plan: any) => plan.is_active !== false && plan.is_public !== false)
           .map((plan: any, index: number) => ({
             ...plan,
             recommended: this.isRecommendedPlan(plan),

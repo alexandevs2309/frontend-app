@@ -26,8 +26,8 @@ export class PricingWidget implements OnInit, OnDestroy {
 
     ngOnInit() {
         this.landingService.getPlans().subscribe((plans) => {
-            // Mostrar solo planes pagos. El trial se comunica aparte para evitar competir con la oferta principal.
-            this.plans = plans.filter(plan => plan.name !== 'free' && plan.name !== 'trial');
+            // Mostrar solo planes comerciales publicos. El trial se comunica aparte como estado promocional.
+            this.plans = plans.filter(plan => plan.isPublic !== false);
         });
     }
 
