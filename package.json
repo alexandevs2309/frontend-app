@@ -7,7 +7,7 @@
         "start:dev": "ng serve --configuration development --no-watch --live-reload=false",
         "start:watch": "CHOKIDAR_USEPOLLING=false ng serve --configuration development --watch",
         "start:prod": "ng serve --configuration production",
-        "build": "ng build",
+        "build": "ng build --configuration production",
         "build:dev": "ng build --configuration development",
         "build:prod": "ng build --configuration=production",
         "build:profile": "ng build --configuration profile",
