@@ -3,7 +3,7 @@
     "version": 1,
     "newProjectRoot": "projects",
     "projects": {
-        "sakai-ng": {
+        "auron-suite": {
             "projectType": "application",
             "schematics": {
                 "@schematics/angular:component": {
@@ -17,7 +17,7 @@
                 "build": {
                     "builder": "@angular-devkit/build-angular:browser",
                     "options": {
-                        "outputPath": "dist/sakai-ng",
+                        "outputPath": "dist/auron-suite",
                         "index": "src/index.html",
                         "main": "src/main.ts",
                         "polyfills": [
@@ -106,9 +106,9 @@
                         "poll": 1000
                     },
                     "configurations": {
-                        "production": { "buildTarget": "sakai-ng:build:production" },
-                        "profile": { "buildTarget": "sakai-ng:build:profile" },
-                        "development": { "buildTarget": "sakai-ng:build:development" }
+                        "production": { "buildTarget": "auron-suite:build:production" },
+                        "profile": { "buildTarget": "auron-suite:build:profile" },
+                        "development": { "buildTarget": "auron-suite:build:development" }
                     },
                     "defaultConfiguration": "development"
                     },

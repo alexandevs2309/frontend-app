@@ -1,5 +1,5 @@
 {
-    "name": "sakai-ng",
+    "name": "auron-suite-web",
     "version": "20.0.0",
     "scripts": {
         "ng": "ng",

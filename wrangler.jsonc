@@ -1,12 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "frontend-app",
+"name": "auron-suite-app",
   "compatibility_date": "2026-04-25",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "directory": "dist/sakai-ng",
+    "directory": "dist/auron-suite",
     "not_found_handling": "single-page-application"
   },
   "compatibility_flags": [

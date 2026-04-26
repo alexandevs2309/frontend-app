@@ -37,12 +37,6 @@ export const appRoutes: Routes = [
     // Public routes (landing, legal, register)
     ...publicRoutes,
 
-    // Legacy pages routes
-    {
-        path: 'pages',
-        loadChildren: () => import('./app/pages/pages.routes')
-    },
-
     // 404 page
     { path: 'notfound', component: Notfound },
     { path: '**', redirectTo: '/notfound' }

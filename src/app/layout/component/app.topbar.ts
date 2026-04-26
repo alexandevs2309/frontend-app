@@ -31,7 +31,9 @@ import { roleKey } from '../../core/utils/role-normalizer';
                 <i class="pi pi-bars"></i>
             </button>
             <a class="layout-topbar-logo" [routerLink]="getDashboardRoute()" style="cursor: pointer;">
-                <span class="topbar-brand-mark">P</span>
+                <span class="topbar-brand-mark">
+                    <img src="assets/logos/iso-auron.jpg" alt="Auron Suite" />
+                </span>
                 <div class="topbar-brand-copy">
                     <strong>{{ appConfig.platformName() }}</strong>
                     <small>{{ getWorkspaceLabel() }}</small>
@@ -566,14 +568,19 @@ import { roleKey } from '../../core/utils/role-normalizer';
         .topbar-brand-mark {
             width: 2.25rem;
             height: 2.25rem;
-            display: grid;
-            place-items: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 0.9rem;
             background: var(--shell-brand-mark-bg);
-            color: var(--shell-brand-mark-color);
-            font-size: 0.95rem;
-            font-weight: 800;
-            letter-spacing: 0.04em;
+            overflow: hidden;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+        }
+
+        .topbar-brand-mark img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .topbar-brand-copy {
